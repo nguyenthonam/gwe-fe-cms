@@ -10,13 +10,13 @@ export default function Header() {
         </Link>
         <ul className="flex space-x-4">
           <li>
-            <Link href="/" className="hover:underline">
-              Home
+            <Link href="/" className="rounded-md p-2 hover:underline bg-blue-200">
+              Trang Chủ
             </Link>
           </li>
           <li>
-            <Link href="/about" className="hover:underline">
-              About
+            <Link href="/bill" className="p-2 rounded-md hover:underline bg-blue-200">
+              Hóa đơn
             </Link>
           </li>
         </ul>
