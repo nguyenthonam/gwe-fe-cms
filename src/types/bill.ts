@@ -17,13 +17,9 @@ export interface RecipientData {
   state: string | null;
   postCode: string | null;
 }
-export enum PackageCode {
-  PARCEL,
-  DOCUMENT,
-}
 export interface PackageData {
   content: string | null;
-  code: PackageCode;
+  code: string | null;
   weight: number;
   PCEs: number;
   declaredValue: string;

@@ -3,8 +3,8 @@ import Image from "next/image";
 
 export default function Header() {
   return (
-    <header className="bg-white text-blue-600 p-4 border-b-2 border-gray-600">
-      <nav className="container mx-auto flex justify-between items-center">
+    <header className="bg-white text-blue-600 border-b-2 border-gray-600">
+      <nav className="container mx-auto p-4 flex justify-between items-center">
         <Link href="/">
           <Image src="/logo.png" alt="Logo" width={200} height={100} className="rounded-full" />
         </Link>
