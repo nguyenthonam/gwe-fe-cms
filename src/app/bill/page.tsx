@@ -1,5 +1,4 @@
-import BillForm from "@/components/BillForm";
-import BillPrint from "@/components/BillPrint";
+import BillForm from "@/components/Bill/BillForm";
 
 export default function Bill() {
   return (

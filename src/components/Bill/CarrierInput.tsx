@@ -3,18 +3,19 @@
 import { useRef, useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
-interface Code {
+interface Carriers {
   name: string;
 }
 
-const packageTypes: Code[] = [{ name: "PARCEL" }, { name: "DOCUMENT" }];
+const carriers: Carriers[] = [{ name: "DHL SIN" }, { name: "CT EU" }, { name: "CLE" }, { name: "DHL ECOM" }, { name: "FEDEX SIN" }];
 
-interface PackageInputProps {
+interface CarrierInputProps {
   className?: string;
   onChange: (value: string) => void; // Callback để gửi giá trị ra ngoài
+  required?: boolean;
 }
 
-export default function PackageCodeInput({ onChange, className }: PackageInputProps) {
+export default function CountryInput({ required = false, className, onChange }: CarrierInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -36,7 +37,7 @@ export default function PackageCodeInput({ onChange, className }: PackageInputPr
     onChange(value); // Xuất giá trị ra component cha
   };
 
-  const handleSelect = (carrier: Code) => {
+  const handleSelect = (carrier: Carriers) => {
     const selectedValue = `${carrier.name}`;
     handleChange(selectedValue);
     setShowDropdown(false);
@@ -53,6 +54,7 @@ export default function PackageCodeInput({ onChange, className }: PackageInputPr
         onChange={(e) => handleChange(e.target.value)}
         onFocus={() => setShowDropdown(true)}
         onAbort={() => setShowDropdown(false)}
+        required={required}
       />
       <ChevronDown
         className={`absolute right-1 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-transform ${showDropdown ? "rotate-180" : "rotate-0"} cursor-pointer`}
@@ -62,7 +64,7 @@ export default function PackageCodeInput({ onChange, className }: PackageInputPr
       {/* Dropdown */}
       {showDropdown && (
         <ul className="absolute w-full bg-white border rounded-lg shadow-lg mt-1 max-h-[140px] overflow-auto">
-          {packageTypes
+          {carriers
             // .filter((c) => c.name.toLowerCase().includes(inputValue.toLowerCase()))
             .map((value, idx) => (
               <li key={value.name + idx} className="p-2 text-[14px] cursor-pointer hover:bg-gray-200 " onClick={() => handleSelect(value)}>

@@ -17,6 +17,14 @@ export interface RecipientData {
   state: string | null;
   postCode: string | null;
 }
+export interface IDimension {
+  no: number;
+  length: number;
+  width: number;
+  height: number;
+  gross: number;
+  volume: number;
+}
 export interface PackageData {
   content: string | null;
   code: string | null;
@@ -24,7 +32,7 @@ export interface PackageData {
   PCEs: number;
   declaredValue: string;
   currency: string;
-  dimensions?: [{ no: number; length: number; width: number; height: number; gross: number; volume: number }];
+  dimensions: IDimension[] | null;
 }
 export interface BillData {
   customer: string; //FOCO

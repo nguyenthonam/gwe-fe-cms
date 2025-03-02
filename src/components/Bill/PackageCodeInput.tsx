@@ -3,19 +3,19 @@
 import { useRef, useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
-interface Carriers {
+interface Code {
   name: string;
 }
 
-const carriers: Carriers[] = [{ name: "DHL SIN" }, { name: "CT EU" }, { name: "CLE" }, { name: "DHL ECOM" }, { name: "FEDEX SIN" }];
+const packageTypes: Code[] = [{ name: "PARCEL" }, { name: "DOCUMENT" }];
 
-interface CarrierInputProps {
+interface PackageInputProps {
   className?: string;
   onChange: (value: string) => void; // Callback để gửi giá trị ra ngoài
 }
 
-export default function CountryInput({ onChange, className }: CarrierInputProps) {
-  const [inputValue, setInputValue] = useState("");
+export default function PackageCodeInput({ onChange, className }: PackageInputProps) {
+  const [inputValue, setInputValue] = useState("PARCEL");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -36,7 +36,7 @@ export default function CountryInput({ onChange, className }: CarrierInputProps)
     onChange(value); // Xuất giá trị ra component cha
   };
 
-  const handleSelect = (carrier: Carriers) => {
+  const handleSelect = (carrier: Code) => {
     const selectedValue = `${carrier.name}`;
     handleChange(selectedValue);
     setShowDropdown(false);
@@ -62,7 +62,7 @@ export default function CountryInput({ onChange, className }: CarrierInputProps)
       {/* Dropdown */}
       {showDropdown && (
         <ul className="absolute w-full bg-white border rounded-lg shadow-lg mt-1 max-h-[140px] overflow-auto">
-          {carriers
+          {packageTypes
             // .filter((c) => c.name.toLowerCase().includes(inputValue.toLowerCase()))
             .map((value, idx) => (
               <li key={value.name + idx} className="p-2 text-[14px] cursor-pointer hover:bg-gray-200 " onClick={() => handleSelect(value)}>

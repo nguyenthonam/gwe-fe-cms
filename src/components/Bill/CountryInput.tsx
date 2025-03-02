@@ -142,9 +142,10 @@ const countries: Country[] = [
 interface CountryInputProps {
   className?: string;
   onChange: (value: string) => void; // Callback để gửi giá trị ra ngoài
+  required?: boolean;
 }
 
-export default function CountryInput({ onChange, className }: CountryInputProps) {
+export default function CountryInput({ required, className, onChange }: CountryInputProps) {
   const [inputValue, setInputValue] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -182,6 +183,7 @@ export default function CountryInput({ onChange, className }: CountryInputProps)
         value={inputValue}
         onChange={(e) => handleChange(e.target.value)}
         onFocus={() => setShowDropdown(true)}
+        required={required}
       />
       <ChevronDown
         className={`absolute right-1 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-transform ${showDropdown ? "rotate-180" : "rotate-0"} cursor-pointer`}
