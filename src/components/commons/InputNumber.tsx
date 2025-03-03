@@ -11,7 +11,6 @@ const NumberInput: React.FC<NumberInputProps> = ({ value, handleOnChange, ...pro
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let newValue: number | string = e.target.value;
-    console.log("Change:", newValue);
 
     // Nếu không có dấu "." => Loại bỏ số 0 đứng đầu (trừ số 0 duy nhất)
     if (!newValue.includes(".")) {

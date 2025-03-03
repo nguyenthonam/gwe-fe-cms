@@ -15,7 +15,7 @@ interface PackageInputProps {
 }
 
 export default function PackageCodeInput({ onChange, className }: PackageInputProps) {
-  const [inputValue, setInputValue] = useState("PARCEL");
+  const [inputValue, setInputValue] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

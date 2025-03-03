@@ -19,11 +19,9 @@ export default function BillForm() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const onSubmit = (data: BillData) => {
-    console.log("********: ", data);
     setBillData(data);
   };
   const onDimensionChange = (rows: IDimension[] | null) => {
-    console.log("Dimension:", rows);
     setRegister("package.dimensions", rows);
   };
 
@@ -281,7 +279,7 @@ export default function BillForm() {
                   </td>
                 </tr>
                 <tr>
-                  <td className="p-2 w-[120px]">
+                  <td className="p-2 w-[125px]">
                     <label className="text-sm font-medium text-gray-700">Declared Value</label>
                   </td>
                   <td className="p-2">
@@ -291,7 +289,7 @@ export default function BillForm() {
                       defaultValue={0}
                       min={0}
                       placeholder="Please enter..."
-                      className="number-input h-[26px] max-w-[250px] border border-gray-500"
+                      className="number-input h-[26px] max-w-[250px] border border-gray-500 text-left"
                     />
                   </td>
                 </tr>
