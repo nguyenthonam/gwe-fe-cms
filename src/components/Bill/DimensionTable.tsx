@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IDimension } from "@/types/bill";
+import { IDimension } from "@/types";
 import { Button } from "@/components/commons";
 
 interface IProps {
@@ -57,33 +57,33 @@ export default function DimensionTable({ onRowsChange, className }: IProps) {
       <div className="w-full overflow-auto">
         <table className="table">
           <thead>
-            <tr className="bg-gray-300">
-              <th className="border border-gray-400 p-2">No</th>
-              <th className="border border-gray-400 p-2">Length (cm)</th>
-              <th className="border border-gray-400 p-2">Width (cm)</th>
-              <th className="border border-gray-400 p-2">Height (cm)</th>
-              <th className="border border-gray-400 p-2">Gross (kg)</th>
-              <th className="border border-gray-400 p-2">Volume (m³)</th>
-              <th className="border border-gray-400 p-2">Action</th>
+            <tr className="bg-gray-400">
+              <th className="border border-gray-500 p-2">No</th>
+              <th className="border border-gray-500 p-2">Length (cm)</th>
+              <th className="border border-gray-500 p-2">Width (cm)</th>
+              <th className="border border-gray-500 p-2">Height (cm)</th>
+              <th className="border border-gray-500 p-2">Gross (kg)</th>
+              <th className="border border-gray-500 p-2">Volume (m³)</th>
+              <th className="border border-gray-500 p-2">Action</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row, index) => (
               <tr key={row.no} className="border">
-                <td className="border border-gray-400 p-2 text-center">{index + 1}</td>
+                <td className="border border-gray-400 bg-gray-200 p-2 text-center">{index + 1}</td>
                 {["length", "width", "height", "gross"].map((field) => (
-                  <td key={field} className="border border-gray-400 p-2">
+                  <td key={field} className="border border-gray-400 bg-gray-200 p-2">
                     <input
                       type="number"
-                      className="number-input border-1 rounded"
+                      className="number-input border-2 border-gray-600 rounded text-center min-w-[50px] "
                       min={0}
                       value={row[field as keyof typeof row]}
                       onChange={(e) => handleInputChange(row.no, field, Number(e.target.value))}
                     />
                   </td>
                 ))}
-                <td className="border border-gray-400 p-2 text-center">{row.volume}</td>
-                <td className="border border-gray-400 p-2 text-center">
+                <td className="border border-gray-400 bg-gray-200 p-2 text-center">{row.volume}</td>
+                <td className="border border-gray-400 bg-gray-200 p-2 text-center">
                   <Button onClick={() => deleteRow(row.no)} className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
                     Xóa
                   </Button>

@@ -1,11 +1,11 @@
-export interface SenderData {
+export interface ISenderData {
   name: string | null; // MR Thuận
   address1: string | null;
   address2: string | null;
   address3: string | null;
   phone: string;
 }
-export interface RecipientData {
+export interface IRecipientData {
   name: string | null;
   attention: string | null;
   address1: string | null;
@@ -25,7 +25,7 @@ export interface IDimension {
   gross: number;
   volume: number;
 }
-export interface PackageData {
+export interface IPackageData {
   content: string | null;
   code: string | null;
   weight: number;
@@ -34,13 +34,13 @@ export interface PackageData {
   currency: string;
   dimensions: IDimension[] | null;
 }
-export interface BillData {
+export interface IBillData {
   customer: string; //FOCO
   GWERef: string; //GWE76683
   carrierRef: string; //xxx00005xxx
   carrier: string; // DHL SIN
-  sender: SenderData;
-  recipient: RecipientData;
-  package: PackageData;
+  sender: ISenderData;
+  recipient: IRecipientData;
+  package: IPackageData;
   note: string | null;
 }

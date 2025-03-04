@@ -2,23 +2,22 @@
 
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { BillData, IDimension } from "@/types/bill";
-import { useReactToPrint } from "react-to-print";
-import BillPrint, { IBillPrintRef } from "./BillPrint";
+import { IBillData, IDimension } from "@/types";
 import CountryInput from "./CountryInput";
 import CarrierInput from "./CarrierInput";
 import PackageCodeInput from "./PackageCodeInput";
 import DimensionTable from "./DimensionTable";
 import { Button } from "@/components/commons";
+import BillPopup, { IBillPopupHandle } from "./BillPopup";
 
 export default function BillForm() {
-  const { register, handleSubmit, setValue: setRegister } = useForm<BillData>();
-  const [billData, setBillData] = useState<BillData | null>(null);
+  const { register, handleSubmit, setValue: setRegister } = useForm<IBillData>();
+  const [billData, setBillData] = useState<IBillData | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
-  const printRef = useRef<IBillPrintRef | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const billPopupRef = useRef<IBillPopupHandle>(null);
 
-  const onSubmit = (data: BillData) => {
+  const onSubmit = (data: IBillData) => {
     setBillData(data);
   };
   const onDimensionChange = (rows: IDimension[] | null) => {
@@ -34,7 +33,7 @@ export default function BillForm() {
             <Button onClick={() => formRef.current?.requestSubmit()} className="btn btn-primary text-[14px] md:text-[16px]">
               Create Bill
             </Button>
-            <Button className="btn btn-secondary text-[14px] md:text-[16px]" onClick={() => printRef.current?.handlePrint()}>
+            <Button className="btn btn-secondary text-[14px] md:text-[16px]" onClick={() => billPopupRef.current?.open()}>
               Print Bill
             </Button>
             <Button className="btn btn-secondary text-[14px] md:text-[16px]">Print Shipping Mark</Button>
@@ -257,7 +256,7 @@ export default function BillForm() {
                       defaultValue={0}
                       min={0}
                       placeholder="Please enter..."
-                      className="w-full h-[26px] max-w-[250px] p-1 border border-gray-500 number-input"
+                      className="w-full h-[26px] max-w-[250px] p-1 border border-gray-500 number-input text-left"
                       required
                     />
                   </td>
@@ -273,7 +272,7 @@ export default function BillForm() {
                       defaultValue={1}
                       min={0}
                       placeholder="Please enter..."
-                      className="number-input h-[26px] max-w-[250px] border border-gray-500"
+                      className="number-input h-[26px] max-w-[250px] border border-gray-500 text-left"
                       required
                     />
                   </td>
@@ -323,10 +322,7 @@ export default function BillForm() {
 
       {/* Hiển thị hóa đơn để in */}
       <div className="mt-6">
-        <BillPrint ref={printRef} data={billData} />
-        <Button onClick={() => printRef.current?.handleSaveAndPrint()} className="mt-4 bg-green-500 text-white p-2 rounded">
-          In Hóa Đơn
-        </Button>
+        <BillPopup ref={billPopupRef} data={billData} />
       </div>
     </div>
   );

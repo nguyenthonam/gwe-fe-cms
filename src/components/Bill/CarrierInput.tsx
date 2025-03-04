@@ -1,13 +1,11 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import Icon from "@mui/material/Icon";
+import { CARRIERS } from "@/lib/constants";
+import type { ICarrier } from "@/types";
 
-interface Carriers {
-  name: string;
-}
-
-const carriers: Carriers[] = [{ name: "DHL SIN" }, { name: "CT EU" }, { name: "CLE" }, { name: "DHL ECOM" }, { name: "FEDEX SIN" }];
+const carriers: ICarrier[] = CARRIERS;
 
 interface CarrierInputProps {
   className?: string;
@@ -37,7 +35,7 @@ export default function CountryInput({ required = false, className, onChange }: 
     onChange(value); // Xuất giá trị ra component cha
   };
 
-  const handleSelect = (carrier: Carriers) => {
+  const handleSelect = (carrier: ICarrier) => {
     const selectedValue = `${carrier.name}`;
     handleChange(selectedValue);
     setShowDropdown(false);
@@ -56,10 +54,9 @@ export default function CountryInput({ required = false, className, onChange }: 
         onAbort={() => setShowDropdown(false)}
         required={required}
       />
-      <ChevronDown
-        className={`absolute right-1 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-transform ${showDropdown ? "rotate-180" : "rotate-0"} cursor-pointer`}
-        onClick={() => setShowDropdown(!showDropdown)}
-      />
+      <Icon className={`absolute right-1 top-1/2 transform -translate-y-1/2 w-5 h-5 cursor-pointer`} sx={{ fontSize: "18px !important" }} onClick={() => setShowDropdown(!showDropdown)}>
+        {showDropdown ? "expand_less" : "expand_more"}
+      </Icon>
 
       {/* Dropdown */}
       {showDropdown && (

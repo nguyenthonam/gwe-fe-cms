@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import Icon from "@mui/material/Icon";
 
 interface Code {
   name: string;
@@ -54,10 +54,9 @@ export default function PackageCodeInput({ onChange, className }: PackageInputPr
         onFocus={() => setShowDropdown(true)}
         onAbort={() => setShowDropdown(false)}
       />
-      <ChevronDown
-        className={`absolute right-1 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-transform ${showDropdown ? "rotate-180" : "rotate-0"} cursor-pointer`}
-        onClick={() => setShowDropdown(!showDropdown)}
-      />
+      <Icon className={`absolute right-1 top-1/2 transform -translate-y-1/2 w-5 h-5 cursor-pointer`} sx={{ fontSize: "18px !important" }} onClick={() => setShowDropdown(!showDropdown)}>
+        {showDropdown ? "expand_less" : "expand_more"}
+      </Icon>
 
       {/* Dropdown */}
       {showDropdown && (

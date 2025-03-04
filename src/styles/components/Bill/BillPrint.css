@@ -8,6 +8,11 @@
     margin: 2mm; /* Lề trang */
   }
 
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   /* Nếu bill quá lớn, tự động in thành 2 trang A4 */
   .bill:nth-child(even) {
     page-break-after: always; /* Ngắt trang sau mỗi tờ bill lẻ */

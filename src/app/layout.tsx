@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import Main from "@/components/Main";
 import "@/styles/globals.scss";
 import "@/styles/globals.css";
 
@@ -16,10 +15,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+      </head>
       <body>
-        <Header />
-        <main className="w-full flex-grow container mx-auto p-4">{children}</main>
-        <Footer />
+        <Main>{children}</Main>
       </body>
     </html>
   );

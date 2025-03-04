@@ -3,13 +3,12 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { useReactToPrint } from "react-to-print";
 import Barcode from "./Barcode";
-import { BillData } from "@/types/bill";
-import { SquareCheck, Square } from "lucide-react";
+import { IBillData } from "@/types";
+import Icon from "@mui/material/Icon";
 import styles from "@/styles/components/Bill/BillPrint.module.css";
 import "@/styles/components/Bill/BillPrint.css";
-import { display } from "html2canvas/dist/types/css/property-descriptors/display";
 interface IProps {
-  data: BillData | null;
+  data: IBillData | null;
 }
 interface IBillView {
   className?: string;
@@ -34,6 +33,7 @@ const BillPrint = React.forwardRef(({ data }: IProps, ref: any) => {
   const handlePrint = useReactToPrint({
     contentRef: billPrintRef,
     documentTitle: data?.GWERef || `GX-${Date.now().toString()}`,
+    preserveAfterPrint: true,
   });
   const handleSaveAndPrint = async () => {
     if (!billPrintRef.current) return;
@@ -186,16 +186,38 @@ const BillPrint = React.forwardRef(({ data }: IProps, ref: any) => {
             </tr>
             <tr className={styles.tableRow}>
               <td className={styles.tableData} colSpan={2}>
-                <div className="py-[2px] flex justify-between">
-                  <b className="items-center">Type of product:</b>
-                  <div className="flex">
-                    <span className="flex items-center gap-1 mr-2">{data?.package?.code && data.package.code === "DOCUMENT" ? <SquareCheck size={20} /> : <Square size={20} />} DOCUMENT</span>
-                    <span className="flex items-center gap-1 mr-2">{data?.package?.code && data.package.code === "PARCEL" ? <SquareCheck size={20} /> : <Square size={20} />} PARCEL</span>
+                <div className="py-[2px] flex justify-between items-center">
+                  <b>Type of product:</b>
+                  <div className="inline-flex">
+                    <p className="inline-flex items-center mr-2">
+                      {data?.package?.code && data.package.code === "DOCUMENT" ? (
+                        <Icon className="my-auto" sx={{ fontSize: "18px !important" }}>
+                          check_box
+                        </Icon>
+                      ) : (
+                        <Icon className="my-auto" sx={{ fontSize: "18px !important" }}>
+                          check_box_outline_blank
+                        </Icon>
+                      )}{" "}
+                      <span className="mt-[1px]">DOCUMENT</span>
+                    </p>
+                    <p className="inline-flex items-center mr-2">
+                      {data?.package?.code && data.package.code === "PARCEL" ? (
+                        <Icon className="my-auto" sx={{ fontSize: "18px !important" }}>
+                          check_box
+                        </Icon>
+                      ) : (
+                        <Icon className="my-auto" sx={{ fontSize: "18px !important" }}>
+                          check_box_outline_blank
+                        </Icon>
+                      )}{" "}
+                      <span className="mt-[1px]">PARCEL</span>
+                    </p>
                   </div>
                 </div>
               </td>
               <td className={styles.tableData} style={{ border: "none" }}>
-                <div className="py-[2px] flex justify-between">
+                <div className="py-[2px] flex justify-between items-center">
                   <b>Number of package:</b>
                   <span> {data?.package?.PCEs || 0}</span>
                   <b>Weight in Kg:</b>
