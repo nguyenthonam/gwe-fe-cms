@@ -1,0 +1,25 @@
+/* Ẩn bill thứ 2 trên web */
+.print-only {
+  display: none;
+}
+@media print {
+  @page {
+    size: A4 portrait; /* Giấy A4 ngang */
+    margin: 2mm; /* Lề trang */
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Nếu bill quá lớn, tự động in thành 2 trang A4 */
+  .bill:nth-child(even) {
+    page-break-after: always; /* Ngắt trang sau mỗi tờ bill lẻ */
+  }
+
+  /* Khi in, hiển thị bill thứ 2 */
+  .print-only {
+    display: block !important;
+  }
+}
