@@ -3,6 +3,9 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { styled, useTheme, Theme, CSSObject } from "@mui/material/styles";
+import CssBaseline from "@mui/material/CssBaseline";
+import { ThemeProvider } from "@mui/material/styles";
+import customTheme from "@/styles/MUI/customTheme"; // Đường dẫn tới theme.ts
 import Box from "@mui/material/Box";
 import Avatar from "@mui/material/Avatar";
 import Menu from "@mui/material/Menu";
@@ -113,83 +116,86 @@ export default function Main({ children }: IProps) {
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      {/* <CssBaseline /> */}
-      <AppBar position="fixed" open={showDrawer} sx={{ backgroundColor: "white" }}>
-        <Toolbar>
-          <IconButton edge="start" color="primary" onClick={() => setShowDrawer(!showDrawer)} sx={{ mr: 2 }}>
-            <MenuIcon />
-          </IconButton>
-
-          {/* Logo - Click để về Home */}
-          <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
-            <Link href="/" passHref>
-              <Image src="/logo.png" alt="Logo" width={150} height={100} />
-            </Link>
-          </Box>
-
-          {/* Avatar */}
-          <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
-            <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>
-              Admin
-            </Typography>
-            <IconButton onClick={handleMenuClick} sx={{ p: 0 }}>
-              <Avatar alt="User" sx={{ bgcolor: lightBlue[500] }}>
-                <AccountCircleIcon />
-              </Avatar>
+    <ThemeProvider theme={customTheme}>
+      <CssBaseline />
+      <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+        {/* <CssBaseline /> */}
+        <AppBar position="fixed" open={showDrawer} sx={{ backgroundColor: "white" }}>
+          <Toolbar>
+            <IconButton edge="start" color="primary" onClick={() => setShowDrawer(!showDrawer)} sx={{ mr: 2 }}>
+              <MenuIcon />
             </IconButton>
-            <Menu anchorEl={anchorEl} open={showMenu} onClose={handleMenuClose} sx={{ mt: 1 }}>
-              <MenuItem onClick={handleMenuClose}>
-                <ListItemIcon>
-                  <PersonIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Profile</ListItemText>
-              </MenuItem>
-              <MenuItem onClick={handleMenuClose}>
-                <ListItemIcon>
-                  <LogoutIcon fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Logout</ListItemText>
-              </MenuItem>
-            </Menu>
-          </Box>
-        </Toolbar>
-      </AppBar>
 
-      <Box sx={{ display: "flex", flexGrow: 1 }}>
-        <Drawer variant="permanent" open={showDrawer} sx={{ "& .MuiDrawer-paper": { bgcolor: lightBlue[900], color: "white" } }}>
-          <DrawerHeader />
-          <Divider />
-          <List>
-            <ListItem disablePadding sx={{ display: "block" }}>
-              <ListItemButton component={Link} href="/dashboard" onClick={() => setShowDrawer(false)}>
-                <ListItemIcon>
-                  <DashboardIcon htmlColor="white" />
-                </ListItemIcon>
-                <ListItemText primary={"Dashboard"} />
-              </ListItemButton>
-              <ListItemButton component={Link} href="/bill" onClick={() => setShowDrawer(false)}>
-                <ListItemIcon>
-                  <ReceiptIcon htmlColor="white" />
-                </ListItemIcon>
-                <ListItemText primary={"Bill"} />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Drawer>
-        {/* Nội dung chính */},
-        <Box component="main" sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-          <DrawerHeader />
-          <Box component="div" sx={{ flexGrow: 1, p: 1 }}>
-            {children}
-          </Box>
+            {/* Logo - Click để về Home */}
+            <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+              <Link href="/" passHref>
+                <Image src="/logo.png" alt="Logo" width={150} height={100} />
+              </Link>
+            </Box>
 
-          {/* Footer */}
-          <Box component="footer" sx={{ p: 2, textAlign: "center", bgcolor: lightBlue[900], color: "white" }}>
-            <Typography variant="body2">© 2025 Gateway Express. All rights reserved.</Typography>
+            {/* Avatar */}
+            <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
+              <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>
+                Admin
+              </Typography>
+              <IconButton onClick={handleMenuClick} sx={{ p: 0 }}>
+                <Avatar alt="User" sx={{ bgcolor: lightBlue[500] }}>
+                  <AccountCircleIcon />
+                </Avatar>
+              </IconButton>
+              <Menu anchorEl={anchorEl} open={showMenu} onClose={handleMenuClose} sx={{ mt: 1 }}>
+                <MenuItem onClick={handleMenuClose}>
+                  <ListItemIcon>
+                    <PersonIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Profile</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={handleMenuClose}>
+                  <ListItemIcon>
+                    <LogoutIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Logout</ListItemText>
+                </MenuItem>
+              </Menu>
+            </Box>
+          </Toolbar>
+        </AppBar>
+
+        <Box sx={{ display: "flex", flexGrow: 1 }}>
+          <Drawer variant="permanent" open={showDrawer} sx={{ "& .MuiDrawer-paper": { bgcolor: lightBlue[900], color: "white" } }}>
+            <DrawerHeader />
+            <Divider />
+            <List>
+              <ListItem disablePadding sx={{ display: "block" }}>
+                <ListItemButton component={Link} href="/dashboard" onClick={() => setShowDrawer(false)}>
+                  <ListItemIcon>
+                    <DashboardIcon htmlColor="white" />
+                  </ListItemIcon>
+                  <ListItemText primary={"Dashboard"} />
+                </ListItemButton>
+                <ListItemButton component={Link} href="/bill" onClick={() => setShowDrawer(false)}>
+                  <ListItemIcon>
+                    <ReceiptIcon htmlColor="white" />
+                  </ListItemIcon>
+                  <ListItemText primary={"Bill"} />
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </Drawer>
+          {/* Nội dung chính */},
+          <Box component="main" sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+            <DrawerHeader />
+            <Box component="div" sx={{ flexGrow: 1, p: 1 }}>
+              {children}
+            </Box>
+
+            {/* Footer */}
+            <Box component="footer" sx={{ p: 2, textAlign: "center", bgcolor: lightBlue[900], color: "white" }}>
+              <Typography variant="body2">© 2025 Gateway Express. All rights reserved.</Typography>
+            </Box>
           </Box>
         </Box>
       </Box>
-    </Box>
+    </ThemeProvider>
   );
 }

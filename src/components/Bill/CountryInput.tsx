@@ -1,19 +1,22 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import Icon from "@mui/material/Icon";
 import type { ICountry } from "@/types";
-import { COUNTRIES } from "@/lib/constants";
+import { COUNTRIES } from "@/libs/constants";
 
 const countries: ICountry[] = COUNTRIES;
 
-interface CountryInputProps {
+interface ICountryInputProps {
   className?: string;
   onChange: (value: string) => void; // Callback để gửi giá trị ra ngoài
   required?: boolean;
 }
+export interface ICountryInputHandle {
+  resetValue: () => void;
+}
 
-export default function CountryInput({ required, className, onChange }: CountryInputProps) {
+const CountryInput = forwardRef(({ required, className, onChange }: ICountryInputProps, ref: any) => {
   const [inputValue, setInputValue] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -29,6 +32,11 @@ export default function CountryInput({ required, className, onChange }: CountryI
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Expose functions to parent via ref
+  useImperativeHandle(ref, () => ({
+    resetValue: () => setInputValue(""),
+  }));
 
   const handleChange = (value: string) => {
     setInputValue(value);
@@ -86,4 +94,6 @@ export default function CountryInput({ required, className, onChange }: CountryI
       )}
     </div>
   );
-}
+});
+
+export default CountryInput;

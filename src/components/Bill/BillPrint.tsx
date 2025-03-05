@@ -7,6 +7,7 @@ import { IBillData } from "@/types";
 import Icon from "@mui/material/Icon";
 import styles from "@/styles/components/Bill/BillPrint.module.css";
 import "@/styles/components/Bill/BillPrint.css";
+import useDate from "@/libs/hooks/useDate";
 interface IProps {
   data: IBillData | null;
 }
@@ -22,17 +23,11 @@ export interface IBillPrintRef {
 
 const BillPrint = React.forwardRef(({ data }: IProps, ref: any) => {
   const billPrintRef = useRef<HTMLDivElement>(null);
+  const { getCurrentDate } = useDate();
 
-  const getCurrentDate = () => {
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, "0"); // Thêm 0 nếu cần
-    const month = String(now.getMonth() + 1).padStart(2, "0"); // Thêm 0 nếu cần
-    const year = now.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
   const handlePrint = useReactToPrint({
     contentRef: billPrintRef,
-    documentTitle: data?.GWERef || `GX-${Date.now().toString()}`,
+    documentTitle: data?.HAWBCode || `GX-${Date.now().toString()}`,
     preserveAfterPrint: true,
   });
   const handleSaveAndPrint = async () => {
@@ -52,7 +47,7 @@ const BillPrint = React.forwardRef(({ data }: IProps, ref: any) => {
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
     pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-    pdf.save(data?.GWERef || "GXxxxxxx"); // Lưu file PDF
+    pdf.save(data?.HAWBCode || "GXxxxxxx"); // Lưu file PDF
 
     // Mở hộp thoại in sau khi lưu
     setTimeout(() => {
@@ -99,7 +94,14 @@ const BillPrint = React.forwardRef(({ data }: IProps, ref: any) => {
               <b className={styles.headerText + " mr-4"}>www.gatewayexpress.vn</b>
             </div>
           </div>
-          <div className={styles.barcode}>{data?.GWERef && <Barcode value={data.GWERef} />}</div>
+          <div className={styles.barcode}>
+            {data?.HAWBCode && <Barcode value={data.HAWBCode} />}{" "}
+            {data?.carrierRef && (
+              <p className="text-center text-[10px]">
+                <b>{data?.carrierRef}</b>
+              </p>
+            )}
+          </div>
         </div>
 
         <table className={styles.table}>

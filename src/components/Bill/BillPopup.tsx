@@ -1,10 +1,10 @@
 import React, { useRef, forwardRef, useImperativeHandle, useState } from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 import BillPrint, { IBillPrintRef } from "./BillPrint";
-import { BillData } from "@/types/bill";
+import { IBillData } from "@/types/bill";
 
 interface IProps {
-  data: BillData | null;
+  data: IBillData | null;
 }
 export interface IBillPopupHandle {
   open: () => void;
@@ -20,14 +20,6 @@ const BillPopup = forwardRef(({ data }: IProps, ref: any) => {
     open: () => setOpen(true),
     close: () => setOpen(false),
   }));
-
-  const getCurrentDate = () => {
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, "0");
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const year = now.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
 
   return (
     <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>

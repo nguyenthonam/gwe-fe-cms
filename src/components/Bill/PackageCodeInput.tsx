@@ -1,20 +1,23 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import Icon from "@mui/material/Icon";
 
-interface Code {
+interface ICode {
   name: string;
 }
 
-const packageTypes: Code[] = [{ name: "PARCEL" }, { name: "DOCUMENT" }];
+const packageTypes: ICode[] = [{ name: "PARCEL" }, { name: "DOCUMENT" }];
 
-interface PackageInputProps {
+interface IPackageCodeInputProps {
   className?: string;
   onChange: (value: string) => void; // Callback để gửi giá trị ra ngoài
 }
+export interface IPackageCodeInputHandle {
+  resetValue: () => void;
+}
 
-export default function PackageCodeInput({ onChange, className }: PackageInputProps) {
+const PackageCodeInput = forwardRef(({ onChange, className }: IPackageCodeInputProps, ref: any) => {
   const [inputValue, setInputValue] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -31,12 +34,17 @@ export default function PackageCodeInput({ onChange, className }: PackageInputPr
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Expose functions to parent via ref
+  useImperativeHandle(ref, () => ({
+    resetValue: () => setInputValue(""),
+  }));
+
   const handleChange = (value: string) => {
     setInputValue(value);
     onChange(value); // Xuất giá trị ra component cha
   };
 
-  const handleSelect = (carrier: Code) => {
+  const handleSelect = (carrier: ICode) => {
     const selectedValue = `${carrier.name}`;
     handleChange(selectedValue);
     setShowDropdown(false);
@@ -72,4 +80,6 @@ export default function PackageCodeInput({ onChange, className }: PackageInputPr
       )}
     </div>
   );
-}
+});
+
+export default PackageCodeInput;

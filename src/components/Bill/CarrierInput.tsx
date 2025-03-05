@@ -1,19 +1,23 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import Icon from "@mui/material/Icon";
-import { CARRIERS } from "@/lib/constants";
+import { CARRIERS } from "@/libs/constants";
 import type { ICarrier } from "@/types";
 
 const carriers: ICarrier[] = CARRIERS;
 
-interface CarrierInputProps {
+interface ICarrierInputProps {
   className?: string;
   onChange: (value: string) => void; // Callback để gửi giá trị ra ngoài
   required?: boolean;
 }
 
-export default function CountryInput({ required = false, className, onChange }: CarrierInputProps) {
+export interface ICarrierInputHandle {
+  resetValue: () => void;
+}
+
+const CarrierInput = forwardRef(({ required = false, className, onChange }: ICarrierInputProps, ref: any) => {
   const [inputValue, setInputValue] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -29,6 +33,11 @@ export default function CountryInput({ required = false, className, onChange }: 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Expose functions to parent via ref
+  useImperativeHandle(ref, () => ({
+    resetValue: () => setInputValue(""),
+  }));
 
   const handleChange = (value: string) => {
     setInputValue(value);
@@ -72,4 +81,6 @@ export default function CountryInput({ required = false, className, onChange }: 
       )}
     </div>
   );
-}
+});
+
+export default CarrierInput;
