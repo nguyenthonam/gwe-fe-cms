@@ -5,10 +5,13 @@ import { useReactToPrint } from "react-to-print";
 import Barcode from "./Barcode";
 import { IBillData } from "@/types";
 import Icon from "@mui/material/Icon";
+import Image from "next/image";
 import styles from "@/styles/components/Bill/BillPrint.module.css";
 import "@/styles/components/Bill/BillPrint.css";
+import utilsDate from "@/libs/utils/utilsDate";
 interface IProps {
   data: IBillData | null;
+  billNumber?: number;
 }
 interface IBillView {
   className?: string;
@@ -16,23 +19,18 @@ interface IBillView {
 
 // Định nghĩa kiểu dữ liệu cho ref
 export interface IBillPrintRef {
-  handlePrint: () => any;
-  handleSaveAndPrint: () => any;
+  handlePrint: () => void;
+  handleSaveAndPrint: () => void;
 }
 
-const BillPrint = React.forwardRef(({ data }: IProps, ref: any) => {
+const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 2 }, ref) => {
   const billPrintRef = useRef<HTMLDivElement>(null);
 
-  const getCurrentDate = () => {
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, "0"); // Thêm 0 nếu cần
-    const month = String(now.getMonth() + 1).padStart(2, "0"); // Thêm 0 nếu cần
-    const year = now.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
+  const { getCurrentDate } = utilsDate();
+
   const handlePrint = useReactToPrint({
     contentRef: billPrintRef,
-    documentTitle: data?.GWERef || `GX-${Date.now().toString()}`,
+    documentTitle: data?.HAWBCode || `GX-${Date.now().toString()}`,
     preserveAfterPrint: true,
   });
   const handleSaveAndPrint = async () => {
@@ -52,7 +50,7 @@ const BillPrint = React.forwardRef(({ data }: IProps, ref: any) => {
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
     pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-    pdf.save(data?.GWERef || "GXxxxxxx"); // Lưu file PDF
+    pdf.save(data?.HAWBCode || "GXxxxxxx"); // Lưu file PDF
 
     // Mở hộp thoại in sau khi lưu
     setTimeout(() => {
@@ -69,11 +67,11 @@ const BillPrint = React.forwardRef(({ data }: IProps, ref: any) => {
 
   const BillView = ({ className }: IBillView) => {
     return (
-      <div className={`${styles.bill} bill ${className}`}>
+      <div className={`${styles.bill} bill a4-portrait ${className}`}>
         <div className={styles.header}>
           <div className={styles.logo}>
             <div className="w-full h-full">
-              <img className="max-w-full" src="logo-04.png" alt="Company Logo" width={"100%"} height="auto" />
+              <Image className="max-w-full w-full h-auto" src="/logo-04.png" alt="Company Logo" width={100} height={100} />
             </div>
           </div>
           <div className="flex flex-col flex-grow">
@@ -99,7 +97,14 @@ const BillPrint = React.forwardRef(({ data }: IProps, ref: any) => {
               <b className={styles.headerText + " mr-4"}>www.gatewayexpress.vn</b>
             </div>
           </div>
-          <div className={styles.barcode}>{data?.GWERef && <Barcode value={data.GWERef} />}</div>
+          <div className={styles.barcode}>
+            {data?.HAWBCode && <Barcode value={data.HAWBCode} />}{" "}
+            {data?.carrierRef && (
+              <p className="text-center text-[10px]">
+                <b>{data?.carrierRef}</b>
+              </p>
+            )}
+          </div>
         </div>
 
         <table className={styles.table}>
@@ -259,7 +264,7 @@ const BillPrint = React.forwardRef(({ data }: IProps, ref: any) => {
 
         <div className="px-[8px] grid grid-cols-[30%_30%_40%] text-[12px]">
           <div className="flex flex-col py-[2px] pr-[8px] border-r-2 border-black">
-            <b>Shipper's signature:</b>
+            <b>Shipper&apos;s signature:</b>
             <p className="h-[70px]"></p>
             <p className="mt-auto">Date & Time: {getCurrentDate()}</p>
           </div>
@@ -282,8 +287,11 @@ const BillPrint = React.forwardRef(({ data }: IProps, ref: any) => {
 
   return (
     <div className={styles.container} ref={billPrintRef}>
-      <BillView />
-      <BillView className="print-only" />
+      {/* <BillView />
+      <BillView className="print-only" /> */}
+      {Array.from({ length: billNumber }).map((v, idx) => (
+        <BillView key={"shipping-mark-" + idx} className={idx > 0 ? "print-only" : ""} />
+      ))}
     </div>
   );
 });

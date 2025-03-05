@@ -3,41 +3,116 @@
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { IBillData, IDimension } from "@/types";
-import CountryInput from "./CountryInput";
-import CarrierInput from "./CarrierInput";
-import PackageCodeInput from "./PackageCodeInput";
+import CountryInput, { ICountryInputHandle } from "./CountryInput";
+import CarrierInput, { ICarrierInputHandle } from "./CarrierInput";
+import PackageCodeInput, { IPackageCodeInputHandle } from "./PackageCodeInput";
 import DimensionTable from "./DimensionTable";
-import { Button } from "@/components/commons";
+import { Button } from "@mui/material";
+import { grey } from "@mui/material/colors";
 import BillPopup, { IBillPopupHandle } from "./BillPopup";
+import BillShippingMarkPopup, { IBillShippingMarkPopupHandle } from "./BillShippingMarkPopup";
+import { useNotification } from "@/contexts/NotificationProvider";
+
+const DEFAULT_VALUE = {
+  customer: "",
+  HAWBCode: "",
+  carrierRef: "",
+  carrier: "",
+  sender: {
+    name: "",
+    address1: "",
+    address2: "",
+    address3: "",
+    phone: "",
+  },
+  recipient: {
+    name: "",
+    attention: "",
+    address1: "",
+    address2: "",
+    address3: "",
+    phone: "",
+    country: "",
+    city: "",
+    state: "",
+    postCode: "",
+  },
+  note: "",
+};
 
 export default function BillForm() {
-  const { register, handleSubmit, setValue: setRegister } = useForm<IBillData>();
+  const {
+    register,
+    handleSubmit,
+    setValue: setRegister,
+    reset: resetForm,
+  } = useForm<IBillData>({
+    defaultValues: DEFAULT_VALUE,
+  });
   const [billData, setBillData] = useState<IBillData | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const carrierRef = useRef<ICarrierInputHandle>(null);
+  const countryRef = useRef<ICountryInputHandle>(null);
+  const packageCodeRef = useRef<IPackageCodeInputHandle>(null);
   const billPopupRef = useRef<IBillPopupHandle>(null);
+  const billShippingMarkPopupRef = useRef<IBillShippingMarkPopupHandle>(null);
+  const { showNotification } = useNotification();
 
-  const onSubmit = (data: IBillData) => {
+  const fetchHAWBCode = async () => {
+    const res = await fetch("/api/generate-house-code");
+    const data = await res.json();
+    return data?.code || null;
+  };
+
+  const onSubmit = async (data: IBillData) => {
+    const code = await fetchHAWBCode();
+    setRegister("HAWBCode", code);
+    data.HAWBCode = code || 1;
     setBillData(data);
+    showNotification("Tạo đơn hàng thành công!", "success");
   };
   const onDimensionChange = (rows: IDimension[] | null) => {
     setRegister("package.dimensions", rows);
   };
+  const onClearForm = () => {
+    setBillData(null);
+    resetForm();
+    carrierRef.current?.resetValue();
+    countryRef.current?.resetValue();
+    packageCodeRef.current?.resetValue();
+  };
 
   return (
     <div className="container mx-auto">
-      <div ref={menuRef} className={`bg-white transition-all sticky top-0 z-50`}>
+      <div ref={menuRef} className={`bg-white transition-all sticky top-[56px] md:top-[64px] z-50`}>
         <div className={`flex flex-col md:flex-row md:justify-between gap-4 py-4 `}>
-          <h1 className="text-2xl md:text-3xl font-bold">ĐƠN HÀNG VẬN CHUYỂN</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">VẬN ĐƠN</h1>
           <div className="flex gap-2 overflow-auto">
-            <Button onClick={() => formRef.current?.requestSubmit()} className="btn btn-primary text-[14px] md:text-[16px]">
+            <Button
+              className="font-bold hover:bg-blue-500 hover:text-white capitalize"
+              color="primary"
+              variant="outlined"
+              disabled={!!billData?.HAWBCode}
+              onClick={() => formRef.current?.requestSubmit()}
+            >
               Create Bill
             </Button>
-            <Button className="btn btn-secondary text-[14px] md:text-[16px]" onClick={() => billPopupRef.current?.open()}>
+            <Button className="font-bold hover:bg-gray-500 hover:text-white capitalize" sx={{ color: grey[500], borderColor: grey[500] }} variant="outlined" onClick={onClearForm}>
+              Clear
+            </Button>
+            <Button className="font-bold hover:bg-teal-500 hover:text-white capitalize" color="teal" variant="outlined" disabled={!billData?.HAWBCode} onClick={() => billPopupRef.current?.open()}>
               Print Bill
             </Button>
-            <Button className="btn btn-secondary text-[14px] md:text-[16px]">Print Shipping Mark</Button>
-            <Button className="btn btn-dark text-[14px] md:text-[16px]">Clear Form</Button>
+            <Button
+              className="font-bold hover:bg-teal-500 hover:text-white capitalize"
+              color="teal"
+              variant="outlined"
+              disabled={!billData?.HAWBCode}
+              onClick={() => billShippingMarkPopupRef.current?.open()}
+            >
+              Print Shipping Mark
+            </Button>
           </div>
         </div>
       </div>
@@ -58,10 +133,10 @@ export default function BillForm() {
                 </tr>
                 <tr>
                   <td className="p-2 w-[120px]">
-                    <label className="text-sm font-medium text-gray-700">GWE Ref</label>
+                    <label className="text-sm font-medium text-gray-700">HAWB Code</label>
                   </td>
                   <td className="p-2">
-                    <input {...register("GWERef")} type="text" placeholder="Please enter..." className="w-full h-[26px] max-w-[250px] p-1 border border-gray-500" />
+                    <input {...register("HAWBCode")} type="text" placeholder="Please enter..." className="w-full h-[26px] max-w-[250px] p-1 border border-gray-500" disabled />
                   </td>
                 </tr>
                 <tr>
@@ -78,7 +153,7 @@ export default function BillForm() {
                   </td>
                   <td className="p-2">
                     <div className="max-w-[250px] h-[26px]">
-                      <CarrierInput className="h-[26px]" onChange={(value) => setRegister("carrier", value)} required />
+                      <CarrierInput ref={carrierRef} className="h-[26px]" onChange={(value) => setRegister("carrier", value)} required />
                     </div>
                   </td>
                 </tr>
@@ -94,7 +169,7 @@ export default function BillForm() {
                     <label className="text-sm font-medium text-gray-700">Sender</label>
                   </td>
                   <td className="p-2">
-                    <input {...register("sender.name")} type="text" placeholder="Please enter..." className="w-full h-[26px] p-1 border border-gray-500" />
+                    <input {...register("sender.name")} type="text" placeholder="Please enter..." className="w-full h-[26px] p-1 border border-gray-500" required />
                   </td>
                 </tr>
                 <tr>
@@ -102,7 +177,7 @@ export default function BillForm() {
                     <label className="text-sm font-medium text-gray-700">Address Line 1</label>
                   </td>
                   <td className="p-2">
-                    <input {...register("sender.address1")} type="text" placeholder="Please enter..." className="w-full h-[26px] p-1 border border-gray-500" />
+                    <input {...register("sender.address1")} type="text" placeholder="Please enter..." className="w-full h-[26px] p-1 border border-gray-500" required />
                   </td>
                 </tr>
                 <tr>
@@ -126,7 +201,7 @@ export default function BillForm() {
                     <label className="text-sm font-medium text-gray-700">Phone</label>
                   </td>
                   <td className="p-2">
-                    <input {...register("sender.phone")} type="text" placeholder="Please enter..." className="w-full h-[26px] max-w-[250px] p-1 border border-gray-500" />
+                    <input {...register("sender.phone")} type="text" placeholder="Please enter..." className="w-full h-[26px] max-w-[250px] p-1 border border-gray-500" required />
                   </td>
                 </tr>
               </tbody>
@@ -206,7 +281,7 @@ export default function BillForm() {
                   </td>
                   <td className="p-2">
                     <div className="max-w-[250px]">
-                      <CountryInput className="h-[26px]" onChange={(value) => setRegister("recipient.country", value)} required />
+                      <CountryInput ref={countryRef} className="h-[26px]" onChange={(value) => setRegister("recipient.country", value)} required />
                     </div>
                   </td>
                 </tr>
@@ -241,7 +316,7 @@ export default function BillForm() {
                   </td>
                   <td className="p-2">
                     <div className="max-w-[250px] h-[26px]">
-                      <PackageCodeInput className="h-[26px]" onChange={(value) => setRegister("package.code", value)} />
+                      <PackageCodeInput ref={packageCodeRef} className="h-[26px]" onChange={(value) => setRegister("package.code", value)} />
                     </div>
                   </td>
                 </tr>
@@ -323,6 +398,7 @@ export default function BillForm() {
       {/* Hiển thị hóa đơn để in */}
       <div className="mt-6">
         <BillPopup ref={billPopupRef} data={billData} />
+        <BillShippingMarkPopup ref={billShippingMarkPopupRef} data={billData} />
       </div>
     </div>
   );
