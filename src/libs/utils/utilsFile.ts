@@ -1,9 +1,9 @@
 import fs from "fs";
 import path from "path";
 
-const useFile = () => {
+const utilsFile = () => {
   // Hàm đọc currentIndex từ file
-  const readFile = (filePath: string): any => {
+  const readFile = (filePath: string) => {
     try {
       const dirPath = path.dirname(filePath); // Lấy đường dẫn thư mục
       // Kiểm tra và tạo thư mục nếu chưa có
@@ -16,7 +16,6 @@ const useFile = () => {
         return 1;
       }
       const data = fs.readFileSync(filePath, "utf-8");
-      console.error("REad data:", data, typeof data);
 
       return JSON.parse(data);
     } catch (error) {
@@ -36,4 +35,4 @@ const useFile = () => {
   return { readFile, writeFile };
 };
 
-export default useFile;
+export default utilsFile;

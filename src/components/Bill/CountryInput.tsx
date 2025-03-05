@@ -7,7 +7,7 @@ import { COUNTRIES } from "@/libs/constants";
 
 const countries: ICountry[] = COUNTRIES;
 
-interface ICountryInputProps {
+interface IProps {
   className?: string;
   onChange: (value: string) => void; // Callback để gửi giá trị ra ngoài
   required?: boolean;
@@ -16,7 +16,7 @@ export interface ICountryInputHandle {
   resetValue: () => void;
 }
 
-const CountryInput = forwardRef(({ required, className, onChange }: ICountryInputProps, ref: any) => {
+const CountryInput = forwardRef<ICountryInputHandle, IProps>(({ required, className, onChange }, ref) => {
   const [inputValue, setInputValue] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -96,4 +96,5 @@ const CountryInput = forwardRef(({ required, className, onChange }: ICountryInpu
   );
 });
 
+CountryInput.displayName = "Country Input";
 export default CountryInput;

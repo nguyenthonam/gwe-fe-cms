@@ -9,7 +9,7 @@ interface ICode {
 
 const packageTypes: ICode[] = [{ name: "PARCEL" }, { name: "DOCUMENT" }];
 
-interface IPackageCodeInputProps {
+interface IProps {
   className?: string;
   onChange: (value: string) => void; // Callback để gửi giá trị ra ngoài
 }
@@ -17,7 +17,7 @@ export interface IPackageCodeInputHandle {
   resetValue: () => void;
 }
 
-const PackageCodeInput = forwardRef(({ onChange, className }: IPackageCodeInputProps, ref: any) => {
+const PackageCodeInput = forwardRef<IPackageCodeInputHandle, IProps>(({ onChange, className }, ref) => {
   const [inputValue, setInputValue] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -82,4 +82,5 @@ const PackageCodeInput = forwardRef(({ onChange, className }: IPackageCodeInputP
   );
 });
 
+PackageCodeInput.displayName = "PackageCode Input";
 export default PackageCodeInput;

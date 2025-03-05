@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { IBillData, IDimension } from "@/types";
 import CountryInput, { ICountryInputHandle } from "./CountryInput";
@@ -10,6 +10,8 @@ import DimensionTable from "./DimensionTable";
 import { Button } from "@mui/material";
 import { grey } from "@mui/material/colors";
 import BillPopup, { IBillPopupHandle } from "./BillPopup";
+import BillShippingMarkPopup, { IBillShippingMarkPopupHandle } from "./BillShippingMarkPopup";
+import { useNotification } from "@/contexts/NotificationProvider";
 
 const DEFAULT_VALUE = {
   customer: "",
@@ -54,6 +56,8 @@ export default function BillForm() {
   const countryRef = useRef<ICountryInputHandle>(null);
   const packageCodeRef = useRef<IPackageCodeInputHandle>(null);
   const billPopupRef = useRef<IBillPopupHandle>(null);
+  const billShippingMarkPopupRef = useRef<IBillShippingMarkPopupHandle>(null);
+  const { showNotification } = useNotification();
 
   const fetchHAWBCode = async () => {
     const res = await fetch("/api/generate-house-code");
@@ -66,6 +70,7 @@ export default function BillForm() {
     setRegister("HAWBCode", code);
     data.HAWBCode = code || 1;
     setBillData(data);
+    showNotification("Tạo đơn hàng thành công!", "success");
   };
   const onDimensionChange = (rows: IDimension[] | null) => {
     setRegister("package.dimensions", rows);
@@ -77,10 +82,6 @@ export default function BillForm() {
     countryRef.current?.resetValue();
     packageCodeRef.current?.resetValue();
   };
-
-  useEffect(() => {
-    return () => onClearForm(); // Reset form khi component unmount
-  }, []);
 
   return (
     <div className="container mx-auto">
@@ -103,7 +104,13 @@ export default function BillForm() {
             <Button className="font-bold hover:bg-teal-500 hover:text-white capitalize" color="teal" variant="outlined" disabled={!billData?.HAWBCode} onClick={() => billPopupRef.current?.open()}>
               Print Bill
             </Button>
-            <Button className="font-bold hover:bg-teal-500 hover:text-white capitalize" color="teal" variant="outlined" disabled={!billData?.HAWBCode} onClick={() => billPopupRef.current?.open()}>
+            <Button
+              className="font-bold hover:bg-teal-500 hover:text-white capitalize"
+              color="teal"
+              variant="outlined"
+              disabled={!billData?.HAWBCode}
+              onClick={() => billShippingMarkPopupRef.current?.open()}
+            >
               Print Shipping Mark
             </Button>
           </div>
@@ -391,6 +398,7 @@ export default function BillForm() {
       {/* Hiển thị hóa đơn để in */}
       <div className="mt-6">
         <BillPopup ref={billPopupRef} data={billData} />
+        <BillShippingMarkPopup ref={billShippingMarkPopupRef} data={billData} />
       </div>
     </div>
   );

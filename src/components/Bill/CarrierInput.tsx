@@ -7,7 +7,7 @@ import type { ICarrier } from "@/types";
 
 const carriers: ICarrier[] = CARRIERS;
 
-interface ICarrierInputProps {
+interface IProps {
   className?: string;
   onChange: (value: string) => void; // Callback để gửi giá trị ra ngoài
   required?: boolean;
@@ -17,7 +17,7 @@ export interface ICarrierInputHandle {
   resetValue: () => void;
 }
 
-const CarrierInput = forwardRef(({ required = false, className, onChange }: ICarrierInputProps, ref: any) => {
+const CarrierInput = forwardRef<ICarrierInputHandle, IProps>(({ required = false, className, onChange }, ref) => {
   const [inputValue, setInputValue] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -83,4 +83,5 @@ const CarrierInput = forwardRef(({ required = false, className, onChange }: ICar
   );
 });
 
+CarrierInput.displayName = "Carrier Input";
 export default CarrierInput;

@@ -2,7 +2,7 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { styled, useTheme, Theme, CSSObject } from "@mui/material/styles";
+import { styled, Theme, CSSObject } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider } from "@mui/material/styles";
 import customTheme from "@/styles/MUI/customTheme"; // Đường dẫn tới theme.ts
@@ -28,6 +28,7 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import PersonIcon from "@mui/icons-material/Person";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { lightBlue } from "@mui/material/colors";
+import { NotificationProvider } from "@/contexts/NotificationProvider";
 
 interface IProps {
   children: React.ReactNode;
@@ -70,21 +71,12 @@ interface AppBarProps extends MuiAppBarProps {
 
 const AppBar = styled(MuiAppBar, {
   shouldForwardProp: (prop) => prop !== "open",
-})<AppBarProps>(({ theme, open }) => ({
+})<AppBarProps>(({ theme }) => ({
   zIndex: theme.zIndex.drawer + 1,
   transition: theme.transitions.create(["width", "margin"], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
-  // ...(open &&
-  //   {
-  //     // marginLeft: drawerWidth,
-  //     // width: `calc(100% - ${drawerWidth}px)`,
-  //     // transition: theme.transitions.create(["width", "margin"], {
-  //     //   easing: theme.transitions.easing.sharp,
-  //     //   duration: theme.transitions.duration.enteringScreen,
-  //     // }),
-  //   }),
 }));
 
 const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" })(({ theme, open }) => ({
@@ -103,7 +95,6 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
 }));
 
 export default function Main({ children }: IProps) {
-  const theme = useTheme();
   const [showDrawer, setShowDrawer] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const showMenu = Boolean(anchorEl);
@@ -116,86 +107,88 @@ export default function Main({ children }: IProps) {
   };
 
   return (
-    <ThemeProvider theme={customTheme}>
-      <CssBaseline />
-      <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-        {/* <CssBaseline /> */}
-        <AppBar position="fixed" open={showDrawer} sx={{ backgroundColor: "white" }}>
-          <Toolbar>
-            <IconButton edge="start" color="primary" onClick={() => setShowDrawer(!showDrawer)} sx={{ mr: 2 }}>
-              <MenuIcon />
-            </IconButton>
-
-            {/* Logo - Click để về Home */}
-            <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
-              <Link href="/" passHref>
-                <Image src="/logo.png" alt="Logo" width={150} height={100} />
-              </Link>
-            </Box>
-
-            {/* Avatar */}
-            <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
-              <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>
-                Admin
-              </Typography>
-              <IconButton onClick={handleMenuClick} sx={{ p: 0 }}>
-                <Avatar alt="User" sx={{ bgcolor: lightBlue[500] }}>
-                  <AccountCircleIcon />
-                </Avatar>
+    <NotificationProvider>
+      <ThemeProvider theme={customTheme}>
+        <CssBaseline />
+        <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+          {/* <CssBaseline /> */}
+          <AppBar position="fixed" open={showDrawer} sx={{ backgroundColor: "white" }}>
+            <Toolbar>
+              <IconButton edge="start" color="primary" onClick={() => setShowDrawer(!showDrawer)} sx={{ mr: 2 }}>
+                <MenuIcon />
               </IconButton>
-              <Menu anchorEl={anchorEl} open={showMenu} onClose={handleMenuClose} sx={{ mt: 1 }}>
-                <MenuItem onClick={handleMenuClose}>
-                  <ListItemIcon>
-                    <PersonIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Profile</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={handleMenuClose}>
-                  <ListItemIcon>
-                    <LogoutIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Logout</ListItemText>
-                </MenuItem>
-              </Menu>
-            </Box>
-          </Toolbar>
-        </AppBar>
 
-        <Box sx={{ display: "flex", flexGrow: 1 }}>
-          <Drawer variant="permanent" open={showDrawer} sx={{ "& .MuiDrawer-paper": { bgcolor: lightBlue[900], color: "white" } }}>
-            <DrawerHeader />
-            <Divider />
-            <List>
-              <ListItem disablePadding sx={{ display: "block" }}>
-                <ListItemButton component={Link} href="/dashboard" onClick={() => setShowDrawer(false)}>
-                  <ListItemIcon>
-                    <DashboardIcon htmlColor="white" />
-                  </ListItemIcon>
-                  <ListItemText primary={"Dashboard"} />
-                </ListItemButton>
-                <ListItemButton component={Link} href="/bill" onClick={() => setShowDrawer(false)}>
-                  <ListItemIcon>
-                    <ReceiptIcon htmlColor="white" />
-                  </ListItemIcon>
-                  <ListItemText primary={"Bill"} />
-                </ListItemButton>
-              </ListItem>
-            </List>
-          </Drawer>
-          {/* Nội dung chính */},
-          <Box component="main" sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-            <DrawerHeader />
-            <Box component="div" sx={{ flexGrow: 1, p: 1 }}>
-              {children}
-            </Box>
+              {/* Logo - Click để về Home */}
+              <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+                <Link href="/" passHref>
+                  <Image src="/logo.png" alt="Logo" width={150} height={100} />
+                </Link>
+              </Box>
 
-            {/* Footer */}
-            <Box component="footer" sx={{ p: 2, textAlign: "center", bgcolor: lightBlue[900], color: "white" }}>
-              <Typography variant="body2">© 2025 Gateway Express. All rights reserved.</Typography>
+              {/* Avatar */}
+              <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
+                <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>
+                  Admin
+                </Typography>
+                <IconButton onClick={handleMenuClick} sx={{ p: 0 }}>
+                  <Avatar alt="User" sx={{ bgcolor: lightBlue[500] }}>
+                    <AccountCircleIcon />
+                  </Avatar>
+                </IconButton>
+                <Menu anchorEl={anchorEl} open={showMenu} onClose={handleMenuClose} sx={{ mt: 1 }}>
+                  <MenuItem onClick={handleMenuClose}>
+                    <ListItemIcon>
+                      <PersonIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Profile</ListItemText>
+                  </MenuItem>
+                  <MenuItem onClick={handleMenuClose}>
+                    <ListItemIcon>
+                      <LogoutIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Logout</ListItemText>
+                  </MenuItem>
+                </Menu>
+              </Box>
+            </Toolbar>
+          </AppBar>
+
+          <Box sx={{ display: "flex", flexGrow: 1 }}>
+            <Drawer variant="permanent" open={showDrawer} sx={{ "& .MuiDrawer-paper": { bgcolor: lightBlue[900], color: "white" } }}>
+              <DrawerHeader />
+              <Divider />
+              <List>
+                <ListItem disablePadding sx={{ display: "block" }}>
+                  <ListItemButton component={Link} href="/dashboard" onClick={() => setShowDrawer(false)}>
+                    <ListItemIcon>
+                      <DashboardIcon htmlColor="white" />
+                    </ListItemIcon>
+                    <ListItemText primary={"Dashboard"} />
+                  </ListItemButton>
+                  <ListItemButton component={Link} href="/bill" onClick={() => setShowDrawer(false)}>
+                    <ListItemIcon>
+                      <ReceiptIcon htmlColor="white" />
+                    </ListItemIcon>
+                    <ListItemText primary={"Bill"} />
+                  </ListItemButton>
+                </ListItem>
+              </List>
+            </Drawer>
+            {/* Nội dung chính */},
+            <Box component="main" sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+              <DrawerHeader />
+              <Box component="div" sx={{ flexGrow: 1, p: 1 }}>
+                {children}
+              </Box>
+
+              {/* Footer */}
+              <Box component="footer" sx={{ p: 2, textAlign: "center", bgcolor: lightBlue[900], color: "white" }}>
+                <Typography variant="body2">© 2025 Gateway Express. All rights reserved.</Typography>
+              </Box>
             </Box>
           </Box>
         </Box>
-      </Box>
-    </ThemeProvider>
+      </ThemeProvider>
+    </NotificationProvider>
   );
 }

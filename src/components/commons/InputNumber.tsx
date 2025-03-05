@@ -3,7 +3,7 @@ import { useState } from "react";
 
 interface NumberInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   value?: number;
-  handleOnChange?: any;
+  handleOnChange?: (value: string | number) => void;
 }
 
 const NumberInput: React.FC<NumberInputProps> = ({ value, handleOnChange, ...props }) => {

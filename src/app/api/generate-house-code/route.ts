@@ -1,17 +1,17 @@
 import path from "path";
 import { NextResponse } from "next/server";
-import { useBill, useFile } from "@/libs/hooks";
+import { utilsBill, utilsFile } from "@/libs/utils";
 
 // Đường dẫn đến file lưu currentIndex
 const filePath = path.join(process.cwd(), "src/datas", "BillDB.json");
 
 export async function GET() {
   try {
-    const { generateHAWBCode } = useBill();
-    const { readFile, writeFile } = useFile();
+    const { generateHAWBCode } = utilsBill();
+    const { readFile, writeFile } = utilsFile();
 
     // Đọc chỉ số hiện tại từ file
-    let res = readFile(filePath);
+    const res = readFile(filePath);
     let index = res?.currentIndex || 1;
 
     // Sinh code mới
@@ -23,6 +23,6 @@ export async function GET() {
 
     return NextResponse.json({ code: newCode });
   } catch (err) {
-    return NextResponse.json({ status: "ERROR", code: null });
+    return NextResponse.json({ status: "ERROR", code: null, data: err });
   }
 }

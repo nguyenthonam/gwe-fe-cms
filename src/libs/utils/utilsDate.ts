@@ -1,4 +1,4 @@
-const useDate = () => {
+const utilsDate = () => {
   const getCurrentDate = () => {
     const now = new Date();
     const day = String(now.getDate()).padStart(2, "0"); // Thêm 0 nếu cần
@@ -9,4 +9,4 @@ const useDate = () => {
   return { getCurrentDate };
 };
 
-export default useDate;
+export default utilsDate;

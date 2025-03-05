@@ -1,5 +1,4 @@
-// hooks/useSerialGenerator.ts
-const useBill = () => {
+const utilsBill = () => {
   const generateHAWBCode = (index: number): string => {
     return `GX${index.toString().padStart(6, "0")}`;
   };
@@ -7,4 +6,4 @@ const useBill = () => {
   return { generateHAWBCode };
 };
 
-export default useBill;
+export default utilsBill;

@@ -1,24 +1,23 @@
 import React, { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
-import BillPrint, { IBillPrintRef } from "./BillPrint";
+import BillShippingMark, { IBillShippingMarkRef } from "./BillShippingMark";
 import { IBillData } from "@/types/bill";
 import BillNumberPopup from "./BillNumberPopup";
 
 interface IProps {
   data: IBillData | null;
 }
-export interface IBillPopupHandle {
+export interface IBillShippingMarkPopupHandle {
   open: () => void;
   close: () => void;
 }
 
-const BillPopup = forwardRef<IBillPopupHandle, IProps>(({ data }, ref) => {
+const BillShippingMarkPopup = forwardRef<IBillShippingMarkPopupHandle, IProps>(({ data }, ref) => {
   const [open, setOpen] = useState(false);
   const [billNumber, setBillNumber] = useState(2);
   const [isConfirm, setIsConfirm] = useState(true);
   const [openBillNumber, setOpenBillNumber] = useState(false);
-
-  const printRef = useRef<IBillPrintRef | null>(null);
+  const printRef = useRef<IBillShippingMarkRef | null>(null);
 
   // Expose functions to parent via ref
   useImperativeHandle(ref, () => ({
@@ -43,10 +42,10 @@ const BillPopup = forwardRef<IBillPopupHandle, IProps>(({ data }, ref) => {
     <>
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle className="mb-2 border-b-2 border-gray-300">
-          <p className="uppercase text-blue-600">THÔNG TIN IN HÓA ĐƠN</p>
+          <p className="uppercase text-blue-600">SHIPPING MARK</p>
         </DialogTitle>
         <DialogContent>
-          <BillPrint ref={printRef} data={data} billNumber={billNumber} />
+          <BillShippingMark ref={printRef} data={data} billNumber={billNumber} />
         </DialogContent>
         <DialogActions className="border-t-2 border-gray-300">
           <Button className="font-bold hover:bg-blue-500 hover:text-white" onClick={() => setOpenBillNumber(true)} color="primary" variant="text">
@@ -61,6 +60,5 @@ const BillPopup = forwardRef<IBillPopupHandle, IProps>(({ data }, ref) => {
     </>
   );
 });
-
-BillPopup.displayName = "Bill Popup";
-export default BillPopup;
+BillShippingMarkPopup.displayName = "Bill Shipping Mark";
+export default BillShippingMarkPopup;
