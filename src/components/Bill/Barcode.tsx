@@ -8,14 +8,14 @@ interface BarcodeProps {
 }
 
 export default function Barcode({ value }: BarcodeProps) {
-  const barcodeRef = useRef(null);
+  const barcodeRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     if (barcodeRef.current) {
       JsBarcode(barcodeRef.current, value, { format: "CODE128", fontOptions: "bold", fontSize: 30 });
 
       // Đặt width 100% và giữ tỷ lệ height auto
-      const svg: any = barcodeRef.current;
+      const svg = barcodeRef.current;
       svg.style.width = "100%";
       svg.style.height = "90px";
     }

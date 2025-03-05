@@ -36,7 +36,7 @@ export interface IPackageData {
 }
 export interface IBillData {
   customer: string; //FOCO
-  GWERef: string; //GWE76683
+  HAWBCode: string; //GX000000 : House Airway Bill
   carrierRef: string; //xxx00005xxx
   carrier: string; // DHL SIN
   sender: ISenderData;

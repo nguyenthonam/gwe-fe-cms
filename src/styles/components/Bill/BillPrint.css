@@ -2,10 +2,28 @@
 .print-only {
   display: none;
 }
+.print-shipping-mart-only {
+  display: none;
+}
 @media print {
   @page {
-    size: A4 portrait; /* Giấy A4 ngang */
-    margin: 2mm; /* Lề trang */
+    margin: 2mm;
+  }
+
+  .a4-portrait {
+    page: a4-portrait;
+  }
+
+  .a4-landscape {
+    page: a4-landscape;
+  }
+
+  @page a4-portrait {
+    size: A4 portrait;
+  }
+
+  @page a4-landscape {
+    size: A4 landscape;
   }
 
   body {
@@ -21,5 +39,9 @@
   /* Khi in, hiển thị bill thứ 2 */
   .print-only {
     display: block !important;
+  }
+  /* Khi in, hiển thị bill thứ 2 */
+  .print-shipping-mart-only {
+    display: flex !important;
   }
 }
