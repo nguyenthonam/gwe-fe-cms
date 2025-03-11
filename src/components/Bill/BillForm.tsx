@@ -8,7 +8,7 @@ import CarrierInput, { ICarrierInputHandle } from "./CarrierInput";
 import PackageCodeInput, { IPackageCodeInputHandle } from "./PackageCodeInput";
 import DimensionTable from "./DimensionTable";
 import { Button } from "@mui/material";
-import { grey } from "@mui/material/colors";
+import { red } from "@mui/material/colors";
 import BillPopup, { IBillPopupHandle } from "./BillPopup";
 import BillShippingMarkPopup, { IBillShippingMarkPopupHandle } from "./BillShippingMarkPopup";
 import { useNotification } from "@/contexts/NotificationProvider";
@@ -50,6 +50,7 @@ export default function BillForm() {
     defaultValues: DEFAULT_VALUE,
   });
   const [billData, setBillData] = useState<IBillData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const carrierRef = useRef<ICarrierInputHandle>(null);
@@ -66,11 +67,13 @@ export default function BillForm() {
   };
 
   const onSubmit = async (data: IBillData) => {
+    setIsLoading(true);
     const code = await fetchHAWBCode();
     setRegister("HAWBCode", code);
     data.HAWBCode = code || 1;
     setBillData(data);
     showNotification("Tạo đơn hàng thành công!", "success");
+    setIsLoading(false);
   };
   const onDimensionChange = (rows: IDimension[] | null) => {
     setRegister("package.dimensions", rows);
@@ -94,11 +97,13 @@ export default function BillForm() {
               color="primary"
               variant="outlined"
               disabled={!!billData?.HAWBCode}
+              loading={isLoading}
+              loadingPosition="start"
               onClick={() => formRef.current?.requestSubmit()}
             >
               Create Bill
             </Button>
-            <Button className="font-bold hover:bg-gray-500 hover:text-white capitalize" sx={{ color: grey[500], borderColor: grey[500] }} variant="outlined" onClick={onClearForm}>
+            <Button className="font-bold hover:bg-red-500 hover:text-white capitalize" sx={{ color: red[500], borderColor: red[500] }} variant="outlined" onClick={onClearForm}>
               Clear
             </Button>
             <Button className="font-bold hover:bg-teal-500 hover:text-white capitalize" color="teal" variant="outlined" disabled={!billData?.HAWBCode} onClick={() => billPopupRef.current?.open()}>

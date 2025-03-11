@@ -1,3 +1,37 @@
+/* Arial */
+@font-face {
+  font-family: "Arial";
+  font-style: normal;
+  font-weight: 300;
+  src: url("/fonts/Arial-Light.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Arial";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/fonts/Arial-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Arial";
+  font-style: normal;
+  font-weight: 500;
+  src: url("/fonts/Arial-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Arial";
+  font-style: normal;
+  font-weight: 600;
+  src: url("/fonts/Arial-Bold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Arial";
+  font-style: normal;
+  font-weight: 700;
+  src: url("/fonts/Arial-Bold.ttf") format("truetype");
+}
+
 /* vietnamese */
 @font-face {
   font-family: "VNPro";
