@@ -7,12 +7,29 @@ interface BillPopupProps {
   onConfirm: (billNumber: number) => void;
 }
 
-export default function BillAmountInputPopup({ open, onClose, onConfirm }: BillPopupProps) {
-  const [billNumber, setBillNumber] = useState(2);
+export default function BillNumberInputPopup({ open, onClose, onConfirm }: BillPopupProps) {
+  const [billNumber, setBillNumber] = useState<string>("2"); // Chuyển thành string để kiểm soát input
 
   const handleConfirm = () => {
-    onConfirm(billNumber);
+    const finalValue = billNumber === "" ? 0 : Number(billNumber);
+    onConfirm(finalValue);
     onClose();
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value;
+
+    if (val.length > 1) {
+      val = val.replace(/^0+/, ""); // Loại bỏ số 0 đầu tiên nếu có nhiều chữ số
+    }
+
+    if (/^\d*$/.test(val)) {
+      // Chỉ cho phép nhập số
+      setBillNumber(val);
+    }
+  };
+  const handleBlur = () => {
+    setBillNumber((prev) => (prev === "" ? "0" : prev)); // Đặt lại 0 nếu input trống
   };
 
   return (
@@ -24,16 +41,18 @@ export default function BillAmountInputPopup({ open, onClose, onConfirm }: BillP
         <TextField
           autoFocus
           margin="dense"
-          type="number"
+          type="text" // Dùng text thay vì number để tránh lỗi
           fullWidth
           variant="outlined"
           value={billNumber}
-          onChange={(e) => {
-            const newValue = Number(e.target.value);
-            if (newValue >= 1) {
-              setBillNumber(newValue);
+          onChange={handleChange}
+          inputRef={(input) => {
+            if (input) {
+              input.setAttribute("inputmode", "numeric");
+              input.setAttribute("pattern", "[0-9]*");
             }
           }}
+          onBlur={handleBlur}
         />
       </DialogContent>
       <DialogActions>

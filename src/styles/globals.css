@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 * {
-  font-family: "VNPro", Arial, sans-serif;
+  font-family: Arial, "VNPro", sans-serif;
   font-weight: 400;
   margin: 0;
   /* font-size: 14px; */

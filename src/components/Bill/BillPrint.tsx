@@ -126,13 +126,13 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
               <td className={styles.tableData + " uppercase"} colSpan={2}>
                 {data?.customer && (
                   <>
-                    <span>{data.customer}</span>
+                    <b>{data.customer}</b>
                     <br />
                   </>
                 )}
-                <b>ATTN:</b> <span>{data?.sender?.name ? data.sender.name : ""}</span>
+                <span>ATTN:</span> <span>{data?.sender?.name ? data.sender.name : ""}</span>
                 <br />
-                <b>ADDR:</b> <span>{data?.sender?.address1 ? data.sender.address1 : ""}</span>
+                <span>ADD:</span> <span>{data?.sender?.address1 ? data.sender.address1 : ""}</span>
                 <br />
                 {data?.sender?.address2 && (
                   <>
@@ -146,23 +146,24 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
                     <br />
                   </>
                 )}
-                <b>TEL:</b> <span>{data?.sender?.phone ? data.sender.phone : ""}</span>
+                <span>CONTACT NUMBER:</span> <span>{data?.sender?.phone ? data.sender.phone : ""}</span>
                 <br />
                 <p style={{ minHeight: "40px" }}>
-                  <b>NOTE:</b> <span>{data?.note ? data.note : ""}</span>
+                  <span>NOTE:</span> <span>{data?.note ? data.note : ""}</span>
                 </p>
               </td>
               <td className={styles.tableData + " uppercase"} style={{ border: "none" }}>
                 {data?.recipient?.address2 && (
                   <>
-                    <p>{data.recipient.name}</p>
+                    <b>{data.recipient.name}</b>
+                    <br />
                   </>
                 )}
                 <p>
-                  <b>ATTN:</b> <span>{data?.recipient?.attention ? data.recipient.attention : ""}</span>
+                  <span>ATTN:</span> <span>{data?.recipient?.attention ? data.recipient.attention : ""}</span>
                 </p>
                 <p>
-                  <b>ADDR:</b> <span>{data?.recipient?.address1 ? data.recipient.address1 : ""}</span>
+                  <span>ADD:</span> <span>{data?.recipient?.address1 ? data.recipient.address1 : ""}</span>
                 </p>
                 {data?.recipient?.address2 && (
                   <>
@@ -185,7 +186,7 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
                   </>
                 )}
                 <p>
-                  <b>TEL:</b> <span>{data?.recipient?.phone ? data.recipient.phone : ""}</span>
+                  <span>CONTACT NUMBER:</span> <span>{data?.recipient?.phone ? data.recipient.phone : ""}</span>
                 </p>
               </td>
             </tr>
@@ -241,7 +242,9 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
                 <p>
                   <b>Declared value for custom:</b>
                 </p>
-                <p className="text-center">{data?.package?.declaredValue}</p>
+                <p className="text-center">
+                  {data?.package?.declaredValue} {data?.package?.currency}
+                </p>
               </td>
               <td className={styles.tableData + " !border-none"}>
                 <div className="mb-1">
@@ -252,7 +255,7 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
                     {data?.package?.dimensions &&
                       data.package.dimensions.map((item, idx) => (
                         <p key={item.no + idx}>
-                          Kiện {item.no}: {item?.length || 0}x{item?.width || 0}x{item?.height || 0}
+                          PIECE {item.no}: {item?.length || 0}x{item?.width || 0}x{item?.height || 0}
                         </p>
                       ))}
                   </div>
