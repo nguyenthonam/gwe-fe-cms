@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import type { ILoginRequest, IAuthState } from "@/types/auth";
-import { loginApi } from "@/utils/apis/apiAuth";
+import { loginApi, logoutApi } from "@/utils/apis/apiAuth";
 
 const initialState: IAuthState = {
   user: null,
@@ -34,6 +34,18 @@ export const loginUser = createAsyncThunk("auth/loginUser", async ({ email, pass
   }
 });
 
+export const logoutUser = createAsyncThunk("auth/logoutUser", async (_, { dispatch }) => {
+  try {
+    const res = await logoutApi();
+    dispatch(logout());
+    return res.data;
+  } catch (error) {
+    // Still clear local state on error
+    dispatch(logout());
+    throw error;
+  }
+});
+
 const AuthSlice = createSlice({
   name: "auth",
   initialState,
@@ -55,6 +67,7 @@ const AuthSlice = createSlice({
       state.user = null;
       localStorage?.removeItem("AccessToken");
       localStorage?.removeItem("User");
+      document.cookie = "AccessToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
     },
   },
   extraReducers: (builder) => {
@@ -67,6 +80,17 @@ const AuthSlice = createSlice({
         state.isLoading = false;
       })
       .addCase(loginUser.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(logoutUser.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(logoutUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

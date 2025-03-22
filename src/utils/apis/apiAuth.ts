@@ -10,3 +10,14 @@ export const loginApi = async ({ email, password }: ILoginRequest) => {
   }
   return null;
 };
+
+export const logoutApi = async () => {
+  try {
+    // This endpoint should clear the httpOnly cookie
+    const res = await AxiosAPI.post("/api/sign-out");
+    return res;
+  } catch (error) {
+    console.error("Error logout:", error);
+    throw error;
+  }
+};
