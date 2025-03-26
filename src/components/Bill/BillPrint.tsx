@@ -99,9 +99,9 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
           </div>
           <div className={styles.barcode}>
             {data?.HAWBCode && <Barcode value={data.HAWBCode} />}{" "}
-            {data?.carrierRef && (
+            {data?.CAWBCode && (
               <p className="text-center text-[10px]">
-                <b>{data?.carrierRef}</b>
+                <b>{data?.CAWBCode}</b>
               </p>
             )}
           </div>
