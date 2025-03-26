@@ -28,7 +28,12 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import PersonIcon from "@mui/icons-material/Person";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { lightBlue } from "@mui/material/colors";
-import { NotificationProvider } from "@/contexts/NotificationProvider";
+import ReduxProvider from "@/components/ReduxProvider";
+import { NotificationProvider, useNotification } from "@/contexts/NotificationProvider";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useDispatch } from "react-redux";
+import { logoutUser } from "@/store/reducers/authReducer";
+import { useRouter } from "next/navigation";
 
 interface IProps {
   children: React.ReactNode;
@@ -94,21 +99,39 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
   }),
 }));
 
-export default function Main({ children }: IProps) {
-  const [showDrawer, setShowDrawer] = React.useState(false);
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const showMenu = Boolean(anchorEl);
+export default function LayoutView({ children }: IProps) {
+  const View = ({ children }: IProps) => {
+    const [showDrawer, setShowDrawer] = React.useState(false);
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const showMenu = Boolean(anchorEl);
+    const dispatch = useDispatch();
+    const { showNotification } = useNotification();
+    const router = useRouter();
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
+    const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      setAnchorEl(event.currentTarget);
+    };
+    const handleMenuClose = () => {
+      setAnchorEl(null);
+    };
 
-  return (
-    <NotificationProvider>
-      <ThemeProvider theme={customTheme}>
+    const handleLogout = async () => {
+      handleMenuClose();
+      // Logout
+      try {
+        const result = await dispatch(logoutUser() as any);
+        if (logoutUser.fulfilled.match(result)) {
+          showNotification("Đăng xuất thành công!", "success");
+          router.push("/login");
+        } else {
+          throw Error("Đăng xuất thất bại, vui lòng thử lại!");
+        }
+      } catch (error) {
+        showNotification("Đăng xuất thất bại, vui lòng thử lại!", "error");
+      }
+    };
+    return (
+      <>
         <CssBaseline />
         <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
           {/* <CssBaseline /> */}
@@ -142,7 +165,7 @@ export default function Main({ children }: IProps) {
                     </ListItemIcon>
                     <ListItemText>Profile</ListItemText>
                   </MenuItem>
-                  <MenuItem onClick={handleMenuClose}>
+                  <MenuItem onClick={handleLogout}>
                     <ListItemIcon>
                       <LogoutIcon fontSize="small" />
                     </ListItemIcon>
@@ -188,7 +211,19 @@ export default function Main({ children }: IProps) {
             </Box>
           </Box>
         </Box>
-      </ThemeProvider>
-    </NotificationProvider>
+      </>
+    );
+  };
+
+  return (
+    <ReduxProvider>
+      <NotificationProvider>
+        <ProtectedRoute>
+          <ThemeProvider theme={customTheme}>
+            <View>{children}</View>
+          </ThemeProvider>
+        </ProtectedRoute>
+      </NotificationProvider>
+    </ReduxProvider>
   );
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Main from "@/components/Main";
+import LayoutView from "@/components/LayoutView";
 import "@/styles/globals.scss";
 import "@/styles/globals.css";
 
@@ -19,7 +19,7 @@ export default function RootLayout({
         <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
       </head>
       <body>
-        <Main>{children}</Main>
+        <LayoutView>{children}</LayoutView>
       </body>
     </html>
   );

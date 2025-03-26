@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import Icon from "@mui/material/Icon";
-import { CARRIERS } from "@/libs/constants";
+import { CARRIERS } from "@/utils/constants";
 import type { ICarrier } from "@/types";
 
 const carriers: ICarrier[] = CARRIERS;

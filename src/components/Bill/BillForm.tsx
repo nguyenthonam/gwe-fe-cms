@@ -16,7 +16,7 @@ import { useNotification } from "@/contexts/NotificationProvider";
 const DEFAULT_VALUE = {
   customer: "",
   HAWBCode: "",
-  carrierRef: "",
+  CAWBCode: "",
   carrier: "",
   sender: {
     name: "",
@@ -146,10 +146,10 @@ export default function BillForm() {
                 </tr>
                 <tr>
                   <td className="p-2 w-[120px]">
-                    <label className="text-sm font-medium text-gray-700">Carrier Ref</label>
+                    <label className="text-sm font-medium text-gray-700">CAWB Code</label>
                   </td>
                   <td className="p-2">
-                    <input {...register("carrierRef")} type="text" placeholder="Please enter..." className="w-full h-[26px] max-w-[250px] p-1 border border-gray-500" />
+                    <input {...register("CAWBCode")} type="text" placeholder="Please enter..." className="w-full h-[26px] max-w-[250px] p-1 border border-gray-500" />
                   </td>
                 </tr>
                 <tr>
