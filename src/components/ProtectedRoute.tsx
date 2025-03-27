@@ -37,10 +37,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    // Handle token restoration
+    // Handle save token and user profile from localStorage
     const savedToken = localStorage.getItem("AccessToken");
     if (savedToken && !accessToken) {
-      console.log("Restoring token from localStorage");
       dispatch(setAccessToken({ accessToken: savedToken }));
     }
   }, [pathname, router]);

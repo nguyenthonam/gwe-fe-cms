@@ -1,4 +1,4 @@
-import { ILoginRequest } from "@/types";
+import { ILoginRequest } from "@/types/apis/typeAuthApi";
 import AxiosAPI from "@/utils/configs/axiosClient";
 
 export const loginApi = async ({ email, password }: ILoginRequest) => {
@@ -13,7 +13,6 @@ export const loginApi = async ({ email, password }: ILoginRequest) => {
 
 export const logoutApi = async () => {
   try {
-    // This endpoint should clear the httpOnly cookie
     const res = await AxiosAPI.post("/api/sign-out");
     return res;
   } catch (error) {
