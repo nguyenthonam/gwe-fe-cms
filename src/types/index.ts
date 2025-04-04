@@ -1,3 +1,5 @@
-export type * from "./bill";
-export type * from "./country";
-export type * from "./carrier";
+export type * from "./typeBill";
+export type * from "./typeCountry";
+export type * from "./typeCarrier";
+export type * from "./typeAuth";
+export type * from "./typeUser";

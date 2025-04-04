@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import Icon from "@mui/material/Icon";
 import type { ICountry } from "@/types";
-import { COUNTRIES } from "@/libs/constants";
+import { COUNTRIES } from "@/utils/constants";
 
 const countries: ICountry[] = COUNTRIES;
 

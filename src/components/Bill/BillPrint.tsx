@@ -8,7 +8,7 @@ import Icon from "@mui/material/Icon";
 import Image from "next/image";
 import styles from "@/styles/components/Bill/BillPrint.module.css";
 import "@/styles/components/Bill/BillPrint.css";
-import utilsDate from "@/libs/utils/utilsDate";
+import utilsDate from "@/utils/hooks/hookDate";
 interface IProps {
   data: IBillData | null;
   billNumber?: number;
@@ -99,9 +99,9 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
           </div>
           <div className={styles.barcode}>
             {data?.HAWBCode && <Barcode value={data.HAWBCode} />}{" "}
-            {data?.carrierRef && (
+            {data?.CAWBCode && (
               <p className="text-center text-[10px]">
-                <b>{data?.carrierRef}</b>
+                <b>{data?.CAWBCode}</b>
               </p>
             )}
           </div>

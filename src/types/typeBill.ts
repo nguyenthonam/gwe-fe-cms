@@ -36,8 +36,8 @@ export interface IPackageData {
 }
 export interface IBillData {
   customer: string; //FOCO
-  HAWBCode: string; //GX000000 : House Airway Bill
-  carrierRef: string; //xxx00005xxx
+  HAWBCode: string; //GX000000 : Mã vận đơn của công ty mình.
+  CAWBCode: string; //xxx00005xxx. Mã vận đơn từ hãng bay
   carrier: string; // DHL SIN
   sender: ISenderData;
   recipient: IRecipientData;
