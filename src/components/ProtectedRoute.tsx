@@ -3,8 +3,9 @@ import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter, usePathname } from "next/navigation";
 import { AppState } from "@/store";
-import { setAccessToken, logout } from "@/store/reducers/authReducer";
+import { setAccessToken, logout, setProfile } from "@/store/reducers/authReducer";
 import { useNotification } from "@/contexts/NotificationProvider";
+import { IUser } from "@/types/typeUser";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
@@ -19,12 +20,18 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       const response = await fetch(window.location.href);
       const authStatus = response.headers.get("X-Auth-Status");
       const shouldClearStorage = response.headers.get("X-Clear-LocalStorage");
+      const userData = response.headers.get("X-User-Data");
 
       if (authStatus === "unauthorized" || shouldClearStorage) {
         console.log("Unauthorized from middleware - clearing storage");
         localStorage.clear();
         dispatch(logout());
         return true;
+      }
+
+      if (userData) {
+        const parsedUserData = JSON.parse(userData) as IUser;
+        dispatch(setProfile({ profile: parsedUserData }));
       }
       return false;
     };
@@ -36,20 +43,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         router.push("/login");
       }
     });
-
-    // Handle save token and user profile from localStorage
-    const savedToken = localStorage.getItem("AccessToken");
-    if (savedToken && !accessToken) {
-      dispatch(setAccessToken({ accessToken: savedToken }));
-    }
   }, [pathname, router]);
 
-  // 2. Handle routing based on auth state
+  // Handle routing based on auth state
   useEffect(() => {
     if (accessToken && pathname === "/login") {
       router.push("/dashboard");
     }
-  }, [accessToken, pathname, router]); // Fewer dependencies
+  }, [accessToken, pathname, router]);
 
   return <>{children}</>;
 };

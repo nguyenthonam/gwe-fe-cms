@@ -107,25 +107,26 @@ export default function LayoutView({ children }: IProps) {
     const router = useRouter();
 
     React.useEffect(() => {
-      // Refresh user data after successful update
-      const fetchProfile = async () => {
-        try {
-          const response = await getProfileApi();
-          if (!response || response.status === 401) {
-            dispatch(logout());
-            return false;
-          }
-          const profile = response?.data?.data as IUser;
-          if (profile) {
-            dispatch(setProfile({ profile: profile }));
-          }
-        } catch (error) {
-          console.error("Fetch user profile error:", error);
-        }
-      };
-      if (accessToken && !profile) {
-        fetchProfile();
-      }
+      // // Refresh user data after successful update
+      // const fetchProfile = async () => {
+      //   try {
+      //     const response = await getProfileApi();
+      //     if (!response || response.status === 401) {
+      //       dispatch(logout());
+      //       return false;
+      //     }
+      //     const profile = response?.data?.data as IUser;
+      //     if (profile) {
+      //       dispatch(setProfile({ profile: profile }));
+      //     }
+      //   } catch (error) {
+      //     console.error("Fetch user profile error:", error);
+      //   }
+      // };
+      // console.log("Fetch user profile:", profile, accessToken);
+      // if (accessToken && !profile) {
+      //   fetchProfile();
+      // }
     }, []);
 
     const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {

@@ -31,7 +31,6 @@ export default function ProfilePage() {
     country: { code: "", name: "" },
   });
 
-  const [isUpdated, setIsUpdated] = useState(false);
   const [editField, setEditField] = useState<keyof IUser | null>(null);
   const [password, setPassword] = useState<IPasswordChange>({ oldPassword: "", newPassword: "" });
   const [showPassword, setShowPassword] = useState({
@@ -43,8 +42,6 @@ export default function ProfilePage() {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    // Refresh user data after successful update
-    console.log("Refresh user data", isUpdated);
     const fetchProfile = async () => {
       try {
         const response = await getProfileApi();
@@ -62,7 +59,7 @@ export default function ProfilePage() {
       }
     };
     fetchProfile();
-  }, [isUpdated]);
+  }, []);
 
   const handleEditClick = (field: keyof IUser) => setEditField(field);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,7 +85,23 @@ export default function ProfilePage() {
       }
 
       showNotification("Cập nhật thành công!", "success");
-      setIsUpdated(!isUpdated);
+      const fetchProfile = async () => {
+        try {
+          const response = await getProfileApi();
+          if (!response || response.status === 401) {
+            dispatch(logout());
+            window.location.reload();
+          }
+          const profile = response?.data?.data as IUser;
+          if (profile) {
+            setUser(profile);
+            dispatch(setProfile({ profile: profile }));
+          }
+        } catch (error) {
+          console.error("Fetch user profile error:", error);
+        }
+      };
+      fetchProfile();
     } catch (error) {
       console.error("Update user error:", error);
       showNotification(error instanceof Error ? error.message : "Cập nhật thất bại!", "error");
@@ -115,7 +128,23 @@ export default function ProfilePage() {
       }
 
       showNotification("Cập nhật thành công!", "success");
-      setIsUpdated(!isUpdated);
+      const fetchProfile = async () => {
+        try {
+          const response = await getProfileApi();
+          if (!response || response.status === 401) {
+            dispatch(logout());
+            window.location.reload();
+          }
+          const profile = response?.data?.data as IUser;
+          if (profile) {
+            setUser(profile);
+            dispatch(setProfile({ profile: profile }));
+          }
+        } catch (error) {
+          console.error("Fetch user profile error:", error);
+        }
+      };
+      fetchProfile();
     } catch (error) {
       console.error("Update user error:", error);
       showNotification(error instanceof Error ? error.message : "Cập nhật thất bại!", "error");
