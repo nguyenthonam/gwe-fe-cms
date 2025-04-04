@@ -13,7 +13,7 @@ AxiosAPI.interceptors.request.use(
   (config) => {
     const accessToken = localStorage.getItem("AccessToken");
     if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
+      config.headers.Authorization = accessToken;
     }
     config.withCredentials = true;
     return config;

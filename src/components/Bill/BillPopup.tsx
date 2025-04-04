@@ -1,7 +1,7 @@
 import React, { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 import BillPrint, { IBillPrintRef } from "./BillPrint";
-import { IBillData } from "@/types/bill";
+import { IBillData } from "@/types/typeBill";
 import BillNumberPopup from "./BillNumberPopup";
 
 interface IProps {

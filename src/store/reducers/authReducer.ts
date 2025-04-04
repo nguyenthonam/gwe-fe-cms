@@ -1,9 +1,11 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import type { ILoginRequest, IAuthState } from "@/types/auth";
+import type { IAuthState } from "@/types/typeAuth";
 import { loginApi, logoutApi } from "@/utils/apis/apiAuth";
+import { ILoginRequest } from "@/types/apis/typeAuthApi";
+import { IUser } from "@/types";
 
 const initialState: IAuthState = {
-  user: null,
+  profile: null,
   accessToken: null,
   isLoading: false,
   error: null,
@@ -53,18 +55,19 @@ const AuthSlice = createSlice({
     setAccessToken: (state, action: PayloadAction<{ accessToken: string }>) => {
       state.accessToken = action.payload.accessToken;
     },
-    setUser: (state, action: PayloadAction<{ user: any }>) => {
-      state.user = action.payload.user;
+    setProfile: (state, action: PayloadAction<{ profile: IUser }>) => {
+      state.profile = action.payload.profile;
+      localStorage?.setItem("User", JSON.stringify(action.payload.profile));
     },
     setAuth: (state, action: PayloadAction<{ accessToken: string; user: any }>) => {
       state.accessToken = action.payload.accessToken;
-      state.user = action.payload.user;
+      state.profile = action.payload.user;
       localStorage?.setItem("AccessToken", action.payload.accessToken); // Lưu vào localStorage
       localStorage?.setItem("User", JSON.stringify(action.payload.user)); // 🔥 Lưu user vào localStorage
     },
     logout: (state) => {
       state.accessToken = null;
-      state.user = null;
+      state.profile = null;
       localStorage?.removeItem("AccessToken");
       localStorage?.removeItem("User");
       document.cookie = "AccessToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
@@ -97,5 +100,5 @@ const AuthSlice = createSlice({
   },
 });
 
-export const { setAuth, setUser, setAccessToken, logout } = AuthSlice.actions;
+export const { setAuth, setProfile, setAccessToken, logout } = AuthSlice.actions;
 export default AuthSlice.reducer;

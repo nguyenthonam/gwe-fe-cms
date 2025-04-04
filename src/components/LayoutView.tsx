@@ -6,34 +6,30 @@ import { styled, Theme, CSSObject } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider } from "@mui/material/styles";
 import customTheme from "@/styles/MUI/customTheme"; // Đường dẫn tới theme.ts
-import Box from "@mui/material/Box";
-import Avatar from "@mui/material/Avatar";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-import MuiDrawer from "@mui/material/Drawer";
-import MuiAppBar, { AppBarProps as MuiAppBarProps } from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import List from "@mui/material/List";
-import Typography from "@mui/material/Typography";
-import Divider from "@mui/material/Divider";
-import IconButton from "@mui/material/IconButton";
-import ListItem from "@mui/material/ListItem";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import MenuIcon from "@mui/icons-material/Menu";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import ReceiptIcon from "@mui/icons-material/Receipt";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import PersonIcon from "@mui/icons-material/Person";
-import LogoutIcon from "@mui/icons-material/Logout";
 import { lightBlue } from "@mui/material/colors";
+import MuiAppBar, { AppBarProps as MuiAppBarProps } from "@mui/material/AppBar";
+import { Box, Drawer as MuiDrawer, Menu, MenuItem, Toolbar, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Collapse, Avatar, Typography, IconButton } from "@mui/material";
+import {
+  Menu as MenuIcon,
+  Business as BusinessIcon,
+  Dataset as DatasetIcon,
+  ExpandLess as ExpandLessIcon,
+  ExpandMore as ExpandMoreIcon,
+  Dashboard as DashboardIcon,
+  Receipt as ReceiptIcon,
+  AccountCircle as AccountCircleIcon,
+  Person as PersonIcon,
+  Logout as LogoutIcon,
+} from "@mui/icons-material";
 import ReduxProvider from "@/components/ReduxProvider";
 import { NotificationProvider, useNotification } from "@/contexts/NotificationProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { useDispatch } from "react-redux";
-import { logoutUser } from "@/store/reducers/authReducer";
+import { useDispatch, useSelector } from "react-redux";
+import { logoutUser, setProfile, logout } from "@/store/reducers/authReducer";
 import { useRouter } from "next/navigation";
+import { AppState } from "@/store";
+import { getProfileApi } from "@/utils/apis/apiProfile";
+import { IUser } from "@/types/typeUser";
 
 interface IProps {
   children: React.ReactNode;
@@ -102,11 +98,36 @@ const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== "open" 
 export default function LayoutView({ children }: IProps) {
   const View = ({ children }: IProps) => {
     const [showDrawer, setShowDrawer] = React.useState(false);
+    const [openManage, setOpenManage] = React.useState(false); // Trạng thái mở rộng "Quản lý"
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const showMenu = Boolean(anchorEl);
     const dispatch = useDispatch();
+    const { accessToken, profile } = useSelector((state: AppState) => state.auth);
     const { showNotification } = useNotification();
     const router = useRouter();
+
+    React.useEffect(() => {
+      // // Refresh user data after successful update
+      // const fetchProfile = async () => {
+      //   try {
+      //     const response = await getProfileApi();
+      //     if (!response || response.status === 401) {
+      //       dispatch(logout());
+      //       return false;
+      //     }
+      //     const profile = response?.data?.data as IUser;
+      //     if (profile) {
+      //       dispatch(setProfile({ profile: profile }));
+      //     }
+      //   } catch (error) {
+      //     console.error("Fetch user profile error:", error);
+      //   }
+      // };
+      // console.log("Fetch user profile:", profile, accessToken);
+      // if (accessToken && !profile) {
+      //   fetchProfile();
+      // }
+    }, []);
 
     const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>) => {
       setAnchorEl(event.currentTarget);
@@ -114,7 +135,6 @@ export default function LayoutView({ children }: IProps) {
     const handleMenuClose = () => {
       setAnchorEl(null);
     };
-
     const handleLogout = async () => {
       handleMenuClose();
       // Logout
@@ -130,6 +150,7 @@ export default function LayoutView({ children }: IProps) {
         showNotification("Đăng xuất thất bại, vui lòng thử lại!", "error");
       }
     };
+
     return (
       <>
         <CssBaseline />
@@ -151,15 +172,20 @@ export default function LayoutView({ children }: IProps) {
               {/* Avatar */}
               <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
                 <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>
-                  Admin
+                  {profile?.fullname}
                 </Typography>
-                <IconButton onClick={handleMenuClick} sx={{ p: 0 }}>
+                <IconButton onClick={handleMenuClick} sx={{ p: "2px" }}>
                   <Avatar alt="User" sx={{ bgcolor: lightBlue[500] }}>
                     <AccountCircleIcon />
                   </Avatar>
                 </IconButton>
                 <Menu anchorEl={anchorEl} open={showMenu} onClose={handleMenuClose} sx={{ mt: 1 }}>
-                  <MenuItem onClick={handleMenuClose}>
+                  <MenuItem
+                    onClick={() => {
+                      handleMenuClose();
+                      router.push("/profile");
+                    }}
+                  >
                     <ListItemIcon>
                       <PersonIcon fontSize="small" />
                     </ListItemIcon>
@@ -195,6 +221,55 @@ export default function LayoutView({ children }: IProps) {
                     <ListItemText primary={"Bill"} />
                   </ListItemButton>
                 </ListItem>
+                {/* Mục Quản lý (Dropdown) */}
+                <ListItemButton
+                  onClick={() => {
+                    setOpenManage(!openManage);
+                    setShowDrawer(true);
+                  }}
+                >
+                  <ListItemIcon>
+                    <DatasetIcon htmlColor="white" />
+                  </ListItemIcon>
+                  <ListItemText primary="Quản lý" />
+                  {openManage ? <ExpandLessIcon htmlColor="white" /> : <ExpandMoreIcon htmlColor="white" />}
+                </ListItemButton>
+
+                <Collapse in={openManage} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {/* Quản lý Tài khoản */}
+                    <ListItemButton
+                      sx={{ pl: 4 }}
+                      component={Link}
+                      href="/manager/users"
+                      onClick={() => {
+                        setShowDrawer(false);
+                        setOpenManage(false);
+                      }}
+                    >
+                      <ListItemIcon>
+                        <PersonIcon htmlColor="white" />
+                      </ListItemIcon>
+                      <ListItemText primary="Tài khoản" />
+                    </ListItemButton>
+
+                    {/* Quản lý Công ty */}
+                    <ListItemButton
+                      sx={{ pl: 4 }}
+                      component={Link}
+                      href="/manager/companies"
+                      onClick={() => {
+                        setShowDrawer(false);
+                        setOpenManage(false);
+                      }}
+                    >
+                      <ListItemIcon>
+                        <BusinessIcon htmlColor="white" />
+                      </ListItemIcon>
+                      <ListItemText primary="Công ty" />
+                    </ListItemButton>
+                  </List>
+                </Collapse>
               </List>
             </Drawer>
             {/* Nội dung chính */},

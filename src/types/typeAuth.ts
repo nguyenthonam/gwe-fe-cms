@@ -1,11 +1,6 @@
 export interface IAuthState {
-  user: any;
+  profile: any;
   accessToken: string | null;
   isLoading: boolean;
   error: string | null;
-}
-
-export interface ILoginRequest {
-  email: string;
-  password: string;
 }
