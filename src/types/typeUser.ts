@@ -23,7 +23,7 @@ export interface IIdentityUser {
 }
 
 export interface IUser {
-  id?: string;
+  id: string;
   userId?: string; // Từ 6 -> 24 ký tự, tên đăng nhập
   company?: string; // Chỉ có nếu user thuộc công ty nào đó. Nếu role = Partner thì chắc chắn phải có company
   email?: string; // email đăng nhập

@@ -53,7 +53,8 @@ export async function middleware(req: NextRequest) {
         }
         return response;
       }
-    } catch (error) {
+    } catch (err: any) {
+      console.error("Error verifying token:", err?.message);
       return redirectLogin;
     }
   };

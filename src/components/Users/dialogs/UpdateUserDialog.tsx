@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from "@mui/material";
 import { lightBlue } from "@mui/material/colors";
-import { updateUserApi, getUserByIdApi } from "@/utils/apis/apiUser";
+import { updateUserApi } from "@/utils/apis/apiUser";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { IUser } from "@/types/typeUser";
 import { IUpdateUserRequest } from "@/types/apis/typeUser.Api";

@@ -11,91 +11,116 @@ const initialState: IAuthState = {
   error: null,
 };
 
-// Async Thunk để xử lý login
-export const loginUser = createAsyncThunk("auth/loginUser", async ({ email, password }: ILoginRequest, { rejectWithValue, dispatch }) => {
-  try {
-    const res = await loginApi({ email, password });
-    if (!res) {
-      throw new Error("Không nhận được phản hồi từ máy chủ!");
-    }
-
-    const token = res?.headers["authorization"];
-    if (!token) throw new Error("Không có token!");
-
-    const data = res?.data?.data;
-
-    if (!data || !data.id) {
-      throw new Error("Đăng nhập thất bại!");
-    }
-    // ✅ Cập nhật Redux state + Lưu token vào localStorage
-    dispatch(setAuth({ accessToken: token, user: data }));
-    return data;
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.message || "Lỗi không xác định";
-    return rejectWithValue(errorMessage);
+const initializeAuthState = (): IAuthState => {
+  if (typeof window !== "undefined") {
+    const token: string | null = localStorage.getItem("AccessToken");
+    const user: string | null = localStorage.getItem("User");
+    return {
+      ...initialState,
+      accessToken: token || null,
+      profile: user ? JSON.parse(user) : null,
+    };
   }
-});
+  return initialState;
+};
 
-export const logoutUser = createAsyncThunk("auth/logoutUser", async (_, { dispatch }) => {
+export const loginUser = createAsyncThunk<{ accessToken: string; user: IUser }, ILoginRequest, { rejectValue: string }>(
+  "auth/loginUser",
+  async ({ email, password }: ILoginRequest, { rejectWithValue }) => {
+    try {
+      const res = await loginApi({ email, password });
+      if (!res) throw new Error("Không nhận được phản hồi từ máy chủ!");
+
+      const token: string | undefined = res?.headers["authorization"];
+      if (!token) throw new Error("Không có token!");
+
+      const data: IUser = res?.data?.data as IUser;
+      if (!data || !data.id) throw new Error("Đăng nhập thất bại!");
+
+      return { accessToken: token, user: data };
+    } catch (error: unknown) {
+      const errorMessage: string = (error as any).response?.data?.message || "Lỗi không xác định";
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const logoutUser = createAsyncThunk<any, void, { rejectValue: string }>("auth/logoutUser", async (_, { dispatch, rejectWithValue }) => {
   try {
-    const res = await logoutApi();
-    dispatch(logout());
+    const res = await logoutApi(); // Gọi API logout để xóa cookie từ server
+    dispatch(logout()); // Cập nhật state và xóa localStorage
     return res.data;
-  } catch (error) {
-    // Still clear local state on error
-    dispatch(logout());
-    throw error;
+  } catch (error: unknown) {
+    dispatch(logout()); // Vẫn logout client-side ngay cả khi API lỗi
+    return rejectWithValue((error as Error).message || "Lỗi đăng xuất");
   }
 });
 
 const AuthSlice = createSlice({
   name: "auth",
-  initialState,
+  initialState: initializeAuthState(),
   reducers: {
-    setAccessToken: (state, action: PayloadAction<{ accessToken: string }>) => {
+    setAccessToken: (state: IAuthState, action: PayloadAction<{ accessToken: string }>) => {
       state.accessToken = action.payload.accessToken;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("AccessToken", action.payload.accessToken);
+      }
     },
-    setProfile: (state, action: PayloadAction<{ profile: IUser }>) => {
+    setProfile: (state: IAuthState, action: PayloadAction<{ profile: IUser }>) => {
       state.profile = action.payload.profile;
-      localStorage?.setItem("User", JSON.stringify(action.payload.profile));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("User", JSON.stringify(action.payload.profile));
+      }
     },
-    setAuth: (state, action: PayloadAction<{ accessToken: string; user: any }>) => {
+    setAuth: (state: IAuthState, action: PayloadAction<{ accessToken: string; user: IUser }>) => {
       state.accessToken = action.payload.accessToken;
       state.profile = action.payload.user;
-      localStorage?.setItem("AccessToken", action.payload.accessToken); // Lưu vào localStorage
-      localStorage?.setItem("User", JSON.stringify(action.payload.user)); // 🔥 Lưu user vào localStorage
+      if (typeof window !== "undefined") {
+        localStorage.setItem("AccessToken", action.payload.accessToken);
+        localStorage.setItem("User", JSON.stringify(action.payload.user));
+      }
+      document.cookie = `AccessToken=${action.payload.accessToken}; Path=/; Secure; HttpOnly`;
     },
-    logout: (state) => {
+    logout: (state: IAuthState) => {
       state.accessToken = null;
       state.profile = null;
-      localStorage?.removeItem("AccessToken");
-      localStorage?.removeItem("User");
-      document.cookie = "AccessToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("AccessToken");
+        localStorage.removeItem("User");
+        // Không cần xóa cookie bằng document.cookie vì HttpOnly ngăn điều này
+      }
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(loginUser.pending, (state) => {
+      .addCase(loginUser.pending, (state: IAuthState) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state) => {
+      .addCase(loginUser.fulfilled, (state: IAuthState, action: PayloadAction<{ accessToken: string; user: IUser }>) => {
         state.isLoading = false;
+        state.accessToken = action.payload.accessToken;
+        state.profile = action.payload.user;
+        if (typeof window !== "undefined") {
+          localStorage.setItem("AccessToken", action.payload.accessToken);
+          localStorage.setItem("User", JSON.stringify(action.payload.user));
+        }
+        document.cookie = `AccessToken=${action.payload.accessToken}; Path=/; Secure; HttpOnly`;
       })
-      .addCase(loginUser.rejected, (state, action) => {
+      .addCase(loginUser.rejected, (state: IAuthState, action: PayloadAction<string | undefined>) => {
         state.isLoading = false;
-        state.error = action.payload as string;
+        state.error = action.payload || null;
       })
-      .addCase(logoutUser.pending, (state) => {
+      .addCase(logoutUser.pending, (state: IAuthState) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(logoutUser.fulfilled, (state) => {
+      .addCase(logoutUser.fulfilled, (state: IAuthState) => {
         state.isLoading = false;
       })
-      .addCase(logoutUser.rejected, (state, action) => {
+      .addCase(logoutUser.rejected, (state: IAuthState, action: PayloadAction<string | undefined>) => {
         state.isLoading = false;
-        state.error = action.payload as string;
+        state.error = action.payload || null;
       });
   },
 });

@@ -21,6 +21,7 @@ const countriesList: ICountry[] = [{ code: "", name: "" }, ...COUNTRIES];
 
 export default function ProfilePage() {
   const [user, setUser] = useState<IUser>({
+    id: "",
     userId: "",
     email: "",
     fullname: "",
@@ -59,7 +60,7 @@ export default function ProfilePage() {
       }
     };
     fetchProfile();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleEditClick = (field: keyof IUser) => setEditField(field);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,7 +155,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg" sx={{ padding: "0" }}>
       <Typography variant="h4" gutterBottom sx={{ textAlign: "center", fontWeight: "bold", mb: 3, color: lightBlue[700] }}>
         User Profile
       </Typography>
