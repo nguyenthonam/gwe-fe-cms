@@ -5,7 +5,7 @@ import { Container } from "@mui/material";
 
 export default function UsersPage() {
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg" sx={{ padding: "0" }}>
       <UsersManager />
     </Container>
   );

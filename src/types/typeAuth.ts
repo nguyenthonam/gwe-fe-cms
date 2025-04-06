@@ -1,5 +1,7 @@
+import { IUser } from "./typeUser";
+
 export interface IAuthState {
-  profile: any;
+  profile: IUser | null;
   accessToken: string | null;
   isLoading: boolean;
   error: string | null;

@@ -36,7 +36,7 @@ export default function UsersManagerComponent() {
   const [isUpdated, setIsUpdated] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(2);
+  const rowsPerPage = 2;
   const [totalPage, setTotalPage] = useState(1);
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedId, setSelectedId] = useState(null);

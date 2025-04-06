@@ -3,14 +3,16 @@ import { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter, usePathname } from "next/navigation";
 import { AppState } from "@/store";
-import { setAccessToken, logout, setProfile } from "@/store/reducers/authReducer";
+import { logoutUser, setProfile } from "@/store/reducers/authReducer";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { IUser } from "@/types/typeUser";
+import { ThunkDispatch } from "@reduxjs/toolkit";
+import { AnyAction } from "redux";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const dispatch = useDispatch();
+  const dispatch: ThunkDispatch<AppState, unknown, AnyAction> = useDispatch();
   const { showNotification } = useNotification();
   const { accessToken } = useSelector((state: AppState) => state.auth);
 
@@ -23,9 +25,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       const userData = response.headers.get("X-User-Data");
 
       if (authStatus === "unauthorized" || shouldClearStorage) {
-        console.log("Unauthorized from middleware - clearing storage");
         localStorage.clear();
-        dispatch(logout());
+        dispatch(logoutUser());
+        return true;
+      }
+
+      const localToken = localStorage.getItem("AccessToken");
+
+      // Không có token trong Redux và localStorage
+      if (!localToken) {
+        dispatch(logoutUser());
         return true;
       }
 
@@ -43,7 +52,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         router.push("/login");
       }
     });
-  }, [pathname, router]);
+  }, [pathname, router, dispatch, showNotification]);
 
   // Handle routing based on auth state
   useEffect(() => {

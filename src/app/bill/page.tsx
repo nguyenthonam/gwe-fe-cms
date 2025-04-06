@@ -1,9 +1,10 @@
 import BillForm from "@/components/Bill/BillForm";
+import { Container } from "@mui/material";
 
 export default function Bill() {
   return (
-    <div>
+    <Container maxWidth="lg" sx={{ padding: "0" }}>
       <BillForm />
-    </div>
+    </Container>
   );
 }
