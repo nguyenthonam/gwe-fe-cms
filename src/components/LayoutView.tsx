@@ -126,7 +126,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
     const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
     const showMenu: boolean = Boolean(anchorEl);
     const dispatch: ThunkDispatch<AppState, unknown, AnyAction> = useDispatch();
-    const { profile, isLoading }: { accessToken: string | null; profile: IUser | null; isLoading: boolean } = useSelector((state: AppState) => state.auth);
+    const { accessToken, profile, isLoading }: { accessToken: string | null; profile: IUser | null; isLoading: boolean } = useSelector((state: AppState) => state.auth);
     const { showNotification } = useNotification();
     const router = useRouter();
 
@@ -187,105 +187,113 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                 <MenuIcon />
               </IconButton>
               <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
-                <Link href="/" passHref>
+                {accessToken ? (
+                  <Link href="/" passHref>
+                    <Image src="/logo.png" alt="Logo" width={150} height={100} />
+                  </Link>
+                ) : (
                   <Image src="/logo.png" alt="Logo" width={150} height={100} />
-                </Link>
+                )}
               </Box>
-              <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
-                <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>
-                  {profile?.fullname || "User"}
-                </Typography>
-                <IconButton onClick={handleMenuClick} sx={{ p: "2px" }}>
-                  <Avatar alt="User" sx={{ bgcolor: lightBlue[500] }}>
-                    <AccountCircleIcon />
-                  </Avatar>
-                </IconButton>
-                <Menu anchorEl={anchorEl} open={showMenu} onClose={handleMenuClose} sx={{ mt: 1 }}>
-                  <MenuItem
-                    onClick={() => {
-                      handleMenuClose();
-                      router.push("/profile");
-                    }}
-                  >
-                    <ListItemIcon>
-                      <PersonIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Profile</ListItemText>
-                  </MenuItem>
-                  <MenuItem onClick={handleLogout} disabled={isLoading}>
-                    <ListItemIcon>
-                      <LogoutIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Logout</ListItemText>
-                  </MenuItem>
-                </Menu>
-              </Box>
+              {accessToken && (
+                <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
+                  <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>
+                    {profile?.fullname || "User"}
+                  </Typography>
+                  <IconButton onClick={handleMenuClick} sx={{ p: "2px" }}>
+                    <Avatar alt="User" sx={{ bgcolor: lightBlue[500] }}>
+                      <AccountCircleIcon />
+                    </Avatar>
+                  </IconButton>
+                  <Menu anchorEl={anchorEl} open={showMenu} onClose={handleMenuClose} sx={{ mt: 1 }}>
+                    <MenuItem
+                      onClick={() => {
+                        handleMenuClose();
+                        router.push("/profile");
+                      }}
+                    >
+                      <ListItemIcon>
+                        <PersonIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Profile</ListItemText>
+                    </MenuItem>
+                    <MenuItem onClick={handleLogout} disabled={isLoading}>
+                      <ListItemIcon>
+                        <LogoutIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Logout</ListItemText>
+                    </MenuItem>
+                  </Menu>
+                </Box>
+              )}
             </Toolbar>
           </AppBar>
           <Box sx={{ display: "flex", flexGrow: 1 }}>
             <Drawer variant="permanent" open={showDrawer} sx={{ "& .MuiDrawer-paper": { bgcolor: lightBlue[900], color: "white" } }}>
               <DrawerHeader />
               <Divider />
-              <List>
-                <ListItem disablePadding sx={{ display: "block" }}>
-                  <ListItemButton component={Link} href="/dashboard" onClick={() => setShowDrawer(false)}>
-                    <ListItemIcon>
-                      <DashboardIcon htmlColor="white" />
-                    </ListItemIcon>
-                    <ListItemText primary={"Dashboard"} />
-                  </ListItemButton>
-                  <ListItemButton component={Link} href="/bill" onClick={() => setShowDrawer(false)}>
-                    <ListItemIcon>
-                      <ReceiptIcon htmlColor="white" />
-                    </ListItemIcon>
-                    <ListItemText primary={"Bill"} />
-                  </ListItemButton>
-                </ListItem>
-                <ListItemButton
-                  onClick={() => {
-                    setOpenManage(!openManage);
-                    setShowDrawer(true);
-                  }}
-                >
-                  <ListItemIcon>
-                    <DatasetIcon htmlColor="white" />
-                  </ListItemIcon>
-                  <ListItemText primary="Quản lý" />
-                  {openManage ? <ExpandLessIcon htmlColor="white" /> : <ExpandMoreIcon htmlColor="white" />}
-                </ListItemButton>
-                <Collapse in={openManage} timeout="auto" unmountOnExit>
-                  <List component="div" disablePadding>
-                    <ListItemButton
-                      sx={{ pl: 4 }}
-                      component={Link}
-                      href="/manager/users"
-                      onClick={() => {
-                        setShowDrawer(false);
-                        setOpenManage(false);
-                      }}
-                    >
+              {accessToken && (
+                <List>
+                  <ListItem disablePadding sx={{ display: "block" }}>
+                    <ListItemButton component={Link} href="/dashboard" onClick={() => setShowDrawer(false)}>
                       <ListItemIcon>
-                        <PersonIcon htmlColor="white" />
+                        <DashboardIcon htmlColor="white" />
                       </ListItemIcon>
-                      <ListItemText primary="Tài khoản" />
+                      <ListItemText primary={"Dashboard"} />
                     </ListItemButton>
-                    <ListItemButton
-                      sx={{ pl: 4 }}
-                      component={Link}
-                      href="/manager/companies"
-                      onClick={() => {
-                        setShowDrawer(false);
-                        setOpenManage(false);
-                      }}
-                    >
+                    <ListItemButton component={Link} href="/bill" onClick={() => setShowDrawer(false)}>
                       <ListItemIcon>
-                        <BusinessIcon htmlColor="white" />
+                        <ReceiptIcon htmlColor="white" />
                       </ListItemIcon>
-                      <ListItemText primary="Công ty" />
+                      <ListItemText primary={"Bill"} />
                     </ListItemButton>
-                  </List>
-                </Collapse>
-              </List>
+                  </ListItem>
+                  <ListItemButton
+                    onClick={() => {
+                      setOpenManage(!openManage);
+                      setShowDrawer(true);
+                    }}
+                  >
+                    <ListItemIcon>
+                      <DatasetIcon htmlColor="white" />
+                    </ListItemIcon>
+                    <ListItemText primary="Quản lý" />
+                    {openManage ? <ExpandLessIcon htmlColor="white" /> : <ExpandMoreIcon htmlColor="white" />}
+                  </ListItemButton>
+                  <Collapse in={openManage} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+                      <ListItemButton
+                        sx={{ pl: 4 }}
+                        component={Link}
+                        href="/manager/users"
+                        onClick={() => {
+                          setShowDrawer(false);
+                          setOpenManage(false);
+                        }}
+                      >
+                        <ListItemIcon>
+                          <PersonIcon htmlColor="white" />
+                        </ListItemIcon>
+                        <ListItemText primary="Tài khoản" />
+                      </ListItemButton>
+                      <ListItemButton
+                        sx={{ pl: 4 }}
+                        component={Link}
+                        href="/manager/companies"
+                        onClick={() => {
+                          setShowDrawer(false);
+                          setOpenManage(false);
+                        }}
+                      >
+                        <ListItemIcon>
+                          <BusinessIcon htmlColor="white" />
+                        </ListItemIcon>
+                        <ListItemText primary="Công ty" />
+                      </ListItemButton>
+                    </List>
+                  </Collapse>
+                </List>
+              )}
             </Drawer>
             <Box component="main" sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
               <DrawerHeader />

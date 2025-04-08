@@ -8,6 +8,7 @@ import { useNotification } from "@/contexts/NotificationProvider";
 import { IUser } from "@/types/typeUser";
 import { ThunkDispatch } from "@reduxjs/toolkit";
 import { AnyAction } from "redux";
+import { verifyTokenApi } from "@/utils/apis/apiAuth";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
@@ -17,37 +18,40 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { accessToken } = useSelector((state: AppState) => state.auth);
 
   useEffect(() => {
+    const handleVerifyToken = async () => {
+      try {
+        const res = await verifyTokenApi();
+        if (!res) throw new Error("Không nhận được phản hồi từ máy chủ!");
+
+        const data = res?.data;
+        if (data?.data) {
+          const userData = data.data;
+          dispatch(setProfile({ profile: userData }));
+        }
+        return true;
+      } catch (err: any) {
+        return false;
+      }
+    };
+
     const handleCheckAuthHeaders = async () => {
-      console.log("Checking auth headers from middleware...");
-      const response = await fetch(window.location.href);
-      const authStatus = response.headers.get("X-Auth-Status");
-      const shouldClearStorage = response.headers.get("X-Clear-LocalStorage");
-      const userData = response.headers.get("X-User-Data");
-
-      if (authStatus === "unauthorized" || shouldClearStorage) {
-        localStorage.clear();
-        dispatch(logoutUser());
-        return true;
-      }
-
-      const localToken = localStorage.getItem("AccessToken");
-
       // Không có token trong Redux và localStorage
-      if (!localToken) {
+      if (!accessToken) {
         dispatch(logoutUser());
-        return true;
+        return false;
+      }
+      const isValid = await handleVerifyToken();
+      if (!isValid) {
+        dispatch(logoutUser());
+        return false;
       }
 
-      if (userData) {
-        const parsedUserData = JSON.parse(userData) as IUser;
-        dispatch(setProfile({ profile: parsedUserData }));
-      }
-      return false;
+      return true;
     };
 
     // Check middleware response first
-    handleCheckAuthHeaders().then((isUnauthorized) => {
-      if (isUnauthorized && pathname !== "/login") {
+    handleCheckAuthHeaders().then((isValid) => {
+      if (!isValid && pathname !== "/login") {
         showNotification("Phiên đăng nhập kết thúc!", "error");
         router.push("/login");
       }
