@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { AppState } from "@/store";
 import { logoutUser, setProfile } from "@/store/reducers/authReducer";
 import { useNotification } from "@/contexts/NotificationProvider";
-import { IUser } from "@/types/typeUser";
 import { ThunkDispatch } from "@reduxjs/toolkit";
 import { AnyAction } from "redux";
 import { verifyTokenApi } from "@/utils/apis/apiAuth";
@@ -29,7 +28,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           dispatch(setProfile({ profile: userData }));
         }
         return true;
-      } catch (err: any) {
+      } catch (error: any) {
+        console.error("Error verifying token:", error?.message);
         return false;
       }
     };
@@ -56,7 +56,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         router.push("/login");
       }
     });
-  }, [pathname, router, dispatch, showNotification]);
+  }, [accessToken, pathname, router, dispatch, showNotification]);
 
   // Handle routing based on auth state
   useEffect(() => {
