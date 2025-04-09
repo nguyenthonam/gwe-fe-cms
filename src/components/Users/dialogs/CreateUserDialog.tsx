@@ -12,7 +12,7 @@ export default function CreateUserDialog({ open, onClose, onSuccess }: { open: b
   const handleCreateUser = async () => {
     try {
       setLoading(true);
-      const response = await createUserApi({ email: user.email, pwd: "user123", fullname: user.fullname });
+      const response = await createUserApi({ email: user.email, fullname: user.fullname });
       if (!response?.data?.status) {
         showNotification(response?.data?.message || "Thêm thất bại!", "error");
         return;

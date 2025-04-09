@@ -4,7 +4,7 @@ import { ICountry } from "../typeCountry";
 
 export interface ICreateUserRequest {
   email: string;
-  pwd: string;
+  pwd?: string;
   fullname?: string;
   company?: string;
   phone?: string;
