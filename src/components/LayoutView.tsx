@@ -42,7 +42,7 @@ import ReduxProvider from "@/components/ReduxProvider";
 import { NotificationProvider, useNotification } from "@/contexts/NotificationProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useDispatch, useSelector } from "react-redux";
-import { logoutUser } from "@/store/reducers/authReducer";
+import { signOutUser } from "@/store/reducers/authReducer";
 import { useRouter } from "next/navigation";
 import { AppState } from "@/store";
 import { IUser } from "@/types/typeUser";
@@ -135,9 +135,9 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
     //     try {
     //       const response = await getProfileApi();
     //       if (!response || response.status === 401) {
-    //         dispatch(logoutUser());
+    //         dispatch(signOutUser());
     //         showNotification("Phiên đăng nhập hết hạn!", "error");
-    //         router.push("/login");
+    //         router.push("/sign-in");
     //         return;
     //       }
     //       const profileData: IUser = response?.data?.data as IUser;
@@ -169,9 +169,9 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
       handleMenuClose();
       if (isLoading) return;
       try {
-        await dispatch(logoutUser());
+        await dispatch(signOutUser());
         showNotification("Đăng xuất thành công!", "success");
-        router.push("/login");
+        router.push("/sign-in");
       } catch (error: unknown) {
         showNotification((error as Error).message || "Đăng xuất thất bại, vui lòng thử lại!", "error");
       }
@@ -195,7 +195,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                   <Image src="/logo.png" alt="Logo" width={150} height={100} />
                 )}
               </Box>
-              {accessToken && (
+              {accessToken ? (
                 <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
                   <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>
                     {profile?.fullname || "User"}
@@ -224,6 +224,14 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                       <ListItemText>Logout</ListItemText>
                     </MenuItem>
                   </Menu>
+                </Box>
+              ) : (
+                <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
+                  <Link href="/sign-in" passHref>
+                    <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[500] }}>
+                      Sign in
+                    </Typography>
+                  </Link>
                 </Box>
               )}
             </Toolbar>

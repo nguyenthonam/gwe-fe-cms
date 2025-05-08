@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import type { IAuthState } from "@/types/typeAuth";
-import { loginApi, logoutApi } from "@/utils/apis/apiAuth";
+import { signInApi, signOutApi } from "@/utils/apis/apiAuth";
 import { ILoginRequest } from "@/types/apis/typeAuthApi";
 import { IUser } from "@/types";
 
@@ -24,11 +24,11 @@ const initializeAuthState = (): IAuthState => {
   return initialState;
 };
 
-export const loginUser = createAsyncThunk<{ accessToken: string; user: IUser }, ILoginRequest, { rejectValue: string }>(
-  "auth/loginUser",
+export const signInUser = createAsyncThunk<{ accessToken: string; user: IUser }, ILoginRequest, { rejectValue: string }>(
+  "auth/signInUser",
   async ({ email, password }: ILoginRequest, { rejectWithValue }) => {
     try {
-      const res = await loginApi({ email, password });
+      const res = await signInApi({ email, password });
       if (!res) throw new Error("Không nhận được phản hồi từ máy chủ!");
 
       const token: string | undefined = res?.headers["authorization"];
@@ -45,9 +45,9 @@ export const loginUser = createAsyncThunk<{ accessToken: string; user: IUser }, 
   }
 );
 
-export const logoutUser = createAsyncThunk<any, void, { rejectValue: string }>("auth/logoutUser", async (_, { dispatch, rejectWithValue }) => {
+export const signOutUser = createAsyncThunk<any, void, { rejectValue: string }>("auth/signOutUser", async (_, { dispatch, rejectWithValue }) => {
   try {
-    const res = await logoutApi(); // Gọi API logout để xóa cookie từ server
+    const res = await signOutApi(); // Gọi API logout để xóa cookie từ server
     dispatch(logout()); // Cập nhật state và xóa localStorage
     return res.data;
   } catch (error: unknown) {
@@ -93,11 +93,11 @@ const AuthSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(loginUser.pending, (state: IAuthState) => {
+      .addCase(signInUser.pending, (state: IAuthState) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(loginUser.fulfilled, (state: IAuthState, action: PayloadAction<{ accessToken: string; user: IUser }>) => {
+      .addCase(signInUser.fulfilled, (state: IAuthState, action: PayloadAction<{ accessToken: string; user: IUser }>) => {
         state.isLoading = false;
         state.accessToken = action.payload.accessToken;
         state.profile = action.payload.user;
@@ -107,18 +107,18 @@ const AuthSlice = createSlice({
         }
         document.cookie = `AccessToken=${action.payload.accessToken}; Path=/; Secure; HttpOnly`;
       })
-      .addCase(loginUser.rejected, (state: IAuthState, action: PayloadAction<string | undefined>) => {
+      .addCase(signInUser.rejected, (state: IAuthState, action: PayloadAction<string | undefined>) => {
         state.isLoading = false;
         state.error = action.payload || null;
       })
-      .addCase(logoutUser.pending, (state: IAuthState) => {
+      .addCase(signOutUser.pending, (state: IAuthState) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(logoutUser.fulfilled, (state: IAuthState) => {
+      .addCase(signOutUser.fulfilled, (state: IAuthState) => {
         state.isLoading = false;
       })
-      .addCase(logoutUser.rejected, (state: IAuthState, action: PayloadAction<string | undefined>) => {
+      .addCase(signOutUser.rejected, (state: IAuthState, action: PayloadAction<string | undefined>) => {
         state.isLoading = false;
         state.error = action.payload || null;
       });
