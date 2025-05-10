@@ -18,17 +18,12 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
   const { showNotification } = useNotification();
 
   useEffect(() => {
-    if (data && data.id) {
+    if (data && data._id) {
       setUser({
-        id: data.id,
+        id: data._id,
         email: data.email,
-        fullname: data.fullname,
-        phone: data.phone,
-        company: data.company,
-        address: data.address,
-        province: data.province,
-        state: data.state,
-        country: data.country,
+        company: data.companyId,
+        contact: data.contact,
         avatar: data.avatar,
         identity_key: data.identity_key,
         role: data.role,
@@ -73,7 +68,7 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
           placeholder="Họ và tên"
           fullWidth
           variant="outlined"
-          value={user?.fullname}
+          value={user?.contact?.fullname}
           onChange={(e) => setUser((prev) => (prev ? { ...prev, fullname: e.target.value } : undefined))}
         />
         <TextField

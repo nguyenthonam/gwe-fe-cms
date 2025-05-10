@@ -198,7 +198,7 @@ export default function UsersManagerComponent() {
             ) : (
               data.map((row) => (
                 <TableRow key={row.id}>
-                  <TableCell>{row.fullname}</TableCell>
+                  <TableCell>{row.contact?.fullname}</TableCell>
                   <TableCell>{row.email}</TableCell>
                   <TableCell>
                     <Chip

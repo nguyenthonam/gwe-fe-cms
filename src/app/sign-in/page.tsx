@@ -87,7 +87,7 @@ export default function LoginPage() {
       <div className="flex flex-col items-center justify-center min-h-screen">
         <form className="w-full max-w-[500px] p-6 flex flex-col items-center justify-center bg-white rounded shadow-md border border-blue-400">
           <div className="flex flex-col justify-center items-center">
-            <Image src="/logo-04.png" alt="Logo" width={150} height={100} />
+            <Image src="/logo-04.png" alt="Logo" width={150} height={100} priority />
           </div>
           <TextField
             className="mb-2 w-full"

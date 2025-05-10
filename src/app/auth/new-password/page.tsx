@@ -84,7 +84,7 @@ export default function ResetPasswordPage() {
       <div className="flex flex-col items-center justify-center min-h-screen">
         <form className="w-full max-w-[500px] p-6 flex flex-col items-center justify-center bg-white rounded shadow-md border border-blue-400">
           <div className="mb-4 flex flex-col justify-center items-center">
-            <Image src="/icon.png" alt="Logo" width={80} height={50} />
+            <Image src="/icon.png" alt="Logo" width={80} height={50} priority />
           </div>
           <Typography variant="h4" gutterBottom sx={{ textAlign: "center", fontWeight: "normal", mb: 3, color: lightBlue[700] }}>
             Reset Password
