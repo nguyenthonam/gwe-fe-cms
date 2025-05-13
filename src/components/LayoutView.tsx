@@ -298,7 +298,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                       <ListItemButton
                         sx={{ pl: 4 }}
                         component={Link}
-                        href="/manager/customers"
+                        href="/manager/partners"
                         onClick={() => {
                           setShowDrawer(false);
                           setOpenManage(false);
@@ -307,7 +307,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                         <ListItemIcon>
                           <BusinessIcon htmlColor="white" />
                         </ListItemIcon>
-                        <ListItemText primary="Khách Hàng" />
+                        <ListItemText primary="Đối Tác" />
                       </ListItemButton>
                     </List>
                   </Collapse>
