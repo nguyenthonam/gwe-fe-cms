@@ -1,6 +1,6 @@
 import { ERECORD_STATUS } from "@/types/enums";
-import { EGENDER, EUSER_ROLES, IIdentityUser } from "../typeUser";
-import { ICountry } from "../typeCountry";
+import { IIdentityUser } from "../typeUser";
+import { EGENDER, EUSER_ROLES, IBasicContactInfor } from "../typeGlobals";
 
 export interface ICreateUserRequest {
   email: string;
@@ -13,17 +13,12 @@ export interface IUpdateUserRequest {
   id: string;
   email?: string;
   company?: string;
-  phone?: string; // SDT đăng nhập
-  fullname?: string; // Họ và tên
-  gender?: EGENDER; // giới tính
-  birthday?: Date; // Ngày sinh DD/MM/YYYY
-  address?: string; // Địa chỉ
-  province?: string; // Tỉnh thành phố
-  state?: string; // Quận huyện
-  country?: ICountry; // Quốc gia
-  avatar?: string;
+  contact?: IBasicContactInfor;
+  gender?: EGENDER;
+  birthday?: Date;
   identity_key?: IIdentityUser; // căn cước or cmnd
-  role?: EUSER_ROLES; // Phân quyền
+  avatar?: string;
+  role?: EUSER_ROLES;
   status?: ERECORD_STATUS;
 }
 

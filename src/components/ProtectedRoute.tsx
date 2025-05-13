@@ -65,7 +65,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         }
       });
     }
-  }, [pathname, router, dispatch, showNotification]);
+  }, [pathname, router, dispatch, showNotification, accessToken]);
 
   // Handle routing based on auth state
   useEffect(() => {

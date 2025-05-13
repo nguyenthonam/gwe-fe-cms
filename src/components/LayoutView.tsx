@@ -36,6 +36,7 @@ import {
   Receipt as ReceiptIcon,
   AccountCircle as AccountCircleIcon,
   Person as PersonIcon,
+  Subtitles as SubtitlesIcon,
   Logout as LogoutIcon,
 } from "@mui/icons-material";
 import ReduxProvider from "@/components/ReduxProvider";
@@ -187,18 +188,14 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                 <MenuIcon />
               </IconButton>
               <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
-                {accessToken ? (
-                  <Link href="/" passHref>
-                    <Image src="/logo.png" alt="Logo" width={150} height={100} />
-                  </Link>
-                ) : (
-                  <Image src="/logo.png" alt="Logo" width={150} height={100} />
-                )}
+                <Link href="/" passHref>
+                  <Image src="/logo.png" alt="Logo" width={150} height={100} priority />
+                </Link>
               </Box>
               {accessToken ? (
                 <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
                   <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>
-                    {profile?.fullname || "User"}
+                    {profile?.contact?.fullname || "User"}
                   </Typography>
                   <IconButton onClick={handleMenuClick} sx={{ p: "2px" }}>
                     <Avatar alt="User" sx={{ bgcolor: lightBlue[500] }}>
@@ -273,6 +270,20 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                       <ListItemButton
                         sx={{ pl: 4 }}
                         component={Link}
+                        href="/manager/orders"
+                        onClick={() => {
+                          setShowDrawer(false);
+                          setOpenManage(false);
+                        }}
+                      >
+                        <ListItemIcon>
+                          <SubtitlesIcon htmlColor="white" />
+                        </ListItemIcon>
+                        <ListItemText primary="Đơn Hàng" />
+                      </ListItemButton>
+                      <ListItemButton
+                        sx={{ pl: 4 }}
+                        component={Link}
                         href="/manager/users"
                         onClick={() => {
                           setShowDrawer(false);
@@ -287,7 +298,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                       <ListItemButton
                         sx={{ pl: 4 }}
                         component={Link}
-                        href="/manager/companies"
+                        href="/manager/partners"
                         onClick={() => {
                           setShowDrawer(false);
                           setOpenManage(false);
@@ -296,7 +307,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                         <ListItemIcon>
                           <BusinessIcon htmlColor="white" />
                         </ListItemIcon>
-                        <ListItemText primary="Công ty" />
+                        <ListItemText primary="Đối Tác" />
                       </ListItemButton>
                     </List>
                   </Collapse>
