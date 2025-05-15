@@ -1,20 +1,20 @@
 import { EPaymentTerms, ERECORD_STATUS, IBaseRecord } from "./typeGlobals";
 
 export interface IRepresentative {
-  name: string;
-  phone: string;
+  name?: string;
+  phone?: string;
 }
 
 export interface ICompanyContact {
-  email: string;
+  email?: string;
   hotline?: string | null;
   website?: string | null;
 }
 
 export interface ICompanyContract {
-  startDate: Date | null;
-  endDate: Date | null;
-  paymentTerms: EPaymentTerms;
+  startDate?: Date | null;
+  endDate?: Date | null;
+  paymentTerms?: EPaymentTerms;
 }
 export enum ECOMPANY_TYPE {
   Carrier = "rrCreies",
@@ -23,13 +23,14 @@ export enum ECOMPANY_TYPE {
   Customer = "Mrertomr",
 }
 export interface ICompany extends IBaseRecord {
-  code: string; // DHL, FEDEX, GATEWAYEXPRESS,...
-  name: string;
-  taxCode: string; // Duy nhất
-  address: string;
-  representative: IRepresentative;
-  contact: ICompanyContact;
-  contract: ICompanyContract;
-  type: ECOMPANY_TYPE | null;
-  status: ERECORD_STATUS;
+  id?: string;
+  code?: string; // DHL, FEDEX, GATEWAYEXPRESS,...
+  name?: string;
+  taxCode?: string; // Duy nhất
+  address?: string;
+  representative?: IRepresentative;
+  contact?: ICompanyContact;
+  contract?: ICompanyContract;
+  type?: ECOMPANY_TYPE | null;
+  status?: ERECORD_STATUS;
 }

@@ -1,11 +1,9 @@
 "use client";
 import { useState } from "react";
-import { Box, Tabs, Tab, Paper, Typography, Button, TextField, IconButton, Container } from "@mui/material";
+import { Box, Tabs, Tab, Paper, Typography, Container } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { Add, Edit, Lock, LockOpen } from "@mui/icons-material";
-import { pages } from "next/dist/build/templates/app-page";
 import { ActionMenu } from "@/components/Globals/ActionMenu";
-import { ICompany } from "@/types/typeCompany";
+import PartnerManagerView from "@/components/Partners/PartnerManagerView";
 
 const dummyRows = Array.from({ length: 5 }, (_, i) => ({
   id: i,
@@ -21,7 +19,6 @@ const dummyRows = Array.from({ length: 5 }, (_, i) => ({
 
 export default function PartnerManagementTabs() {
   const [tabIndex, setTabIndex] = useState(0);
-  const [selectedCompany, setSelectedCompany] = useState<ICompany>();
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue);
   };
@@ -38,24 +35,6 @@ export default function PartnerManagementTabs() {
   const handleToggleEmployeeLock = (employee: any) => {
     console.log("Toggle Employee Lock", employee);
   };
-
-  const companyColumns: GridColDef[] = [
-    { field: "code", headerName: "CODE", width: 120 },
-    { field: "name", headerName: "NAME", width: 200 },
-    { field: "taxCode", headerName: "TAX CODE", width: 150 },
-    { field: "address", headerName: "ADDRESS", width: 250 },
-    { field: "type", headerName: "TYPE", width: 100 },
-    {
-      field: "actions",
-      headerName: "ACTION",
-      width: 150,
-      renderCell: ({ row }) => (
-        <>
-          <ActionMenu onEdit={() => handleEditCompany(row)} onLockUnlock={() => handleToggleCompanyLock(row)} status={row?.status} />
-        </>
-      ),
-    },
-  ];
 
   const employeeColumns: GridColDef[] = [
     { field: "userId", headerName: "USER ID", width: 120 },
@@ -87,22 +66,7 @@ export default function PartnerManagementTabs() {
         </Tabs>
 
         <Box mt={2} className="w-full ">
-          <Paper sx={{ p: 2 }}>
-            <Box mb={2} display="flex" justifyContent="space-between" alignItems="center">
-              <TextField size="small" placeholder="Tìm kiếm..." />
-              <Box display="flex" gap={1}>
-                <Button variant="contained" startIcon={<Add />}>
-                  Tạo mới
-                </Button>
-                <Button variant="outlined">Xuất Excel</Button>
-              </Box>
-            </Box>
-            {tabIndex === 0 ? (
-              <DataGrid autoHeight rows={dummyRows} columns={companyColumns} pageSizeOptions={[5]} />
-            ) : (
-              <DataGrid autoHeight rows={dummyRows} columns={employeeColumns} pageSizeOptions={[5]} />
-            )}
-          </Paper>
+          <Paper>{tabIndex === 0 ? <PartnerManagerView /> : <DataGrid autoHeight rows={dummyRows} columns={employeeColumns} pageSizeOptions={[5]} />}</Paper>
         </Box>
       </Box>
     </Container>
