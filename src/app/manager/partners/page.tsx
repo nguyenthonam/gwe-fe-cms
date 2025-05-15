@@ -4,6 +4,7 @@ import { Box, Tabs, Tab, Paper, Typography, Container } from "@mui/material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { ActionMenu } from "@/components/Globals/ActionMenu";
 import PartnerManagerView from "@/components/Partners/PartnerManagerView";
+import StaffManagerView from "@/components/Staff/StaffManagerView";
 
 const dummyRows = Array.from({ length: 5 }, (_, i) => ({
   id: i,
@@ -66,7 +67,7 @@ export default function PartnerManagementTabs() {
         </Tabs>
 
         <Box mt={2} className="w-full ">
-          <Paper>{tabIndex === 0 ? <PartnerManagerView /> : <DataGrid autoHeight rows={dummyRows} columns={employeeColumns} pageSizeOptions={[5]} />}</Paper>
+          <Paper>{tabIndex === 0 ? <PartnerManagerView /> : <StaffManagerView />}</Paper>
         </Box>
       </Box>
     </Container>

@@ -19,7 +19,7 @@ export interface IUser extends IBaseRecord {
   companyId?: string; // Bắt buộc với role = Partner
   contact?: IBasicContactInfor;
   gender?: EGENDER;
-  birthday?: Date;
+  birthday?: Date | null;
   identity_key?: IIdentityUser; // căn cước or cmnd
   avatar?: string;
   role?: EUSER_ROLES;
@@ -28,5 +28,17 @@ export interface IUser extends IBaseRecord {
       token: string;
     }
   ];
+  status?: ERECORD_STATUS;
+}
+
+export interface IUpdateUserRequest {
+  email?: string;
+  companyId?: string;
+  contact?: IBasicContactInfor;
+  gender?: EGENDER;
+  birthday?: Date | null;
+  identity_key?: IIdentityUser; // căn cước or cmnd
+  avatar?: string;
+  role?: EUSER_ROLES;
   status?: ERECORD_STATUS;
 }

@@ -3,8 +3,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } 
 import { lightBlue } from "@mui/material/colors";
 import { updateUserApi } from "@/utils/apis/apiUser";
 import { useNotification } from "@/contexts/NotificationProvider";
-import { IUser } from "@/types/typeUser";
-import { IUpdateUserRequest } from "@/types/apis/typeUser.Api";
+import { IUpdateUserRequest, IUser } from "@/types/typeUser";
 
 interface IProps {
   open: boolean;
@@ -20,9 +19,8 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
   useEffect(() => {
     if (data && data._id) {
       setUser({
-        id: data._id,
         email: data.email,
-        company: data.companyId,
+        companyId: data.companyId,
         contact: data.contact,
         avatar: data.avatar,
         identity_key: data.identity_key,
@@ -35,9 +33,9 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
   const handleUpdateUser = async () => {
     try {
       setLoading(true);
-      if (!user) throw new Error("User not found!");
+      if (!user || !data?.id) throw new Error("User not found!");
       console.log("Payload:", user);
-      const response = await updateUserApi(user);
+      const response = await updateUserApi(data.id, user);
       if (!response?.data?.status) {
         showNotification(response?.data?.message || "Cập nhật thất bại!", "error");
         return;
