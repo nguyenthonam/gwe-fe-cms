@@ -1,7 +1,7 @@
 import { IBaseRecord } from "./typeGlobals";
 
 export interface ICAWBCode extends IBaseRecord {
-  carrierId: string;
-  code: string;
-  isUsed: boolean;
+  carrierId?: string | { _id?: string; code?: string; name?: string };
+  code?: string;
+  isUsed?: boolean;
 }

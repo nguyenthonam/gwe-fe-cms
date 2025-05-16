@@ -13,16 +13,21 @@ export const getCAWBCodesApi = async () => {
   }
 };
 
-export const searchCAWBCodesApi = async ({ keyword, page = 1, perPage = 10, status }: ISearchQuery) => {
+export const searchCAWBCodesApi = async ({ keyword, page = 1, perPage = 10, status = "all", isUsed, carrierId }: ISearchQuery & { isUsed?: string; carrierId?: string }) => {
   try {
-    const res = await AxiosAPI.get("/api/cawb-codes/search", {
-      params: {
-        keyword,
-        page,
-        perPage,
-        status,
-      },
+    const query = {
+      page,
+      perPage,
+      keyword,
+      status,
+    } as any;
+    if (isUsed) query.isUsed = isUsed;
+    if (carrierId) query.carrierId = carrierId;
+
+    const res = await AxiosAPI.get(`/api/cawb-codes/search`, {
+      params: query,
     });
+
     return res;
   } catch (error: any) {
     console.error("Error:", error);
@@ -30,7 +35,7 @@ export const searchCAWBCodesApi = async ({ keyword, page = 1, perPage = 10, stat
   }
 };
 
-export const createCAWBCodeApi = async (payload: ICAWBCode) => {
+export const createCAWBCodesApi = async (payload: { carrierId: string; codes: string[] }) => {
   try {
     const res = await AxiosAPI.post("/api/cawb-codes", payload);
     return res;

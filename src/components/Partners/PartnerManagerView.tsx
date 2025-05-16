@@ -222,56 +222,53 @@ export default function PartnerManager() {
 
   return (
     <Box className="space-y-4 p-6">
-      {/* <Typography variant="h5">Quản lý Đối tác</Typography> */}
-      <Paper sx={{ p: 2 }}>
-        <Box mb={2} display="flex" justifyContent="space-between" alignItems="center" gap={2}>
-          <TextField
-            className="max-w-[250px] w-full"
-            placeholder="Tìm đối tác..."
-            size="small"
-            value={keyword}
-            onChange={(e) => debouncedSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && fetchCompanies()}
-          />
+      <Box mb={2} display="flex" justifyContent="space-between" alignItems="center" gap={2}>
+        <TextField
+          className="max-w-[250px] w-full"
+          placeholder="Tìm đối tác..."
+          size="small"
+          value={keyword}
+          onChange={(e) => debouncedSearch(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && fetchCompanies()}
+        />
 
-          <Select size="small" displayEmpty value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 150 }}>
-            <MenuItem value="">Mặc đinh</MenuItem>
-            <MenuItem value="all">Tất cả trạng thái</MenuItem>
-            <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
-            <MenuItem value={ERECORD_STATUS.Locked}>Đã khoá</MenuItem>
-            <MenuItem value={ERECORD_STATUS.NoActive}>Không hoạt động</MenuItem>
-            <MenuItem value={ERECORD_STATUS.Deleted}>Đã xoá</MenuItem>
-          </Select>
-          <Stack direction="row" spacing={1}>
-            <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
-              Xuất Excel
-            </Button>
-            <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
-              Tạo mới
-            </Button>
-          </Stack>
+        <Select size="small" displayEmpty value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 150 }}>
+          <MenuItem value="">Mặc đinh</MenuItem>
+          <MenuItem value="all">Tất cả trạng thái</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Locked}>Đã khoá</MenuItem>
+          <MenuItem value={ERECORD_STATUS.NoActive}>Không hoạt động</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Deleted}>Đã xoá</MenuItem>
+        </Select>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
+            Xuất Excel
+          </Button>
+          <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
+            Tạo mới
+          </Button>
+        </Stack>
+      </Box>
+
+      {loading ? (
+        <Box textAlign="center">
+          <CircularProgress />
         </Box>
-
-        {loading ? (
-          <Box textAlign="center">
-            <CircularProgress />
-          </Box>
-        ) : (
-          <DataGrid
-            rowHeight={48}
-            rows={companies.map((c) => ({ ...c, id: c._id }))}
-            columns={columns}
-            paginationMode="server"
-            rowCount={total}
-            paginationModel={{ page, pageSize }}
-            onPaginationModelChange={({ page, pageSize }) => {
-              setPage(page);
-              setPageSize(pageSize);
-            }}
-            disableRowSelectionOnClick
-          />
-        )}
-      </Paper>
+      ) : (
+        <DataGrid
+          rowHeight={48}
+          rows={companies.map((c) => ({ ...c, id: c._id }))}
+          columns={columns}
+          paginationMode="server"
+          rowCount={total}
+          paginationModel={{ page, pageSize }}
+          onPaginationModelChange={({ page, pageSize }) => {
+            setPage(page);
+            setPageSize(pageSize);
+          }}
+          disableRowSelectionOnClick
+        />
+      )}
 
       <PartnerDetailDialog
         open={openDetailDialog}

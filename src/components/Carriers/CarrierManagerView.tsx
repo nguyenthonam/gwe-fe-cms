@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, Button, TextField, MenuItem, Select, Stack, CircularProgress, Typography } from "@mui/material";
+import { Box, Button, TextField, MenuItem, Select, Stack, CircularProgress, Typography, Paper } from "@mui/material";
 import { Add, Download } from "@mui/icons-material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import debounce from "lodash/debounce";
@@ -187,7 +187,7 @@ export default function CarrierManagerView() {
   ];
 
   return (
-    <Box className="space-y-4">
+    <Box className="space-y-4 p-6">
       <Box mb={2} display="flex" gap={2} alignItems="center" justifyContent="space-between">
         <TextField placeholder="Tìm nhà vận chuyển..." size="small" onChange={(e) => debouncedSearch(e.target.value)} className="max-w-[250px] w-full" />
         <Select size="small" displayEmpty value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 150 }}>
@@ -228,6 +228,7 @@ export default function CarrierManagerView() {
           />
         </Box>
       )}
+
       <CarrierDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} carrier={selectedCarrier} />
       <CreateCarrierDialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} onCreated={handleCreated} />
       <UpdateCarrierDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={handleUpdated} carrier={selectedCarrier} />

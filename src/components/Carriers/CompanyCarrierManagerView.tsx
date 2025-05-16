@@ -175,7 +175,7 @@ export default function CompanyCarrierManagerView() {
   ];
 
   return (
-    <Box>
+    <Box className="space-y-4 p-6">
       <Box mb={2} display="flex" gap={2} justifyContent="space-between" alignItems="center">
         <TextField placeholder="Tìm hãng bay..." size="small" className="max-w-[250px] w-full" onChange={(e) => debouncedSearch(e.target.value)} />
         <Select size="small" displayEmpty value={status} onChange={(e) => setStatus(e.target.value)} sx={{ minWidth: 150 }}>
@@ -215,7 +215,6 @@ export default function CompanyCarrierManagerView() {
           disableRowSelectionOnClick
         />
       )}
-
       <CreateCompanyCarrierDialog open={openCreate} onClose={() => setOpenCreate(false)} onCreated={fetchData} />
       <UpdateCompanyCarrierDialog open={openUpdate} onClose={() => setOpenUpdate(false)} onUpdated={fetchData} company={selected} />
       <CompanyCarrierDetailDialog open={openDetail} onClose={() => setOpenDetail(false)} company={selected} />
