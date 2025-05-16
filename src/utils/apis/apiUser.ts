@@ -1,8 +1,8 @@
-import { IUpdateUserRequest, IUser } from "@/types/typeUser";
+import { ICreateUserRequest, IUpdateUserRequest } from "@/types/typeUser";
 import { EUSER_ROLES, ISearchQuery } from "@/types/typeGlobals";
 import AxiosAPI from "@/utils/configs/axiosClient";
 
-export const createUserApi = async (payload: IUser) => {
+export const createUserApi = async (payload: ICreateUserRequest) => {
   try {
     const res = await AxiosAPI.post("/api/users", payload);
     return res;

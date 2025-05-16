@@ -16,7 +16,7 @@ export interface IUser extends IBaseRecord {
   userId?: string; // 6-24 ký tự
   email?: string;
   pwd?: string; // Mật khẩu cấp 1 (Từ 6 -> 32 ký tự, có ký tự chữ số, chữ hoa và chữ thường)
-  companyId?: string; // Bắt buộc với role = Partner
+  companyId?: { _id?: string; name?: string; code?: string } | null; // Bắt buộc với role = Partner
   contact?: IBasicContactInfor;
   gender?: EGENDER;
   birthday?: Date | null;
@@ -32,6 +32,17 @@ export interface IUser extends IBaseRecord {
 }
 
 export interface IUpdateUserRequest {
+  email?: string;
+  companyId?: string;
+  contact?: IBasicContactInfor;
+  gender?: EGENDER;
+  birthday?: Date | null;
+  identity_key?: IIdentityUser; // căn cước or cmnd
+  avatar?: string;
+  role?: EUSER_ROLES;
+  status?: ERECORD_STATUS;
+}
+export interface ICreateUserRequest {
   email?: string;
   companyId?: string;
   contact?: IBasicContactInfor;

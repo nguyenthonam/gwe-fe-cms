@@ -3,9 +3,9 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Stack, Grid, MenuItem } from "@mui/material";
 import { useEffect, useState } from "react";
 import { createUserApi } from "@/utils/apis/apiUser";
-import { EGENDER, ERECORD_STATUS, EUSER_ROLES } from "@/types/typeGlobals";
+import { EGENDER, EUSER_ROLES } from "@/types/typeGlobals";
 import { useNotification } from "@/contexts/NotificationProvider";
-import { IUser } from "@/types";
+import { ICreateUserRequest, IUser } from "@/types/typeUser";
 import { ICompany } from "@/types/typeCompany";
 import { getPartnersApi } from "@/utils/apis/apiPartner";
 
@@ -18,9 +18,9 @@ interface Props {
 const genderOptions = Object.entries(EGENDER);
 
 export default function CreateStaffDialog({ open, onClose, onCreated }: Props) {
-  const [form, setForm] = useState<IUser>({
-    companyId: "",
+  const [form, setForm] = useState<ICreateUserRequest>({
     email: "",
+    companyId: "",
     contact: { fullname: "", phone: "" },
     gender: EGENDER.MALE,
     birthday: null,

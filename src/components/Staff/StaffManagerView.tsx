@@ -14,6 +14,9 @@ import { searchUsersApi, lockUserApi, unlockUserApi, deleteUserApi } from "@/uti
 import * as XLSX from "sheetjs-style";
 import CreateStaffDialog from "./CreateStaffDialog";
 import UpdateStaffDialog from "./UpdateStaffDialog";
+import { EnumChip } from "../Globals/EnumChip";
+import StaffDetailDialog from "./StaffDetailDialog";
+import { genderLabel, recordStatusLabel } from "@/utils/constants/enumLabel";
 
 export default function StaffManagerView() {
   const [staffs, setStaffs] = useState<IUser[]>([]);
@@ -25,6 +28,7 @@ export default function StaffManagerView() {
   const [loading, setLoading] = useState(false);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openUpdateDialog, setOpenUpdateDialog] = useState(false);
+  const [openDetailDialog, setOpenDetailDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
 
   const { showNotification } = useNotification();
@@ -50,6 +54,7 @@ export default function StaffManagerView() {
       });
       setStaffs(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
+      console.log("Staff:", staffs);
     } catch (error) {
       console.error("Failed to fetch staffs", error);
     } finally {
@@ -93,12 +98,17 @@ export default function StaffManagerView() {
       "HỌ TÊN": s.contact?.fullname || "",
       EMAIL: s.email || "",
       SĐT: s.contact?.phone || "",
-      "GIỚI TÍNH": s.gender || "",
-      "TRẠNG THÁI": s.status || "",
+      "CÔNG TY": typeof s.companyId === "object" ? s.companyId?.name || "" : String(s.companyId || ""),
+      "GIỚI TÍNH": genderLabel[s.gender as keyof typeof genderLabel] || "Khác",
+      "TRẠNG THÁI": recordStatusLabel[s.status as keyof typeof recordStatusLabel] || s.status,
     }));
+
     const ws = XLSX.utils.json_to_sheet(data);
+
+    // Auto column width
     ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
 
+    // Apply styles: border + bold headers
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -135,15 +145,36 @@ export default function StaffManagerView() {
   };
 
   const columns: GridColDef[] = [
-    { field: "userId", headerName: "ID", width: 120 },
-    { field: "fullname", headerName: "HỌ TÊN", width: 200, renderCell: ({ row }: { row: IUser }) => row.contact?.fullname || "" },
-    { field: "email", headerName: "EMAIL", width: 220 },
-    { field: "phone", headerName: "SĐT", width: 150, renderCell: ({ row }: { row: IUser }) => row.contact?.phone || "" },
-    { field: "gender", headerName: "GIỚI TÍNH", width: 120 },
+    {
+      field: "userId",
+      headerName: "ID",
+      flex: 1.2,
+      minWidth: 120,
+      renderCell: ({ row }: { row: IUser }) => (
+        <Box display="flex" alignItems="center" height="100%">
+          <Typography
+            sx={{ cursor: "pointer", textDecoration: "underline" }}
+            color="primary"
+            onClick={() => {
+              setSelectedUser(row);
+              setOpenDetailDialog(true);
+            }}
+          >
+            {row.userId}
+          </Typography>
+        </Box>
+      ),
+    },
+    { field: "fullname", headerName: "HỌ TÊN", flex: 1, minWidth: 150, renderCell: ({ row }: { row: IUser }) => row.contact?.fullname || "" },
+    { field: "companyId", headerName: "CÔNG TY", flex: 1, minWidth: 100, renderCell: ({ row }: { row: IUser }) => row.companyId?.code || "" },
+    { field: "email", headerName: "EMAIL", flex: 1, minWidth: 180 },
+    { field: "phone", headerName: "SĐT", flex: 1, minWidth: 120, renderCell: ({ row }: { row: IUser }) => row.contact?.phone || "" },
+    { field: "gender", headerName: "GIỚI TÍNH", flex: 1, renderCell: ({ row }: { row: IUser }) => <EnumChip type="gender" value={row.gender} /> },
     {
       field: "status",
       headerName: "TRẠNG THÁI",
-      width: 130,
+      flex: 1,
+      minWidth: 140,
       renderCell: ({ value }) => <StatusChip status={value} />,
     },
     {
@@ -165,10 +196,10 @@ export default function StaffManagerView() {
   ];
 
   return (
-    <Box>
+    <Box className="space-y-4 p-6">
       <Box mb={2} display="flex" gap={2} alignItems="center" justifyContent="space-between">
         <TextField placeholder="Tìm nhân viên..." size="small" className="max-w-[250px] w-full" onChange={(e) => debouncedSearch(e.target.value)} />
-        <Select size="small" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 150 }}>
+        <Select size="small" displayEmpty value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 150 }}>
           <MenuItem value="">Mặc định</MenuItem>
           <MenuItem value="all">Tất cả</MenuItem>
           <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
@@ -191,21 +222,22 @@ export default function StaffManagerView() {
           <CircularProgress />
         </Box>
       ) : (
-        <DataGrid
-          autoHeight
-          rows={staffs.map((s) => ({ ...s, id: s.id || s._id }))}
-          columns={columns}
-          rowCount={total}
-          paginationModel={{ page, pageSize }}
-          paginationMode="server"
-          onPaginationModelChange={({ page, pageSize }) => {
-            setPage(page);
-            setPageSize(pageSize);
-          }}
-          disableRowSelectionOnClick
-        />
+        <Box sx={{ width: "100%", overflow: "auto" }}>
+          <DataGrid
+            rows={staffs.map((s) => ({ ...s, id: s.id || s._id }))}
+            columns={columns}
+            rowCount={total}
+            paginationModel={{ page, pageSize }}
+            paginationMode="server"
+            onPaginationModelChange={({ page, pageSize }) => {
+              setPage(page);
+              setPageSize(pageSize);
+            }}
+            disableRowSelectionOnClick
+          />
+        </Box>
       )}
-
+      <StaffDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} staff={selectedUser} />
       <CreateStaffDialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} onCreated={handleCreated} />
       <UpdateStaffDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={handleUpdated} user={selectedUser} />
     </Box>

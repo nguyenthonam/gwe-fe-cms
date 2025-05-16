@@ -57,7 +57,12 @@ export default function PartnerManagementTabs() {
 
   return (
     <Container maxWidth="lg" sx={{ padding: "0" }}>
-      <Box className="p-6 space-y-4">
+      <Box
+        className="p-6 space-y-4"
+        sx={{
+          maxWidth: "calc(100vw - 120px)",
+        }}
+      >
         <Typography variant="h5" mb={2}>
           ĐỐI TÁC
         </Typography>

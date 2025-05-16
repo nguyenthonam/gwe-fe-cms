@@ -172,7 +172,7 @@ export default function PartnerManager() {
   const columns: GridColDef[] = [
     {
       field: "code",
-      headerName: "Mã Cty",
+      headerName: "MÃ CÔNG TY",
       flex: 1.5,
       renderCell: ({ row }: { row: ICompany }) => (
         <Box display="flex" alignItems="center" height="100%">
@@ -189,10 +189,10 @@ export default function PartnerManager() {
         </Box>
       ),
     },
-    { field: "name", headerName: "Tên", flex: 1.5 },
+    { field: "name", headerName: "TÊN", flex: 1.5 },
     {
       field: "representative",
-      headerName: "Người đại diện",
+      headerName: "NGƯỜI ĐẠI DIỆN",
       flex: 1.2,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" height="100%">
@@ -203,7 +203,7 @@ export default function PartnerManager() {
     { field: "taxCode", headerName: "MST", flex: 1 },
     {
       field: "status",
-      headerName: "Trạng thái",
+      headerName: "TRẠNG THÁI",
       renderCell: ({ value }) => <StatusChip status={value} />,
       width: 130,
     },
@@ -222,7 +222,7 @@ export default function PartnerManager() {
 
   return (
     <Box className="space-y-4 p-6">
-      <Typography variant="h5">Quản lý Đối tác</Typography>
+      {/* <Typography variant="h5">Quản lý Đối tác</Typography> */}
       <Paper sx={{ p: 2 }}>
         <Box mb={2} display="flex" justifyContent="space-between" alignItems="center" gap={2}>
           <TextField
