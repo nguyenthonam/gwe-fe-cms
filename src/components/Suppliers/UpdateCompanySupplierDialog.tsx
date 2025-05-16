@@ -3,8 +3,8 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Stack, Grid } from "@mui/material";
 import { useEffect, useState } from "react";
 import { ICompany } from "@/types/typeCompany";
-import { updateCompanyCarrierApi } from "@/utils/apis/apiCarrier";
 import { useNotification } from "@/contexts/NotificationProvider";
+import { updateCompanySupplierApi } from "@/utils/apis/apiSupplier";
 
 interface Props {
   open: boolean;
@@ -13,7 +13,7 @@ interface Props {
   company: ICompany | null;
 }
 
-export default function UpdateCompanyCarrierDialog({ open, onClose, onUpdated, company }: Props) {
+export default function UpdateCompanySupplierDialog({ open, onClose, onUpdated, company }: Props) {
   const [form, setForm] = useState<ICompany>({});
   const [loading, setLoading] = useState(false);
   const { showNotification } = useNotification();
@@ -45,7 +45,7 @@ export default function UpdateCompanyCarrierDialog({ open, onClose, onUpdated, c
         return;
       }
 
-      await updateCompanyCarrierApi(company._id, changedFields);
+      await updateCompanySupplierApi(company._id, changedFields);
       showNotification("Cập nhật thành công!", "success");
       onUpdated();
       onClose();
@@ -58,15 +58,15 @@ export default function UpdateCompanyCarrierDialog({ open, onClose, onUpdated, c
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Cập nhật Hãng Bay</DialogTitle>
+      <DialogTitle>Cập nhật Công ty Cung Ứng</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={12}>
-              <TextField label="Mã Hãng Bay" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
+              <TextField label="Mã Công ty" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={12}>
-              <TextField label="Tên Hãng Bay" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
+              <TextField label="Tên Công ty" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
               <TextField label="Mã số thuế" value={form.taxCode || ""} onChange={(e) => handleChange("taxCode", e.target.value)} fullWidth size="small" />

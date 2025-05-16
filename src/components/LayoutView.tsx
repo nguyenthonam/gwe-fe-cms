@@ -29,7 +29,8 @@ import {
 import {
   Menu as MenuIcon,
   Business as BusinessIcon,
-  AirplaneTicket as AirplainIcon,
+  AirplaneTicket as CarrierIcon,
+  EmojiTransportation as SupplierIcon,
   Dataset as DatasetIcon,
   ExpandLess as ExpandLessIcon,
   ExpandMore as ExpandMoreIcon,
@@ -320,9 +321,23 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                         }}
                       >
                         <ListItemIcon>
-                          <AirplainIcon htmlColor="white" />
+                          <CarrierIcon htmlColor="white" />
                         </ListItemIcon>
                         <ListItemText primary="Hãng Bay" />
+                      </ListItemButton>
+                      <ListItemButton
+                        sx={{ pl: 4 }}
+                        component={Link}
+                        href="/manager/suppliers"
+                        onClick={() => {
+                          setShowDrawer(false);
+                          setOpenManage(false);
+                        }}
+                      >
+                        <ListItemIcon>
+                          <SupplierIcon htmlColor="white" />
+                        </ListItemIcon>
+                        <ListItemText primary="Nhà Cung Cấp" />
                       </ListItemButton>
                     </List>
                   </Collapse>

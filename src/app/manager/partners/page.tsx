@@ -5,6 +5,7 @@ import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { ActionMenu } from "@/components/Globals/ActionMenu";
 import PartnerManagerView from "@/components/Partners/PartnerManagerView";
 import StaffManagerView from "@/components/Staff/StaffManagerView";
+import { lightBlue } from "@mui/material/colors";
 
 const dummyRows = Array.from({ length: 5 }, (_, i) => ({
   id: i,
@@ -63,8 +64,8 @@ export default function PartnerManagementTabs() {
           maxWidth: "calc(100vw - 120px)",
         }}
       >
-        <Typography variant="h5" mb={2}>
-          ĐỐI TÁC
+        <Typography variant="h5" mb={2} sx={{ fontWeight: "bold", color: lightBlue[500] }}>
+          QUẢN LÝ ĐỐI TÁC
         </Typography>
         <Tabs value={tabIndex} onChange={handleTabChange}>
           <Tab label="Thông tin Đối Tác" />
