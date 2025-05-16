@@ -2,10 +2,8 @@
 "use client";
 
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack, Typography, Divider, Grid } from "@mui/material";
-import { StatusChip } from "@/components/Globals/StatusChip";
-import { ICompany, ECOMPANY_TYPE } from "@/types/typeCompany";
-import { EPaymentTerms } from "@/types/typeGlobals";
-import { color } from "html2canvas/dist/types/css/types/color";
+import { ICompany } from "@/types/typeCompany";
+import { EnumChip } from "../Globals/EnumChip";
 
 interface Props {
   open: boolean;
@@ -51,7 +49,7 @@ export default function PartnerDetailDialog({ open, onClose, partner }: Props) {
               <Typography variant="body2">Trạng thái</Typography>
             </Grid>
             <Grid size={8}>
-              <StatusChip status={partner.status || ""} />
+              <EnumChip type="recordStatus" value={partner.status} />
             </Grid>
             <Grid size={4}>
               <Typography variant="body2">Địa chỉ</Typography>

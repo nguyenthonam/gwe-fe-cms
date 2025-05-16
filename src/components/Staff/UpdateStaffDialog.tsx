@@ -19,18 +19,17 @@ const genderOptions = Object.entries(EGENDER);
 const statusOptions = Object.entries(ERECORD_STATUS);
 
 export default function UpdateStaffDialog({ open, onClose, onUpdated, user }: Props) {
-  const [form, setForm] = useState<any>({});
+  const [form, setForm] = useState<IUpdateUserRequest>({});
   const [loading, setLoading] = useState(false);
   const { showNotification } = useNotification();
 
   useEffect(() => {
     if (user) {
-      if (!user.id) {
+      if (!user._id) {
         showNotification("Thiếu ID!");
         return;
       }
       setForm({
-        id: user.id,
         email: user.email,
         contact: user.contact,
         gender: user.gender,
@@ -54,7 +53,7 @@ export default function UpdateStaffDialog({ open, onClose, onUpdated, user }: Pr
   };
 
   const handleSubmit = async () => {
-    if (!form?.id || !user?.id) return;
+    if (!user?._id) return;
 
     try {
       setLoading(true);
@@ -66,7 +65,7 @@ export default function UpdateStaffDialog({ open, onClose, onUpdated, user }: Pr
       if (form.birthday !== user.birthday) payload.birthday = form.birthday;
       if (form.status !== user.status) payload.status = form.status;
 
-      if (form.contact?.name !== user.contact?.fullname || form.contact?.phone !== user.contact?.phone) {
+      if (form.contact?.fullname !== user.contact?.fullname || form.contact?.phone !== user.contact?.phone) {
         payload.contact = {
           fullname: form.contact?.fullname,
           phone: form.contact?.phone,
@@ -81,7 +80,7 @@ export default function UpdateStaffDialog({ open, onClose, onUpdated, user }: Pr
         };
       }
 
-      await updateUserApi(user.id, payload);
+      await updateUserApi(user._id, payload);
       showNotification("Cập nhật thành công!", "success");
       onUpdated();
     } catch (err: any) {

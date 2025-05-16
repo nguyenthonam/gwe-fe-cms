@@ -1,14 +1,11 @@
+import { ICAWBCode } from "@/types/typeCAWBCode";
 import { ECOMPANY_TYPE, ICompany } from "@/types/typeCompany";
 import { ISearchQuery } from "@/types/typeGlobals";
 import AxiosAPI from "@/utils/configs/axiosClient";
 
-export const getPartnersApi = async () => {
+export const getCAWBCodesApi = async () => {
   try {
-    const res = await AxiosAPI.get("/api/companies/type", {
-      params: {
-        type: ECOMPANY_TYPE.Partner,
-      },
-    });
+    const res = await AxiosAPI.get("/api/cawb-codes");
     return res;
   } catch (error: any) {
     console.error("Error:", error);
@@ -16,15 +13,14 @@ export const getPartnersApi = async () => {
   }
 };
 
-export const searchPartnersApi = async ({ keyword, page = 1, perPage = 10, status }: ISearchQuery) => {
+export const searchCAWBCodesApi = async ({ keyword, page = 1, perPage = 10, status }: ISearchQuery) => {
   try {
-    const res = await AxiosAPI.get("/api/companies/search", {
+    const res = await AxiosAPI.get("/api/cawb-codes/search", {
       params: {
         keyword,
         page,
         perPage,
         status,
-        type: ECOMPANY_TYPE.Partner,
       },
     });
     return res;
@@ -34,9 +30,9 @@ export const searchPartnersApi = async ({ keyword, page = 1, perPage = 10, statu
   }
 };
 
-export const createPartnerApi = async (payload: ICompany) => {
+export const createCAWBCodeApi = async (payload: ICAWBCode) => {
   try {
-    const res = await AxiosAPI.post("/api/companies", { ...payload, type: ECOMPANY_TYPE.Partner });
+    const res = await AxiosAPI.post("/api/cawb-codes", payload);
     return res;
   } catch (error: any) {
     console.error("Error login:", error);
@@ -44,36 +40,36 @@ export const createPartnerApi = async (payload: ICompany) => {
   }
 };
 
-export const updatePartnerApi = async (id: string, company: ICompany) => {
+export const updateCAWBCodeApi = async (id: string, company: ICAWBCode) => {
   try {
-    const res = await AxiosAPI.put(`/api/companies/${id}`, company);
+    const res = await AxiosAPI.put(`/api/cawb-codes/${id}`, company);
     return res;
   } catch (error: any) {
     console.error("Error login:", error);
     throw new Error(error.response.data.message);
   }
 };
-export const lockPartnerApi = async (id: string) => {
+export const lockCAWBCodeApi = async (id: string) => {
   try {
-    const res = await AxiosAPI.put(`/api/companies/${id}/lock`);
+    const res = await AxiosAPI.put(`/api/cawb-codes/${id}/lock`);
     return res;
   } catch (error: any) {
     console.error("Error login:", error);
     throw new Error(error.response.data.message);
   }
 };
-export const unlockPartnerApi = async (id: string) => {
+export const unlockCAWBCodeApi = async (id: string) => {
   try {
-    const res = await AxiosAPI.put(`/api/companies/${id}/unlock`);
+    const res = await AxiosAPI.put(`/api/cawb-codes/${id}/unlock`);
     return res;
   } catch (error: any) {
     console.error("Error login:", error);
     throw new Error(error.response.data.message);
   }
 };
-export const deletePartnerApi = async (id: string) => {
+export const deleteCAWBCodeApi = async (id: string) => {
   try {
-    const res = await AxiosAPI.delete(`/api/companies/${id}`);
+    const res = await AxiosAPI.delete(`/api/cawb-codes/${id}`);
     return res;
   } catch (error: any) {
     console.error("Error login:", error);

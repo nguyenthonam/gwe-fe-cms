@@ -23,7 +23,6 @@ export enum ECOMPANY_TYPE {
   Customer = "Mrertomr",
 }
 export interface ICompany extends IBaseRecord {
-  id?: string;
   code?: string; // DHL, FEDEX, GATEWAYEXPRESS,...
   name?: string;
   taxCode?: string; // Duy nhất

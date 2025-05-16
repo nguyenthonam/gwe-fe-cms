@@ -12,7 +12,6 @@ export interface IToken {
 }
 
 export interface IUser extends IBaseRecord {
-  id?: string;
   userId?: string; // 6-24 ký tự
   email?: string;
   pwd?: string; // Mật khẩu cấp 1 (Từ 6 -> 32 ký tự, có ký tự chữ số, chữ hoa và chữ thường)

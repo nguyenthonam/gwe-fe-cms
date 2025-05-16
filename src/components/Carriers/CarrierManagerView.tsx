@@ -1,24 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, Button, TextField, Typography, CircularProgress, MenuItem, Select, Stack } from "@mui/material";
+import { Box, Button, TextField, MenuItem, Select, Stack, CircularProgress, Typography } from "@mui/material";
 import { Add, Download } from "@mui/icons-material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import debounce from "lodash/debounce";
-import { ActionMenu } from "@/components/Globals/ActionMenu";
-import { useNotification } from "@/contexts/NotificationProvider";
-import { IUser } from "@/types/typeUser";
-import { ERECORD_STATUS, EUSER_ROLES } from "@/types/typeGlobals";
-import { searchUsersApi, lockUserApi, unlockUserApi, deleteUserApi } from "@/utils/apis/apiUser";
-import * as XLSX from "sheetjs-style";
-import CreateStaffDialog from "./CreateStaffDialog";
-import UpdateStaffDialog from "./UpdateStaffDialog";
+import { ICarrier } from "@/types";
+import { ECHARGEABLE_WEIGHT_TYPE, ERECORD_STATUS } from "@/types/typeGlobals";
 import { EnumChip } from "../Globals/EnumChip";
-import StaffDetailDialog from "./StaffDetailDialog";
-import { genderLabel, recordStatusLabel } from "@/utils/constants/enumLabel";
+import { ActionMenu } from "../Globals/ActionMenu";
+import { useNotification } from "@/contexts/NotificationProvider";
+import { searchCarriersApi, lockCarrierApi, unlockCarrierApi, deleteCarrierApi } from "@/utils/apis/apiCarrier";
+import CreateCarrierDialog from "./CreateCarrierDialog";
+import UpdateCarrierDialog from "./UpdateCarrierDialog";
+import { chargeWeightTypeLabel, recordStatusLabel } from "@/utils/constants/enumLabel";
+import * as XLSX from "sheetjs-style";
+import CarrierDetailDialog from "./CarrierDetailDialog";
 
-export default function StaffManagerView() {
-  const [staffs, setStaffs] = useState<IUser[]>([]);
+export default function CarrierManagerView() {
+  const [carriers, setCarriers] = useState<ICarrier[]>([]);
   const [keyword, setKeyword] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | "all" | ERECORD_STATUS>("");
   const [page, setPage] = useState(0);
@@ -28,86 +28,72 @@ export default function StaffManagerView() {
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openUpdateDialog, setOpenUpdateDialog] = useState(false);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
+  const [selectedCarrier, setSelectedCarrier] = useState<ICarrier | null>(null);
 
   const { showNotification } = useNotification();
 
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((value: string) => {
-        setPage(0);
-        setKeyword(value);
-      }, 500),
-    []
-  );
+  const debouncedSearch = useMemo(() => debounce((v) => setKeyword(v), 500), []);
 
-  const fetchStaffs = async () => {
+  const fetchCarriers = async () => {
     try {
       setLoading(true);
-      const res = await searchUsersApi({
+      const res = await searchCarriersApi({
         keyword,
         page: page + 1,
         perPage: pageSize,
         status: statusFilter,
-        role: EUSER_ROLES.Partner,
       });
-      setStaffs(res?.data?.data?.data || []);
+      setCarriers(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
-      console.log("Staff:", staffs);
-    } catch (error) {
-      console.error("Failed to fetch staffs", error);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStaffs();
-  }, [page, pageSize, statusFilter, keyword]);
+    fetchCarriers();
+  }, [keyword, page, pageSize, statusFilter]);
 
-  const handleLockToggle = async (staff: IUser) => {
+  const handleLockToggle = async (carrier: ICarrier) => {
     try {
-      if (!staff?._id) return;
-      const confirm = window.confirm(staff.status === ERECORD_STATUS.Active ? "Khoá nhân viên này?" : "Mở khoá nhân viên này?");
+      if (!carrier?._id) return;
+      const confirm = window.confirm(carrier.status === ERECORD_STATUS.Active ? "Khoá nhà vận chuyển này?" : "Mở khoá nhà vận chuyển này?");
       if (!confirm) return;
 
-      const res = staff.status === ERECORD_STATUS.Active ? await lockUserApi(staff._id) : await unlockUserApi(staff._id);
-      showNotification(res?.data?.message || "Cập nhật thành công", "success");
-      fetchStaffs();
+      const res = carrier.status === ERECORD_STATUS.Active ? await lockCarrierApi(carrier._id) : await unlockCarrierApi(carrier._id);
+      showNotification(res?.data?.message || "Cập nhật trạng thái thành công", "success");
+      fetchCarriers();
     } catch (err: any) {
       showNotification(err.message || "Lỗi cập nhật trạng thái", "error");
     }
   };
 
-  const handleDelete = async (staff: IUser) => {
-    if (!staff._id) return;
-    if (!window.confirm("Bạn có chắc muốn xoá nhân viên này?")) return;
+  const handleDelete = async (carrier: ICarrier) => {
+    if (!carrier._id) return;
+    if (!window.confirm("Bạn có chắc muốn xoá?")) return;
     try {
-      await deleteUserApi(staff._id);
+      await deleteCarrierApi(carrier._id);
       showNotification("Đã xoá thành công", "success");
-      fetchStaffs();
+      fetchCarriers();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi xoá nhân viên", "error");
+      showNotification(err.message || "Lỗi khi xoá", "error");
     }
   };
 
   const handleExportExcel = () => {
-    const data = staffs.map((s) => ({
-      ID: s.userId || "",
-      "HỌ TÊN": s.contact?.fullname || "",
-      EMAIL: s.email || "",
-      SĐT: s.contact?.phone || "",
-      "CÔNG TY": typeof s.companyId === "object" ? s.companyId?.name || "" : String(s.companyId || ""),
-      "GIỚI TÍNH": genderLabel[s.gender as keyof typeof genderLabel] || "Khác",
-      "TRẠNG THÁI": recordStatusLabel[s.status as keyof typeof recordStatusLabel] || s.status,
+    const data = carriers.map((c) => ({
+      MÃ: c.code,
+      TÊN: c.name,
+      "HÃNG BAY": typeof c.companyId === "object" ? c.companyId?.name || "" : String(c.companyId),
+      "CÁCH TÍNH CÂN NẶNG": chargeWeightTypeLabel[c.chargeableWeightType],
+      "TRẠNG THÁI": recordStatusLabel[c.status as keyof typeof recordStatusLabel] || c.status,
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
-
-    // Auto column width
     ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
 
-    // Apply styles: border + bold headers
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -128,52 +114,58 @@ export default function StaffManagerView() {
     }
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "BẢNG NHÂN VIÊN");
-    XLSX.writeFile(wb, "BANG_NHAN_VIEN.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "CARRIER");
+    XLSX.writeFile(wb, "NHA_VAN_CHUYEN.xlsx");
   };
 
   const handleCreated = () => {
     setOpenCreateDialog(false);
-    fetchStaffs();
+    fetchCarriers();
   };
 
   const handleUpdated = () => {
     setOpenUpdateDialog(false);
-    setSelectedUser(null);
-    fetchStaffs();
+    setSelectedCarrier(null);
+    fetchCarriers();
   };
 
   const columns: GridColDef[] = [
     {
-      field: "userId",
-      headerName: "ID",
+      field: "code",
+      headerName: "CODE",
       flex: 1.2,
-      minWidth: 120,
-      renderCell: ({ row }: { row: IUser }) => (
+      renderCell: ({ row }: { row: ICarrier }) => (
         <Box display="flex" alignItems="center" height="100%">
           <Typography
             sx={{ cursor: "pointer", textDecoration: "underline" }}
             color="primary"
             onClick={() => {
-              setSelectedUser(row);
+              setSelectedCarrier(row);
               setOpenDetailDialog(true);
             }}
           >
-            {row.userId}
+            {row.code}
           </Typography>
         </Box>
       ),
     },
-    { field: "fullname", headerName: "HỌ TÊN", flex: 1, minWidth: 150, renderCell: ({ row }: { row: IUser }) => row.contact?.fullname || "" },
-    { field: "companyId", headerName: "CÔNG TY", flex: 1, minWidth: 100, renderCell: ({ row }: { row: IUser }) => row.companyId?.code || "" },
-    { field: "email", headerName: "EMAIL", flex: 1, minWidth: 180 },
-    { field: "phone", headerName: "SĐT", flex: 1, minWidth: 120, renderCell: ({ row }: { row: IUser }) => row.contact?.phone || "" },
-    { field: "gender", headerName: "GIỚI TÍNH", flex: 1, renderCell: ({ row }: { row: IUser }) => <EnumChip type="gender" value={row.gender} /> },
+    { field: "name", headerName: "TÊN", flex: 1.5 },
+    {
+      field: "companyId",
+      headerName: "HÃNG BAY",
+      flex: 1,
+      renderCell: ({ row }) => (typeof row.companyId === "object" ? row.companyId?.name : row.companyId),
+    },
+    {
+      field: "chargeableWeightType",
+      headerName: "CÁCH TÍNH CÂN NẶNG",
+      flex: 1.5,
+      renderCell: ({ row }) => <EnumChip type="chargeWeightType" value={row.chargeableWeightType} />,
+    },
     {
       field: "status",
       headerName: "TRẠNG THÁI",
       flex: 1,
-      minWidth: 140,
       renderCell: ({ value }) => <EnumChip type="recordStatus" value={value} />,
     },
     {
@@ -183,7 +175,7 @@ export default function StaffManagerView() {
       renderCell: ({ row }) => (
         <ActionMenu
           onEdit={() => {
-            setSelectedUser(row);
+            setSelectedCarrier(row);
             setOpenUpdateDialog(true);
           }}
           onLockUnlock={() => handleLockToggle(row)}
@@ -195,9 +187,9 @@ export default function StaffManagerView() {
   ];
 
   return (
-    <Box className="space-y-4 p-6">
+    <Box className="space-y-4">
       <Box mb={2} display="flex" gap={2} alignItems="center" justifyContent="space-between">
-        <TextField placeholder="Tìm nhân viên..." size="small" className="max-w-[250px] w-full" onChange={(e) => debouncedSearch(e.target.value)} />
+        <TextField placeholder="Tìm nhà vận chuyển..." size="small" onChange={(e) => debouncedSearch(e.target.value)} className="max-w-[250px] w-full" />
         <Select size="small" displayEmpty value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 150 }}>
           <MenuItem value="">Mặc định</MenuItem>
           <MenuItem value="all">Tất cả</MenuItem>
@@ -223,7 +215,7 @@ export default function StaffManagerView() {
       ) : (
         <Box sx={{ width: "100%", overflow: "auto" }}>
           <DataGrid
-            rows={staffs.map((s) => ({ ...s, id: s._id }))}
+            rows={carriers.map((c) => ({ ...c, id: c._id }))}
             columns={columns}
             rowCount={total}
             paginationModel={{ page, pageSize }}
@@ -236,9 +228,9 @@ export default function StaffManagerView() {
           />
         </Box>
       )}
-      <StaffDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} staff={selectedUser} />
-      <CreateStaffDialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} onCreated={handleCreated} />
-      <UpdateStaffDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={handleUpdated} user={selectedUser} />
+      <CarrierDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} carrier={selectedCarrier} />
+      <CreateCarrierDialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} onCreated={handleCreated} />
+      <UpdateCarrierDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={handleUpdated} carrier={selectedCarrier} />
     </Box>
   );
 }

@@ -84,7 +84,7 @@ export default function CreateStaffDialog({ open, onClose, onCreated }: Props) {
             <Grid size={12}>
               <TextField select label="Đối tác" value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
                 {partners.map((p) => (
-                  <MenuItem key={p.id} value={p.id}>
+                  <MenuItem key={p._id} value={p._id}>
                     {p.name}
                   </MenuItem>
                 ))}

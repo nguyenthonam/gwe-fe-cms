@@ -75,11 +75,11 @@ export default function UpdatePartnerDialog({ open, onClose, onUpdated, company 
   };
 
   const handleSubmit = async () => {
-    if (!form?.id) return;
+    if (!company?._id) return;
     setLoading(true);
     try {
       const payload = buildUpdatePayload();
-      await updatePartnerApi({ id: form.id, ...payload });
+      await updatePartnerApi(company._id, payload);
       showNotification("Cập nhật thành công!", "success");
       setForm({});
       onClose();

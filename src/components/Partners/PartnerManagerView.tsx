@@ -11,10 +11,11 @@ import CreatePartnerDialog from "./CreatePartnerDialog";
 import UpdatePartnerDialog from "./UpdatePartnerDialog";
 import { ERECORD_STATUS } from "@/types/typeGlobals";
 import { useNotification } from "@/contexts/NotificationProvider";
-import { StatusChip } from "../Globals/StatusChip";
 import PartnerDetailDialog from "./PartnerDetailDialog";
 import debounce from "lodash/debounce";
 import * as XLSX from "sheetjs-style";
+import { EnumChip } from "../Globals/EnumChip";
+import { recordStatusLabel } from "@/utils/constants/enumLabel";
 
 export default function PartnerManager() {
   const [companies, setCompanies] = useState<ICompany[]>([]);
@@ -66,16 +67,16 @@ export default function PartnerManager() {
   const handleLockToggle = async (company: ICompany) => {
     try {
       let res;
-      if (!company?.id) throw new Error("Thiếu ID đối tác");
+      if (!company?._id) throw new Error("Thiếu ID đối tác");
 
       if (company.status === ERECORD_STATUS.Active) {
         const confirm = window.confirm("Bạn có chắc muốn khoá đối tác này?");
         if (!confirm) return;
-        res = await lockPartnerApi(company.id);
+        res = await lockPartnerApi(company._id);
       } else if (company.status === ERECORD_STATUS.Locked) {
         const confirm = window.confirm("Bạn có chắc muốn mở khoá đối tác này?");
         if (!confirm) return;
-        res = await unlockPartnerApi(company.id);
+        res = await unlockPartnerApi(company._id);
       }
       if (res) {
         showNotification(res.data.message || "Cập nhật thành công!", "success");
@@ -88,10 +89,10 @@ export default function PartnerManager() {
 
   const handleDelete = async (company: ICompany) => {
     try {
-      if (!company?.id) throw new Error("Thiếu ID đối tác");
+      if (!company?._id) throw new Error("Thiếu ID đối tác");
       const confirm = window.confirm("Bạn có chắc muốn xoá đối tác này?");
       if (!confirm) return;
-      const res = await deletePartnerApi(company.id);
+      const res = await deletePartnerApi(company._id);
       showNotification(res?.data?.message || "Đã xoá thành công!", "success");
       fetchCompanies();
     } catch (err: any) {
@@ -110,8 +111,7 @@ export default function PartnerManager() {
       HOTLINE: c.contact?.hotline || "",
       WEBSITE: c.contact?.website || "",
       "ĐỊA CHỈ": c.address || "",
-      LOẠI: c.type || "",
-      "TRẠNG THÁI": c.status || "",
+      "TRẠNG THÁI": recordStatusLabel[c.status as keyof typeof recordStatusLabel] || c.status,
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -204,7 +204,7 @@ export default function PartnerManager() {
     {
       field: "status",
       headerName: "TRẠNG THÁI",
-      renderCell: ({ value }) => <StatusChip status={value} />,
+      renderCell: ({ value }) => <EnumChip type="recordStatus" value={value} />,
       width: 130,
     },
     {
@@ -259,7 +259,7 @@ export default function PartnerManager() {
         ) : (
           <DataGrid
             rowHeight={48}
-            rows={companies.map((c) => ({ ...c, id: c.id || c._id }))}
+            rows={companies.map((c) => ({ ...c, id: c._id }))}
             columns={columns}
             paginationMode="server"
             rowCount={total}
