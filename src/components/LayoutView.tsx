@@ -31,6 +31,7 @@ import {
   Business as BusinessIcon,
   AirplaneTicket as CarrierIcon,
   EmojiTransportation as SupplierIcon,
+  CurrencyBitcoin as PriceIcon,
   Dataset as DatasetIcon,
   ExpandLess as ExpandLessIcon,
   ExpandMore as ExpandMoreIcon,
@@ -338,6 +339,20 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                           <SupplierIcon htmlColor="white" />
                         </ListItemIcon>
                         <ListItemText primary="Nhà Cung Cấp" />
+                      </ListItemButton>
+                      <ListItemButton
+                        sx={{ pl: 4 }}
+                        component={Link}
+                        href="/manager/prices"
+                        onClick={() => {
+                          setShowDrawer(false);
+                          setOpenManage(false);
+                        }}
+                      >
+                        <ListItemIcon>
+                          <PriceIcon htmlColor="white" />
+                        </ListItemIcon>
+                        <ListItemText primary="Giá" />
                       </ListItemButton>
                     </List>
                   </Collapse>
