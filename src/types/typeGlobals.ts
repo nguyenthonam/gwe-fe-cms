@@ -6,8 +6,8 @@ export enum ERECORD_STATUS {
   Deleted = "Dloedtc",
 }
 export enum EFEE_TYPE {
-  Percent = "Percent",
-  Fixed = "Fixed",
+  PERCENT = "Percent",
+  FIXED = "Fixed",
 }
 export enum EUSER_ROLES {
   SupperAdmin = "sAdpdine22",
@@ -259,9 +259,9 @@ export interface IConfirmKey {
   role: string; // Role of user
 }
 
-export interface IRequestGetQuery {
+export interface ISearchQuery {
   page?: number;
   perPage?: number;
-  status?: "all" | ERECORD_STATUS;
+  status?: "" | "all" | ERECORD_STATUS;
   keyword?: string;
 }

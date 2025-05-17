@@ -26,7 +26,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import LockIcon from "@mui/icons-material/Lock";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import { IUser } from "@/types";
-import { searchUserApi, deleteUserByIdApi, lockUserByIdApi, unlockUserByIdApi } from "@/utils/apis/apiUser";
+import { searchUsersApi, deleteUserApi, lockUserApi, unlockUserApi } from "@/utils/apis/apiUser";
 import { useNotification } from "@/contexts/NotificationProvider";
 import CreateUserDialog from "./dialogs/CreateUserDialog";
 import UpdateUserDialog from "./dialogs/UpdateUserDialog";
@@ -51,7 +51,7 @@ export default function UsersManagerComponent() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await searchUserApi({
+        const response = await searchUsersApi({
           page: page,
           perPage: rowsPerPage,
           keyword: search,
@@ -86,7 +86,7 @@ export default function UsersManagerComponent() {
     try {
       setLoading(true);
       if (!selectedId) throw new Error("User not found!");
-      const response = await deleteUserByIdApi(selectedId);
+      const response = await deleteUserApi(selectedId);
       if (!response?.data?.status) {
         showNotification(response?.data?.message || "Xoá thất bại!", "error");
         return;
@@ -108,7 +108,7 @@ export default function UsersManagerComponent() {
       if (!selectedId) {
         throw new Error("User ID is not valid!");
       }
-      const response = await lockUserByIdApi(selectedId);
+      const response = await lockUserApi(selectedId);
       if (!response?.data?.status) {
         showNotification(response?.data?.message || "Khoá thất bại!", "error");
         return;
@@ -130,7 +130,7 @@ export default function UsersManagerComponent() {
       if (!selectedId) {
         throw new Error("User ID is not valid!");
       }
-      const response = await unlockUserByIdApi(selectedId);
+      const response = await unlockUserApi(selectedId);
       if (!response?.data?.status) {
         showNotification(response?.data?.message || "Mở khoá thất bại!", "error");
         return;
@@ -197,7 +197,7 @@ export default function UsersManagerComponent() {
               </TableRow>
             ) : (
               data.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row._id}>
                   <TableCell>{row.contact?.fullname}</TableCell>
                   <TableCell>{row.email}</TableCell>
                   <TableCell>
@@ -241,10 +241,10 @@ export default function UsersManagerComponent() {
                     />
                   </TableCell>
                   <TableCell>
-                    <IconButton disabled={row.status === ERECORD_STATUS.Deleted} onClick={(e) => handleMenuOpen(e, row.id)}>
+                    <IconButton disabled={row.status === ERECORD_STATUS.Deleted} onClick={(e) => handleMenuOpen(e, row._id)}>
                       <MoreVertIcon />
                     </IconButton>
-                    <Menu anchorEl={anchorEl} open={Boolean(anchorEl && selectedId === row.id)} onClose={handleMenuClose}>
+                    <Menu anchorEl={anchorEl} open={Boolean(anchorEl && selectedId === row._id)} onClose={handleMenuClose}>
                       <MenuItem
                         onClick={() => {
                           handleOpenUpdateDialog(row);
