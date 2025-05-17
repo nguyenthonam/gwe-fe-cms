@@ -169,10 +169,12 @@ export default function ExtraFeeManagerView() {
     {
       field: "code",
       headerName: "MÃ",
+      align: "center",
+      headerAlign: "center",
       flex: 1,
       minWidth: 100,
       renderCell: ({ row }) => (
-        <Box display="flex" alignItems="center" height="100%">
+        <Box display="flex" alignItems="center" justifyContent="center" height="100%">
           <Typography
             sx={{ cursor: "pointer", textDecoration: "underline" }}
             color="primary"
@@ -206,6 +208,7 @@ export default function ExtraFeeManagerView() {
     {
       field: "value",
       headerName: "GIÁ TRỊ",
+      align: "center",
       headerAlign: "center",
       flex: 1,
       minWidth: 150,
@@ -214,10 +217,14 @@ export default function ExtraFeeManagerView() {
           label={formatCurrency(value, row.currency)}
           size="small"
           sx={{
+            width: "100%",
+            fontSize: "14px",
             padding: "4px 8px",
-            backgroundColor: grey[300],
-            color: "black",
-            fontWeight: 500,
+            backgroundColor: orange[100],
+            color: orange[700],
+            "& .MuiChip-label": {
+              fontWeight: "bold",
+            },
           }}
         />
       ),
@@ -330,7 +337,7 @@ export default function ExtraFeeManagerView() {
 
       <CreateExtraFeeDialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} onCreated={handleCreated} />
       <UpdateExtraFeeDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={handleUpdated} extraFee={selected} />
-      {/* <ExtraFeeDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} extraFee={selected} /> */}
+      <ExtraFeeDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} extraFee={selected} />
     </Box>
   );
 }

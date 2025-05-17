@@ -143,6 +143,8 @@ export default function ExchangeRateManagerView() {
     {
       field: "currencyFrom",
       headerName: "TỪ TIỀN TỆ",
+      align: "center",
+      headerAlign: "center",
       flex: 1,
       renderCell: ({ value }) => (
         <Chip
@@ -159,6 +161,8 @@ export default function ExchangeRateManagerView() {
     {
       field: "currencyTo",
       headerName: "SANG TIỀN TỆ",
+      align: "center",
+      headerAlign: "center",
       flex: 1,
       renderCell: ({ value }) => (
         <Chip
@@ -175,25 +179,31 @@ export default function ExchangeRateManagerView() {
     {
       field: "rate",
       headerName: "TỶ GIÁ",
+      align: "center",
+      headerAlign: "center",
       flex: 1,
       renderCell: ({ row, value }) => (
-        <Box display="flex" alignItems="center" height="100%">
-          <Chip
-            label={formatCurrency(value, row.currencyTo)}
-            size="small"
-            sx={{
-              padding: "4px 8px",
-              backgroundColor: grey[300],
-              color: "black",
-              fontWeight: 500,
-            }}
-          />
-        </Box>
+        <Chip
+          label={formatCurrency(value, row.currencyTo)}
+          size="small"
+          sx={{
+            width: "100%",
+            fontSize: "14px",
+            padding: "4px 8px",
+            backgroundColor: orange[100],
+            color: orange[700],
+            "& .MuiChip-label": {
+              fontWeight: "bold",
+            },
+          }}
+        />
       ),
     },
     {
       field: "status",
       headerName: "TRẠNG THÁI",
+      align: "center",
+      headerAlign: "center",
       flex: 1,
       renderCell: ({ value }) => <EnumChip type="recordStatus" value={value} />,
     },

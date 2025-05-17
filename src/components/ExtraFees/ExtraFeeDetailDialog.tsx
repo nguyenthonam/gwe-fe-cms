@@ -1,44 +1,67 @@
 "use client";
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Stack } from "@mui/material";
-import { IUser } from "@/types/typeUser";
-import { EnumChip } from "@/components/Globals/EnumChip";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid, Box, Chip } from "@mui/material";
+import { IExtraFee } from "@/types/typeExtraFee";
+import { EnumChip } from "@/components/Globals/EnumChip"; // tạo file này hoặc nhét vào utils
+import { EFEE_TYPE } from "@/types/typeGlobals";
+import { Percent as PercentIcon, Payments as PaymentsIcon } from "@mui/icons-material";
+import { formatCurrency } from "@/utils/hooks/hookCurrency";
+import { green, grey, orange, red } from "@mui/material/colors";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  staff: IUser | null;
+  extraFee: IExtraFee | null;
 }
 
-// Component dùng cho từng dòng thông tin
-const DetailItem = ({ label, value }: { label: string; value?: string | number | React.ReactNode }) => (
-  <Stack direction="row" spacing={1}>
-    <Typography fontWeight="bold" sx={{ width: 130, minWidth: 130 }}>
-      {label}:
-    </Typography>
-    <Typography>{value || "---"}</Typography>
-  </Stack>
-);
-
-export default function StaffDetailDialog({ open, onClose, staff }: Props) {
-  if (!staff) return null;
+export default function ExtraFeeDetailDialog({ open, onClose, extraFee }: Props) {
+  if (!extraFee) return null;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: "bold", color: "primary.main" }}>CHI TIẾT NHÂN VIÊN</DialogTitle>
+      <DialogTitle color="primary" sx={{ fontWeight: "bold" }}>
+        CHI TIẾT PHỤ PHÍ
+      </DialogTitle>
       <DialogContent dividers>
-        <Stack spacing={1.5}>
-          <DetailItem label="User ID" value={staff.userId} />
-          <DetailItem label="Email" value={staff.email} />
-          <DetailItem label="Họ tên" value={staff.contact?.fullname} />
-          <DetailItem label="SĐT" value={staff.contact?.phone} />
-          <DetailItem label="Giới tính" value={<EnumChip type="gender" value={staff.gender} />} />
-          <DetailItem label="Ngày sinh" value={staff.birthday ? new Date(staff.birthday).toLocaleDateString("vi-VN") : "---"} />
-          <DetailItem label="CMND/CCCD" value={staff.identity_key?.id} />
-          <DetailItem label="Nơi cấp" value={staff.identity_key?.address} />
-          <DetailItem label="Công ty" value={staff.companyId && typeof staff.companyId === "object" ? staff.companyId.name : String(staff.companyId || "---")} />
-          <DetailItem label="Trạng thái" value={<EnumChip type="recordStatus" value={staff.status} />} />
-        </Stack>
+        <Grid container spacing={2}>
+          <Grid size={6}>
+            <InfoRow label="Mã phụ phí" value={extraFee.code} />
+          </Grid>
+          <Grid size={6}>
+            <InfoRow label="Tên phụ phí" value={extraFee.name} />
+          </Grid>
+          <Grid size={6}>
+            <InfoRow label="Hãng vận chuyển" value={typeof extraFee.carrierId === "object" ? extraFee.carrierId?.name : String(extraFee.carrierId)} />
+          </Grid>
+          <Grid size={6}>
+            <InfoRow label="Dịch vụ" value={typeof extraFee.serviceId === "object" ? extraFee.serviceId?.code : String(extraFee.serviceId)} />
+          </Grid>
+          <Grid size={6}>
+            <InfoRow label="Loại phí" value={extraFee.type === EFEE_TYPE.PERCENT ? <PercentIcon sx={{ color: red[500] }} /> : <PaymentsIcon sx={{ color: orange[500] }} />} />
+          </Grid>
+          <Grid size={6}>
+            <InfoRow
+              label="Tiền tệ"
+              value={
+                <Chip
+                  label={extraFee.currency}
+                  size="small"
+                  sx={{
+                    backgroundColor: green[700],
+                    color: "#fff",
+                    fontWeight: 500,
+                  }}
+                />
+              }
+            />
+          </Grid>
+          <Grid size={12}>
+            <InfoRow label="Giá trị" value={<Typography sx={{ fontWeight: "bold", color: orange[500] }}>{formatCurrency(extraFee.value, extraFee.currency)}</Typography>} />
+          </Grid>
+          <Grid size={12}>
+            <InfoRow label="Trạng thái" value={<EnumChip type="recordStatus" value={extraFee.status} />} />
+          </Grid>
+        </Grid>
       </DialogContent>
       <DialogActions>
         <Box flex={1} />
@@ -47,3 +70,12 @@ export default function StaffDetailDialog({ open, onClose, staff }: Props) {
     </Dialog>
   );
 }
+
+const InfoRow = ({ label, value }: { label: string; value?: React.ReactNode }) => (
+  <>
+    <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
+      {label}
+    </Typography>
+    <Typography sx={{ mb: 1 }}>{value ?? "-"}</Typography>
+  </>
+);
