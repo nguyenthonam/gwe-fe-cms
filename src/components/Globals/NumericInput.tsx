@@ -24,10 +24,10 @@ export default function NumericInput({ value, onChange, ...props }: NumericInput
       {...props}
       type="text"
       inputMode="numeric"
-      value={value}
+      value={internalValue}
       onChange={handleChange}
       onBlur={() => {
-        if (value === "") onChange("0");
+        if (internalValue === "") onChange("0");
       }}
       onKeyDown={(e) => {
         const allowedKeys = ["Backspace", "Tab", "Delete", "ArrowLeft", "ArrowRight", "Home", "End"];

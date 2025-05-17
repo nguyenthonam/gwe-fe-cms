@@ -20,7 +20,7 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
     if (data && data._id) {
       setUser({
         email: data.email,
-        companyId: data.companyId,
+        companyId: typeof data.companyId === "object" ? data.companyId?.name : data.companyId,
         contact: data.contact,
         avatar: data.avatar,
         identity_key: data.identity_key,
@@ -33,9 +33,9 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
   const handleUpdateUser = async () => {
     try {
       setLoading(true);
-      if (!user || !data?.id) throw new Error("User not found!");
+      if (!user || !data?._id) throw new Error("User not found!");
       console.log("Payload:", user);
-      const response = await updateUserApi(data.id, user);
+      const response = await updateUserApi(data._id, user);
       if (!response?.data?.status) {
         showNotification(response?.data?.message || "Cập nhật thất bại!", "error");
         return;

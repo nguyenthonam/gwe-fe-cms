@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Box, Typography, Divider, Paper, Tabs, Tab, Container } from "@mui/material";
+import { Box, Typography, Paper, Tabs, Tab, Container } from "@mui/material";
 import CompanyCarrierManagerView from "@/components/Carriers/CompanyCarrierManagerView";
 import CarrierManagerView from "@/components/Carriers/CarrierManagerView";
 import CAWBCodeManagerView from "@/components/Carriers/CAWBCodeManagerView";

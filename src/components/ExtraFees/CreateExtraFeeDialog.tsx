@@ -37,7 +37,8 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
     try {
       const res = await getCarriersApi();
       setCarriers(res?.data?.data?.data || []);
-    } catch (err) {
+    } catch (err: any) {
+      console.log(err.message);
       showNotification("Không thể tải danh sách hãng vận chuyển", "error");
     }
   };
@@ -51,7 +52,8 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
     try {
       const res = await getServicesByCarrierApi(companyId);
       setServices(res?.data?.data?.data || []);
-    } catch (err) {
+    } catch (err: any) {
+      console.log(err.massage);
       showNotification("Không thể tải dịch vụ!", "error");
     }
   };

@@ -6,7 +6,7 @@ import { EnumChip } from "@/components/Globals/EnumChip"; // tạo file này ho�
 import { EFEE_TYPE } from "@/types/typeGlobals";
 import { Percent as PercentIcon, Payments as PaymentsIcon } from "@mui/icons-material";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
-import { green, grey, orange, red } from "@mui/material/colors";
+import { green, orange, red } from "@mui/material/colors";
 
 interface Props {
   open: boolean;

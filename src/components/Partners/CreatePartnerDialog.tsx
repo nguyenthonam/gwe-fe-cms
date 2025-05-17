@@ -45,7 +45,8 @@ export default function CreatePartnerDialog({ open, onClose, onCreated }: Props)
       setForm({});
       onClose();
       onCreated();
-    } catch (err) {
+    } catch (err: any) {
+      console.log(err);
       showNotification("Tạo đối tác thất bại!", "error");
     } finally {
       setLoading(false);

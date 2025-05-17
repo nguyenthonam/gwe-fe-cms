@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, Button, Paper, TextField, Typography, CircularProgress, MenuItem, Select, Stack } from "@mui/material";
+import { Box, Button, TextField, Typography, CircularProgress, MenuItem, Select, Stack } from "@mui/material";
 import { Add, Download } from "@mui/icons-material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import debounce from "lodash/debounce";
@@ -52,7 +52,8 @@ export default function CompanyCarrierManagerView() {
       });
       setRows(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
-    } catch (error) {
+    } catch (error: any) {
+      console.log(error.message);
       showNotification("Không thể tải danh sách hãng bay", "error");
     } finally {
       setLoading(false);

@@ -197,7 +197,7 @@ export default function UsersManagerComponent() {
               </TableRow>
             ) : (
               data.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow key={row._id}>
                   <TableCell>{row.contact?.fullname}</TableCell>
                   <TableCell>{row.email}</TableCell>
                   <TableCell>
@@ -241,10 +241,10 @@ export default function UsersManagerComponent() {
                     />
                   </TableCell>
                   <TableCell>
-                    <IconButton disabled={row.status === ERECORD_STATUS.Deleted} onClick={(e) => handleMenuOpen(e, row.id)}>
+                    <IconButton disabled={row.status === ERECORD_STATUS.Deleted} onClick={(e) => handleMenuOpen(e, row._id)}>
                       <MoreVertIcon />
                     </IconButton>
-                    <Menu anchorEl={anchorEl} open={Boolean(anchorEl && selectedId === row.id)} onClose={handleMenuClose}>
+                    <Menu anchorEl={anchorEl} open={Boolean(anchorEl && selectedId === row._id)} onClose={handleMenuClose}>
                       <MenuItem
                         onClick={() => {
                           handleOpenUpdateDialog(row);

@@ -66,15 +66,6 @@ export default function UpdateExtraFeeDialog({ open, onClose, onUpdated, extraFe
     if (carrierId) fetchServices(carrierId);
   }, [form.carrierId]);
 
-  const fetchCarriers = async () => {
-    try {
-      const res = await getCarriersApi();
-      setCarriers(res?.data?.data?.data || []);
-    } catch {
-      showNotification("Không thể tải hãng vận chuyển", "error");
-    }
-  };
-
   const fetchServices = async (carrierId: string) => {
     const selected = carriers.find((c) => c._id === carrierId);
     const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;

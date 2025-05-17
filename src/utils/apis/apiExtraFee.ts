@@ -1,5 +1,5 @@
 import { IExtraFee } from "@/types/typeExtraFee";
-import { ECURRENCY, ISearchQuery } from "@/types/typeGlobals";
+import { ISearchQuery } from "@/types/typeGlobals";
 import AxiosAPI from "@/utils/configs/axiosClient";
 
 export const getExtraFeesApi = async () => {

@@ -20,7 +20,7 @@ import ExtraFeeDetailDialog from "./ExtraFeeDetailDialog";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
 
 import { Percent as PercentIcon, Payments as PaymentsIcon } from "@mui/icons-material";
-import { green, grey, orange, red } from "@mui/material/colors";
+import { green, orange, red } from "@mui/material/colors";
 import { feeTypeLabel } from "@/utils/constants/enumLabel";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
 
@@ -48,8 +48,8 @@ export default function ExtraFeeManagerView() {
     try {
       const res = await getCarriersApi();
       setCarriers(res?.data?.data?.data || []);
-    } catch (err) {
-      console.error("Failed to fetch carriers");
+    } catch (err: any) {
+      console.error("Failed to fetch carriers", err.massage);
     }
   };
 
@@ -65,7 +65,8 @@ export default function ExtraFeeManagerView() {
       });
       setFees(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
-    } catch (err) {
+    } catch (err: any) {
+      console.log(err);
       showNotification("Không thể tải danh sách phụ phí", "error");
     } finally {
       setLoading(false);

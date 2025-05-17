@@ -35,7 +35,7 @@ export const signInUser = createAsyncThunk<{ accessToken: string; user: IUser },
       if (!token) throw new Error("Không có token!");
 
       const data: IUser = res?.data?.data as IUser;
-      if (!data || !data.id) throw new Error("Đăng nhập thất bại!");
+      if (!data || !data._id) throw new Error("Đăng nhập thất bại!");
 
       return { accessToken: token, user: data };
     } catch (error: unknown) {

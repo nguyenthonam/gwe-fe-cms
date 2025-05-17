@@ -13,7 +13,7 @@ import { searchExchangeRatesApi, deleteExchangeRateApi, lockExchangeRateApi, unl
 import { ECURRENCY, ERECORD_STATUS } from "@/types/typeGlobals";
 import CreateExchangeRateDialog from "./CreateExchangeRateDialog";
 import UpdateExchangeRateDialog from "./UpdateExchangeRateDialog";
-import { green, grey, orange } from "@mui/material/colors";
+import { green, orange } from "@mui/material/colors";
 import { ActionMenu } from "../Globals/ActionMenu";
 import { EnumChip } from "../Globals/EnumChip";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
@@ -48,7 +48,8 @@ export default function ExchangeRateManagerView() {
       });
       setRates(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
-    } catch (err) {
+    } catch (err: any) {
+      console.log(err.message);
       showNotification("Không thể tải danh sách tỉ giá", "error");
     } finally {
       setLoading(false);

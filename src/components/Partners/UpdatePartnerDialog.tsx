@@ -84,7 +84,8 @@ export default function UpdatePartnerDialog({ open, onClose, onUpdated, company 
       setForm({});
       onClose();
       onUpdated();
-    } catch (err) {
+    } catch (err: any) {
+      console.log(err.message);
       showNotification("Cập nhật thất bại!", "error");
     } finally {
       setLoading(false);

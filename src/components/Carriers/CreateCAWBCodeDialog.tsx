@@ -1,6 +1,5 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, MenuItem, Select, TextField, Stack, Box, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-import { ICAWBCode } from "@/types/typeCAWBCode";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { ICarrier } from "@/types/typeCarrier";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";

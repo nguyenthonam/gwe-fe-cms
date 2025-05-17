@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, Button, TextField, MenuItem, Select, Stack, CircularProgress, Typography, Paper } from "@mui/material";
+import { Box, Button, TextField, MenuItem, Select, Stack, CircularProgress, Typography } from "@mui/material";
 import { Add, Download } from "@mui/icons-material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import debounce from "lodash/debounce";
 import { ICarrier } from "@/types";
-import { ECHARGEABLE_WEIGHT_TYPE, ERECORD_STATUS } from "@/types/typeGlobals";
+import { ERECORD_STATUS } from "@/types/typeGlobals";
 import { EnumChip } from "../Globals/EnumChip";
 import { ActionMenu } from "../Globals/ActionMenu";
 import { useNotification } from "@/contexts/NotificationProvider";

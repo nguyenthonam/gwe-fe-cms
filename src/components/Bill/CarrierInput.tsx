@@ -3,9 +3,8 @@
 import { useRef, useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import Icon from "@mui/material/Icon";
 import { CARRIERS } from "@/utils/constants";
-import type { ICarrier } from "@/types";
 
-const carriers: ICarrier[] = CARRIERS;
+const carriers: typeof CARRIERS = CARRIERS;
 
 interface IProps {
   className?: string;
@@ -44,7 +43,7 @@ const CarrierInput = forwardRef<ICarrierInputHandle, IProps>(({ required = false
     onChange(value); // Xuất giá trị ra component cha
   };
 
-  const handleSelect = (carrier: ICarrier) => {
+  const handleSelect = (carrier: { name: string }) => {
     const selectedValue = `${carrier.name}`;
     handleChange(selectedValue);
     setShowDropdown(false);

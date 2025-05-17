@@ -1,5 +1,3 @@
-import { ICarrier } from "@/types";
-import { ECOMPANY_TYPE, ICompany } from "@/types/typeCompany";
 import { ISearchQuery } from "@/types/typeGlobals";
 import { IService } from "@/types/typeService";
 import AxiosAPI from "@/utils/configs/axiosClient";
