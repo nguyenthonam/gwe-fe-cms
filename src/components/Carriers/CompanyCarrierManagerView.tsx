@@ -102,15 +102,24 @@ export default function CompanyCarrierManagerView() {
     const ws = XLSX.utils.json_to_sheet(data);
     ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
 
+    // Style cho từng cell
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const cell = XLSX.utils.encode_cell({ r: R, c: C });
         if (!ws[cell]) continue;
         const isHeader = R === 0;
+
         (ws[cell] as any).s = {
-          font: { bold: isHeader, sz: isHeader ? 12 : 11 },
-          alignment: { horizontal: isHeader ? "center" : "left", vertical: "center" },
+          font: {
+            bold: isHeader,
+            sz: isHeader ? 12 : 11,
+          },
+          alignment: {
+            horizontal: isHeader ? "center" : "left",
+            vertical: "center",
+            wrapText: true,
+          },
           border: {
             top: { style: "thin", color: { auto: 1 } },
             bottom: { style: "thin", color: { auto: 1 } },

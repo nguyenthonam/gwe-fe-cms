@@ -13,6 +13,19 @@ export const getServicesApi = async () => {
     throw new Error(error.response.data.message);
   }
 };
+export const getServicesByCarrierApi = async (companyId: string) => {
+  try {
+    const res = await AxiosAPI.get("/api/services", {
+      params: {
+        companyId,
+      },
+    });
+    return res;
+  } catch (error: any) {
+    console.error("Error:", error);
+    throw new Error(error.response.data.message);
+  }
+};
 
 export const searchServicesApi = async ({ keyword, page = 1, perPage = 10, status, companyId }: ISearchQuery & { companyId?: string }) => {
   try {

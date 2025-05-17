@@ -115,16 +115,7 @@ export default function PartnerManager() {
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
-
-    // Tính độ rộng auto cho mỗi cột
-    const colWidths: number[] = [];
-    data.forEach((row) => {
-      Object.values(row).forEach((val, idx) => {
-        const len = val?.toString()?.length || 10;
-        colWidths[idx] = Math.max(colWidths[idx] || 10, len);
-      });
-    });
-    ws["!cols"] = colWidths.map((w) => ({ wch: w + 2 }));
+    ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
 
     // Style cho từng cell
     const range = XLSX.utils.decode_range(ws["!ref"] || "");

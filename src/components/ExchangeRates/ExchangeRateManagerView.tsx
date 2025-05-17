@@ -16,6 +16,7 @@ import UpdateExchangeRateDialog from "./UpdateExchangeRateDialog";
 import { green, grey, orange } from "@mui/material/colors";
 import { ActionMenu } from "../Globals/ActionMenu";
 import { EnumChip } from "../Globals/EnumChip";
+import { formatCurrency } from "@/utils/hooks/hookCurrency";
 
 export default function ExchangeRateManagerView() {
   const [rates, setRates] = useState<IExchangeRate[]>([]);
@@ -88,11 +89,39 @@ export default function ExchangeRateManagerView() {
     const data = rates.map((r) => ({
       "TỪ TIỀN TỆ": r.currencyFrom,
       "SANG TIỀN TỆ": r.currencyTo,
-      "TỶ GIÁ": r.rate,
+      "TỶ GIÁ": formatCurrency(r.rate, r.currencyTo),
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
     ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
+
+    // Style cho từng cell
+    const range = XLSX.utils.decode_range(ws["!ref"] || "");
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cell = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!ws[cell]) continue;
+        const isHeader = R === 0;
+
+        (ws[cell] as any).s = {
+          font: {
+            bold: isHeader,
+            sz: isHeader ? 12 : 11,
+          },
+          alignment: {
+            horizontal: isHeader ? "center" : "left",
+            vertical: "center",
+            wrapText: true,
+          },
+          border: {
+            top: { style: "thin", color: { auto: 1 } },
+            bottom: { style: "thin", color: { auto: 1 } },
+            left: { style: "thin", color: { auto: 1 } },
+            right: { style: "thin", color: { auto: 1 } },
+          },
+        };
+      }
+    }
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "EXCHANGE_RATES");
@@ -147,10 +176,10 @@ export default function ExchangeRateManagerView() {
       field: "rate",
       headerName: "TỶ GIÁ",
       flex: 1,
-      renderCell: ({ value }) => (
+      renderCell: ({ row, value }) => (
         <Box display="flex" alignItems="center" height="100%">
           <Chip
-            label={value}
+            label={formatCurrency(value, row.currencyTo)}
             size="small"
             sx={{
               padding: "4px 8px",

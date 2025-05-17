@@ -1,9 +1,14 @@
 import { ECOMPANY_TYPE } from "@/types/typeCompany";
-import { EGENDER, ERECORD_STATUS, EORDER_STATUS, EPaymentTerms, EPRODUCT_TYPE, ECHARGEABLE_WEIGHT_TYPE } from "@/types/typeGlobals";
+import { EGENDER, ERECORD_STATUS, EORDER_STATUS, EPaymentTerms, EPRODUCT_TYPE, ECHARGEABLE_WEIGHT_TYPE, EFEE_TYPE } from "@/types/typeGlobals";
 
 export const genderLabel: Record<EGENDER, string> = {
   [EGENDER.MALE]: "Nam",
   [EGENDER.FEMALE]: "Nữ",
+};
+
+export const feeTypeLabel: Record<EFEE_TYPE, string> = {
+  [EFEE_TYPE.FIXED]: "Số tiền",
+  [EFEE_TYPE.PERCENT]: "%",
 };
 
 export const recordStatusLabel: Record<ERECORD_STATUS, string> = {

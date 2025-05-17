@@ -6,8 +6,8 @@ export enum ERECORD_STATUS {
   Deleted = "Dloedtc",
 }
 export enum EFEE_TYPE {
-  Percent = "Percent",
-  Fixed = "Fixed",
+  PERCENT = "Percent",
+  FIXED = "Fixed",
 }
 export enum EUSER_ROLES {
   SupperAdmin = "sAdpdine22",
