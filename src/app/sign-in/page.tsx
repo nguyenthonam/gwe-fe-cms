@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser } from "@/store/reducers/authReducer";
+import { signInUser } from "@/store/reducers/authReducer";
 import { AppState } from "@/store";
 import Image from "next/image";
-import { Button, CircularProgress, Container } from "@mui/material";
+import { Button, CircularProgress, Container, Link } from "@mui/material";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
 import IconButton from "@mui/material/IconButton";
@@ -12,6 +12,7 @@ import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { useRouter } from "next/navigation";
+import { lightBlue } from "@mui/material/colors";
 import * as Yup from "yup";
 
 // Validation schema
@@ -62,8 +63,8 @@ export default function LoginPage() {
     }
 
     try {
-      const result = await dispatch(loginUser({ email, password }) as any);
-      if (loginUser.fulfilled.match(result)) {
+      const result = await dispatch(signInUser({ email, password }) as any);
+      if (signInUser.fulfilled.match(result)) {
         showNotification("Đăng nhập thành công!", "success");
         router.push("/dashboard");
       } else {
@@ -86,7 +87,7 @@ export default function LoginPage() {
       <div className="flex flex-col items-center justify-center min-h-screen">
         <form className="w-full max-w-[500px] p-6 flex flex-col items-center justify-center bg-white rounded shadow-md border border-blue-400">
           <div className="flex flex-col justify-center items-center">
-            <Image src="/logo-04.png" alt="Logo" width={150} height={100} />
+            <Image src="/logo-04.png" alt="Logo" width={150} height={100} priority />
           </div>
           <TextField
             className="mb-2 w-full"
@@ -131,6 +132,11 @@ export default function LoginPage() {
               ),
             }}
           />
+          <div className="w-full flex justify-end">
+            <Link href="/auth/forgot-password" underline="none" className="cursor-pointer" style={{ color: lightBlue[500] }}>
+              Forgot password?
+            </Link>
+          </div>
           <Button type="button" className="font-bold capitalize" color="primary" variant="contained" disabled={isLoading} onClick={handleLogin}>
             {isLoading ? <CircularProgress size={24} /> : "Login"}
           </Button>

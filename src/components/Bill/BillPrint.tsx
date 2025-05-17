@@ -30,7 +30,7 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
 
   const handlePrint = useReactToPrint({
     contentRef: billPrintRef,
-    documentTitle: data?.HAWBCode || `GX-${Date.now().toString()}`,
+    documentTitle: data?.HAWBCode,
     preserveAfterPrint: true,
   });
   const handleSaveAndPrint = async () => {
@@ -71,7 +71,7 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
         <div className={styles.header}>
           <div className={styles.logo}>
             <div className="w-full h-full">
-              <Image className="max-w-full w-full h-auto" src="/logo-04.png" alt="Company Logo" width={100} height={100} />
+              <Image className="max-w-full w-full h-auto" src="/logo-04.png" alt="Company Logo" width={100} height={100} priority />
             </div>
           </div>
           <div className="flex flex-col flex-grow">

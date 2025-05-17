@@ -7,7 +7,7 @@ export async function middleware(req: NextRequest) {
 
   // const { pathname } = req.nextUrl;
   // const token = req.cookies.get("AccessToken")?.value;
-  // const loginUrl = new URL("/login", req.url);
+  // const loginUrl = new URL("/sign-in", req.url);
   // const redirectLogin = NextResponse.redirect(loginUrl);
   // redirectLogin.headers.set("X-Clear-LocalStorage", "true");
   // redirectLogin.headers.set("X-Auth-Status", "unauthorized");
@@ -19,14 +19,14 @@ export async function middleware(req: NextRequest) {
   // }
 
   // if (!token) {
-  //   if (pathname !== "/login") {
+  //   if (pathname !== "/sign-in") {
   //     return redirectLogin;
   //   }
   //   const response = NextResponse.next();
   //   response.headers.set("X-Auth-Status", "unauthorized");
   //   response.headers.set("X-Clear-LocalStorage", "true");
   //   return response;
-  // } else if (pathname === "/login") {
+  // } else if (pathname === "/sign-in") {
   //   return NextResponse.redirect(new URL("/dashboard", req.url));
   // }
 
@@ -51,7 +51,7 @@ export async function middleware(req: NextRequest) {
   //       const response = NextResponse.next();
   //       response.headers.set("X-User-Data", userData);
 
-  //       if (pathname === "/login") {
+  //       if (pathname === "/sign-in") {
   //         return NextResponse.redirect(new URL("/dashboard", req.url));
   //       }
   //       return response;

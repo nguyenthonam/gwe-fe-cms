@@ -29,6 +29,9 @@ import {
 import {
   Menu as MenuIcon,
   Business as BusinessIcon,
+  AirplaneTicket as CarrierIcon,
+  EmojiTransportation as SupplierIcon,
+  CurrencyBitcoin as PriceIcon,
   Dataset as DatasetIcon,
   ExpandLess as ExpandLessIcon,
   ExpandMore as ExpandMoreIcon,
@@ -36,13 +39,14 @@ import {
   Receipt as ReceiptIcon,
   AccountCircle as AccountCircleIcon,
   Person as PersonIcon,
+  Subtitles as SubtitlesIcon,
   Logout as LogoutIcon,
 } from "@mui/icons-material";
 import ReduxProvider from "@/components/ReduxProvider";
 import { NotificationProvider, useNotification } from "@/contexts/NotificationProvider";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useDispatch, useSelector } from "react-redux";
-import { logoutUser } from "@/store/reducers/authReducer";
+import { signOutUser } from "@/store/reducers/authReducer";
 import { useRouter } from "next/navigation";
 import { AppState } from "@/store";
 import { IUser } from "@/types/typeUser";
@@ -135,9 +139,9 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
     //     try {
     //       const response = await getProfileApi();
     //       if (!response || response.status === 401) {
-    //         dispatch(logoutUser());
+    //         dispatch(signOutUser());
     //         showNotification("Phiên đăng nhập hết hạn!", "error");
-    //         router.push("/login");
+    //         router.push("/sign-in");
     //         return;
     //       }
     //       const profileData: IUser = response?.data?.data as IUser;
@@ -169,9 +173,9 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
       handleMenuClose();
       if (isLoading) return;
       try {
-        await dispatch(logoutUser());
+        await dispatch(signOutUser());
         showNotification("Đăng xuất thành công!", "success");
-        router.push("/login");
+        router.push("/sign-in");
       } catch (error: unknown) {
         showNotification((error as Error).message || "Đăng xuất thất bại, vui lòng thử lại!", "error");
       }
@@ -187,18 +191,14 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                 <MenuIcon />
               </IconButton>
               <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
-                {accessToken ? (
-                  <Link href="/" passHref>
-                    <Image src="/logo.png" alt="Logo" width={150} height={100} />
-                  </Link>
-                ) : (
-                  <Image src="/logo.png" alt="Logo" width={150} height={100} />
-                )}
+                <Link href="/" passHref>
+                  <Image src="/logo.png" alt="Logo" width={150} height={100} priority />
+                </Link>
               </Box>
-              {accessToken && (
+              {accessToken ? (
                 <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
                   <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>
-                    {profile?.fullname || "User"}
+                    {profile?.contact?.fullname || "User"}
                   </Typography>
                   <IconButton onClick={handleMenuClick} sx={{ p: "2px" }}>
                     <Avatar alt="User" sx={{ bgcolor: lightBlue[500] }}>
@@ -224,6 +224,14 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                       <ListItemText>Logout</ListItemText>
                     </MenuItem>
                   </Menu>
+                </Box>
+              ) : (
+                <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
+                  <Link href="/sign-in" passHref>
+                    <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[500] }}>
+                      Sign in
+                    </Typography>
+                  </Link>
                 </Box>
               )}
             </Toolbar>
@@ -265,6 +273,20 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                       <ListItemButton
                         sx={{ pl: 4 }}
                         component={Link}
+                        href="/manager/orders"
+                        onClick={() => {
+                          setShowDrawer(false);
+                          setOpenManage(false);
+                        }}
+                      >
+                        <ListItemIcon>
+                          <SubtitlesIcon htmlColor="white" />
+                        </ListItemIcon>
+                        <ListItemText primary="Đơn Hàng" />
+                      </ListItemButton>
+                      <ListItemButton
+                        sx={{ pl: 4 }}
+                        component={Link}
                         href="/manager/users"
                         onClick={() => {
                           setShowDrawer(false);
@@ -279,7 +301,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                       <ListItemButton
                         sx={{ pl: 4 }}
                         component={Link}
-                        href="/manager/companies"
+                        href="/manager/partners"
                         onClick={() => {
                           setShowDrawer(false);
                           setOpenManage(false);
@@ -288,7 +310,49 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                         <ListItemIcon>
                           <BusinessIcon htmlColor="white" />
                         </ListItemIcon>
-                        <ListItemText primary="Công ty" />
+                        <ListItemText primary="Đối Tác" />
+                      </ListItemButton>
+                      <ListItemButton
+                        sx={{ pl: 4 }}
+                        component={Link}
+                        href="/manager/carriers"
+                        onClick={() => {
+                          setShowDrawer(false);
+                          setOpenManage(false);
+                        }}
+                      >
+                        <ListItemIcon>
+                          <CarrierIcon htmlColor="white" />
+                        </ListItemIcon>
+                        <ListItemText primary="Hãng Bay" />
+                      </ListItemButton>
+                      <ListItemButton
+                        sx={{ pl: 4 }}
+                        component={Link}
+                        href="/manager/suppliers"
+                        onClick={() => {
+                          setShowDrawer(false);
+                          setOpenManage(false);
+                        }}
+                      >
+                        <ListItemIcon>
+                          <SupplierIcon htmlColor="white" />
+                        </ListItemIcon>
+                        <ListItemText primary="Nhà Cung Cấp" />
+                      </ListItemButton>
+                      <ListItemButton
+                        sx={{ pl: 4 }}
+                        component={Link}
+                        href="/manager/prices"
+                        onClick={() => {
+                          setShowDrawer(false);
+                          setOpenManage(false);
+                        }}
+                      >
+                        <ListItemIcon>
+                          <PriceIcon htmlColor="white" />
+                        </ListItemIcon>
+                        <ListItemText primary="Giá" />
                       </ListItemButton>
                     </List>
                   </Collapse>

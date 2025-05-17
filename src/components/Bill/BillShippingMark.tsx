@@ -20,7 +20,7 @@ const BillShippingMark = React.forwardRef<IBillShippingMarkRef, IProps>(({ data,
 
   const handlePrint = useReactToPrint({
     contentRef: billPrintRef,
-    documentTitle: data?.HAWBCode + "-shipping-mark" || `GX-${Date.now().toString()}-shipping-mark`,
+    documentTitle: data?.HAWBCode + "-shipping-mark",
     preserveAfterPrint: true,
   });
 

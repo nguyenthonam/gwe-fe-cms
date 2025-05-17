@@ -3,8 +3,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } 
 import { lightBlue } from "@mui/material/colors";
 import { updateUserApi } from "@/utils/apis/apiUser";
 import { useNotification } from "@/contexts/NotificationProvider";
-import { IUser } from "@/types/typeUser";
-import { IUpdateUserRequest } from "@/types/apis/typeUser.Api";
+import { IUpdateUserRequest, IUser } from "@/types/typeUser";
 
 interface IProps {
   open: boolean;
@@ -18,17 +17,11 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
   const { showNotification } = useNotification();
 
   useEffect(() => {
-    if (data && data.id) {
+    if (data && data._id) {
       setUser({
-        id: data.id,
         email: data.email,
-        fullname: data.fullname,
-        phone: data.phone,
-        company: data.company,
-        address: data.address,
-        province: data.province,
-        state: data.state,
-        country: data.country,
+        companyId: typeof data.companyId === "object" ? data.companyId?.name : data.companyId,
+        contact: data.contact,
         avatar: data.avatar,
         identity_key: data.identity_key,
         role: data.role,
@@ -40,9 +33,9 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
   const handleUpdateUser = async () => {
     try {
       setLoading(true);
-      if (!user) throw new Error("User not found!");
+      if (!user || !data?._id) throw new Error("User not found!");
       console.log("Payload:", user);
-      const response = await updateUserApi(user);
+      const response = await updateUserApi(data._id, user);
       if (!response?.data?.status) {
         showNotification(response?.data?.message || "Cập nhật thất bại!", "error");
         return;
@@ -73,7 +66,7 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
           placeholder="Họ và tên"
           fullWidth
           variant="outlined"
-          value={user?.fullname}
+          value={user?.contact?.fullname}
           onChange={(e) => setUser((prev) => (prev ? { ...prev, fullname: e.target.value } : undefined))}
         />
         <TextField
