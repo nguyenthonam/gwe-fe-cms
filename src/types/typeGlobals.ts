@@ -27,8 +27,8 @@ export enum ECHARGEABLE_WEIGHT_TYPE {
   TOTAL = 2,
 }
 export enum EPRODUCT_TYPE {
-  Document = "DOX",
-  Parcel = "WPX",
+  DOCUMENT = "DOX",
+  PARCEL = "WPX",
 }
 export enum ECURRENCY {
   VND = "VND", // Vietnam

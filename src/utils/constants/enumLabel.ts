@@ -39,8 +39,8 @@ export const companyTypeLabel: Record<ECOMPANY_TYPE, string> = {
 };
 
 export const productTypeLabel: Record<EPRODUCT_TYPE, string> = {
-  [EPRODUCT_TYPE.Document]: "Tài liệu",
-  [EPRODUCT_TYPE.Parcel]: "Hàng hóa",
+  [EPRODUCT_TYPE.DOCUMENT]: "Tài liệu",
+  [EPRODUCT_TYPE.PARCEL]: "Hàng hóa",
 };
 
 export const chargeWeightTypeLabel: Record<ECHARGEABLE_WEIGHT_TYPE, string> = {
