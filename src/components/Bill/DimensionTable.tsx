@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { IDimension } from "@/types";
-import { Button } from "@/components/commons";
+import Button from "../Globals/Button";
 
 interface IProps {
   onRowsChange: (updatedRows: IDimension[]) => void;

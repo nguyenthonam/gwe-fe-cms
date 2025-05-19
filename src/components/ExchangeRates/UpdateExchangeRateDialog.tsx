@@ -6,6 +6,7 @@ import { IExchangeRate } from "@/types/typeExchangeRate";
 import { ECURRENCY } from "@/types/typeGlobals";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { updateExchangeRateApi } from "@/utils/apis/apiExchangeRate";
+import NumericInput from "../Globals/NumericInput";
 
 interface Props {
   open: boolean;
@@ -88,7 +89,8 @@ export default function UpdateExchangeRateDialog({ open, onClose, onUpdated, exc
               </Select>
             </Grid>
             <Grid size={12}>
-              <TextField label="Tỉ giá" type="number" fullWidth size="small" value={form.rate ?? ""} onChange={(e) => handleChange("rate", Number(e.target.value))} />
+              {/* <TextField label="Tỉ giá" type="number" fullWidth size="small" value={form.rate ?? ""} onChange={(e) => handleChange("rate", Number(e.target.value))} /> */}
+              <NumericInput label="Tỉ giá" fullWidth size="small" value={String(form.rate ?? "")} onChange={(val) => handleChange("rate", Number(val))} />
             </Grid>
           </Grid>
         </Stack>

@@ -1,11 +1,12 @@
 "use client";
 import { useState } from "react";
 import { Box, Typography, Paper, Tabs, Tab, Container } from "@mui/material";
+import { lightBlue } from "@mui/material/colors";
 import CompanyCarrierManagerView from "@/components/Carriers/CompanyCarrierManagerView";
 import CarrierManagerView from "@/components/Carriers/CarrierManagerView";
 import CAWBCodeManagerView from "@/components/Carriers/CAWBCodeManagerView";
 import ServiceManagerView from "@/components/Services/ServiceManagerView";
-import { lightBlue } from "@mui/material/colors";
+import ZoneManagerView from "@/components/Zones/ZoneManagerView";
 
 export default function CarrierManagementView() {
   const [tabIndex, setTabIndex] = useState(0);
@@ -27,6 +28,7 @@ export default function CarrierManagementView() {
           <Tab label="Nhà Vận Chuyển" />
           <Tab label="Dịch vụ" />
           <Tab label="CAWB Code" />
+          <Tab label="Zone" />
         </Tabs>
 
         <Box mt={2} className="w-full ">
@@ -35,6 +37,7 @@ export default function CarrierManagementView() {
             {tabIndex === 1 && <CarrierManagerView />}
             {tabIndex === 2 && <ServiceManagerView />}
             {tabIndex === 3 && <CAWBCodeManagerView />}
+            {tabIndex === 4 && <ZoneManagerView />}
           </Paper>
         </Box>
       </Box>
