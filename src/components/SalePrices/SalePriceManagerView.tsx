@@ -1,45 +1,47 @@
+// SalePriceManagerView.tsx
 "use client";
 
-import { Box, Button, Chip, CircularProgress, MenuItem, Select, Stack, TextField, Typography } from "@mui/material";
+import { useState, useEffect, useMemo } from "react";
+import { Box, Button, Stack, TextField, Select, MenuItem, CircularProgress, Typography, Chip } from "@mui/material";
 import { Add, Download } from "@mui/icons-material";
-import { useEffect, useMemo, useState } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import debounce from "lodash/debounce";
 import * as XLSX from "sheetjs-style";
-
-import { IExtraFee } from "@/types/typeExtraFee";
-import { ICarrier } from "@/types/typeCarrier";
-import { EFEE_TYPE, ERECORD_STATUS } from "@/types/typeGlobals";
+import debounce from "lodash/debounce";
+import { ISalePrice } from "@/types/typeSalePrice";
+import { ERECORD_STATUS, EPRODUCT_TYPE } from "@/types/typeGlobals";
 import { useNotification } from "@/contexts/NotificationProvider";
-import { searchExtraFeesApi, deleteExtraFeeApi, lockExtraFeeApi, unlockExtraFeeApi } from "@/utils/apis/apiExtraFee";
-import { EnumChip } from "../Globals/EnumChip";
-import { ActionMenu } from "../Globals/ActionMenu";
-import CreateExtraFeeDialog from "./CreateSalePriceDialog";
-import UpdateExtraFeeDialog from "./UpdateSalePriceDialog";
-import ExtraFeeDetailDialog from "./SalePriceDetailDialog";
-import { getCarriersApi } from "@/utils/apis/apiCarrier";
-
-import { Percent as PercentIcon, Payments as PaymentsIcon } from "@mui/icons-material";
-import { green, orange, red } from "@mui/material/colors";
-import { feeTypeLabel } from "@/utils/constants/enumLabel";
+import { EnumChip } from "@/components/Globals/EnumChip";
+import { ActionMenu } from "@/components/Globals/ActionMenu";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
+import { getCarriersApi } from "@/utils/apis/apiCarrier";
+import { getPartnersApi } from "@/utils/apis/apiPartner";
+import { getServicesApi, getServicesByCarrierApi } from "@/utils/apis/apiService";
+import { searchSalePricesApi, deleteSalePriceApi, lockSalePriceApi, unlockSalePriceApi } from "@/utils/apis/apiSalePrice";
+import CreateSalePriceDialog from "./CreateSalePriceDialog";
+import UpdateSalePriceDialog from "./UpdateSalePriceDialog";
+import SalePriceDetailDialog from "./SalePriceDetailDialog";
+import { green, orange } from "@mui/material/colors";
 
-export default function ExtraFeeManagerView() {
-  const [fees, setFees] = useState<IExtraFee[]>([]);
-  const [carriers, setCarriers] = useState<ICarrier[]>([]);
-  const [carrierIdFilter, setCarrierIdFilter] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<"" | "all" | ERECORD_STATUS>("");
-
+export default function SalePriceManagerView() {
+  const [prices, setPrices] = useState<ISalePrice[]>([]);
   const [keyword, setKeyword] = useState("");
+  const [carrierIdFilter, setCarrierIdFilter] = useState("");
+  const [serviceIdFilter, setServiceIdFilter] = useState("");
+  const [partnerIdFilter, setPartnerIdFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | "all" | ERECORD_STATUS>("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
+  const [carriers, setCarriers] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
+
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openUpdateDialog, setOpenUpdateDialog] = useState(false);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
-  const [selected, setSelected] = useState<IExtraFee | null>(null);
+  const [selected, setSelected] = useState<ISalePrice | null>(null);
 
   const { showNotification } = useNotification();
   const debouncedSearch = useMemo(() => debounce((v) => setKeyword(v), 500), []);
@@ -48,26 +50,57 @@ export default function ExtraFeeManagerView() {
     try {
       const res = await getCarriersApi();
       setCarriers(res?.data?.data?.data || []);
-    } catch (err: any) {
-      console.error("Failed to fetch carriers", err.massage);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchPartners = async () => {
+    try {
+      const res = await getPartnersApi();
+      setPartners(res?.data?.data?.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchServices = async () => {
+    if (carrierIdFilter) {
+      const selected = carriers.find((c) => c._id === carrierIdFilter);
+      const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
+      if (!companyId) return;
+      try {
+        const res = await getServicesByCarrierApi(companyId);
+        setServices(res?.data?.data?.data || []);
+      } catch (err) {
+        showNotification("Không thể tải danh sách dịch vụ", "error");
+      }
+    } else {
+      try {
+        const res = await getServicesApi();
+        setServices(res?.data?.data?.data || []);
+      } catch (err) {
+        showNotification("Không thể tải danh sách dịch vụ", "error");
+      }
     }
   };
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await searchExtraFeesApi({
+      const res = await searchSalePricesApi({
         keyword,
         page: page + 1,
         perPage: pageSize,
         carrierId: carrierIdFilter,
+        serviceId: serviceIdFilter,
+        partnerId: partnerIdFilter,
         status: statusFilter,
       });
-      setFees(res?.data?.data?.data || []);
+      setPrices(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
-    } catch (err: any) {
-      console.log(err);
-      showNotification("Không thể tải danh sách phụ phí", "error");
+    } catch (err) {
+      showNotification("Không thể tải danh sách giá bán", "error");
     } finally {
       setLoading(false);
     }
@@ -75,32 +108,36 @@ export default function ExtraFeeManagerView() {
 
   useEffect(() => {
     fetchCarriers();
+    fetchPartners();
     fetchData();
   }, []);
 
   useEffect(() => {
+    fetchServices();
+  }, [carrierIdFilter]);
+
+  useEffect(() => {
     fetchData();
-  }, [keyword, page, pageSize, carrierIdFilter, statusFilter]);
+  }, [keyword, page, pageSize, carrierIdFilter, serviceIdFilter, partnerIdFilter, statusFilter]);
 
-  const handleLockToggle = async (rate: IExtraFee) => {
+  const handleLockToggle = async (item: ISalePrice) => {
     try {
-      if (!rate?._id) return;
-      const confirm = window.confirm(rate.status === ERECORD_STATUS.Active ? "Khoá phụ phí này?" : "Mở khoá phụ phí này?");
+      if (!item._id) return;
+      const confirm = window.confirm(item.status === ERECORD_STATUS.Active ? "Khoá giá này?" : "Mở khoá giá này?");
       if (!confirm) return;
-
-      const res = rate.status === ERECORD_STATUS.Active ? await lockExtraFeeApi(rate._id) : await unlockExtraFeeApi(rate._id);
-      showNotification(res?.data?.message || "Cập nhật trạng thái thành công", "success");
+      const res = item.status === ERECORD_STATUS.Active ? await lockSalePriceApi(item._id) : await unlockSalePriceApi(item._id);
+      showNotification(res?.data?.message || "Cập nhật thành công", "success");
       fetchData();
     } catch (err: any) {
       showNotification(err.message || "Lỗi cập nhật trạng thái", "error");
     }
   };
 
-  const handleDelete = async (item: IExtraFee) => {
+  const handleDelete = async (item: ISalePrice) => {
     if (!item._id) return;
-    if (!window.confirm("Bạn có chắc muốn xoá phụ phí này?")) return;
+    if (!window.confirm("Bạn có chắc muốn xoá giá này?")) return;
     try {
-      await deleteExtraFeeApi(item._id);
+      await deleteSalePriceApi(item._id);
       showNotification("Đã xoá thành công", "success");
       fetchData();
     } catch (err: any) {
@@ -109,37 +146,49 @@ export default function ExtraFeeManagerView() {
   };
 
   const handleExportExcel = () => {
-    const data = fees.map((f) => ({
-      MÃ: f.code,
-      TÊN: f.name,
-      HÃNG: typeof f.carrierId === "object" ? f.carrierId?.name : f.carrierId,
-      "DỊCH VỤ": typeof f.serviceId === "object" ? f.serviceId?.code : f.serviceId,
-      "GIÁ TRỊ": formatCurrency(f.value, f.currency),
-      "KIỂU PHÍ": feeTypeLabel[f.type],
-      "TIỀN TỆ": f.currency,
-    }));
+    const documentData = prices
+      .filter((p) => p.productType === EPRODUCT_TYPE.DOCUMENT)
+      .map((p) => ({
+        "PRODUCT TYPE": "DOCUMENT",
+        PARTNER: typeof p.partnerId === "object" ? p.partnerId?.name : p.partnerId,
+        CARRIER: typeof p.carrierId === "object" ? p.carrierId?.name : p.carrierId,
+        SERVICE: typeof p.serviceId === "object" ? p.serviceId?.code : p.serviceId,
+        ZONE: p.zone,
+        "FROM WEIGHT": p.weightMin,
+        "TO WEIGHT": p.weightMax,
+        PRICE: formatCurrency(p.price, p.currency),
+        CURRENCY: p.currency,
+        "PRICE BY KG": p.isPricePerKG ? "YES" : "",
+      }));
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
+    const parcelData = prices
+      .filter((p) => p.productType === EPRODUCT_TYPE.PARCEL)
+      .map((p) => ({
+        "PRODUCT TYPE": "PARCEL",
+        PARTNER: typeof p.partnerId === "object" ? p.partnerId?.name : p.partnerId,
+        CARRIER: typeof p.carrierId === "object" ? p.carrierId?.name : p.carrierId,
+        SERVICE: typeof p.serviceId === "object" ? p.serviceId?.code : p.serviceId,
+        ZONE: p.zone,
+        "FROM WEIGHT": p.weightMin,
+        "TO WEIGHT": p.weightMax,
+        PRICE: formatCurrency(p.price, p.currency),
+        CURRENCY: p.currency,
+        "PRICE BY KG": p.isPricePerKG ? "YES" : "",
+      }));
 
-    // Style cho từng cell
+    const allData = [...documentData, {}, ...parcelData];
+    const ws = XLSX.utils.json_to_sheet(allData);
+    ws["!cols"] = Object.keys(allData[0]).map(() => ({ wch: 20 }));
+
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const cell = XLSX.utils.encode_cell({ r: R, c: C });
         if (!ws[cell]) continue;
-        const isHeader = R === 0;
-
+        const isHeader = R === 0 || (documentData.length > 0 && R === documentData.length + 1);
         (ws[cell] as any).s = {
-          font: {
-            bold: isHeader,
-            sz: isHeader ? 12 : 11,
-          },
-          alignment: {
-            horizontal: isHeader ? "center" : "left",
-            vertical: "center",
-            wrapText: true,
-          },
+          font: { bold: isHeader, sz: isHeader ? 12 : 11 },
+          alignment: { horizontal: isHeader ? "center" : "left", vertical: "center", wrapText: true },
           border: {
             top: { style: "thin", color: { auto: 1 } },
             bottom: { style: "thin", color: { auto: 1 } },
@@ -151,31 +200,18 @@ export default function ExtraFeeManagerView() {
     }
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "EXTRA_FEES");
-    XLSX.writeFile(wb, "PHU_PHI.xlsx");
-  };
-
-  const handleCreated = () => {
-    setOpenCreateDialog(false);
-    fetchData();
-  };
-
-  const handleUpdated = () => {
-    setOpenUpdateDialog(false);
-    setSelected(null);
-    fetchData();
+    XLSX.utils.book_append_sheet(wb, ws, "BANG_GIA_BAN");
+    XLSX.writeFile(wb, "Bang_Gia_Ban.xlsx");
   };
 
   const columns: GridColDef[] = [
     {
-      field: "code",
-      headerName: "MÃ",
-      align: "center",
-      headerAlign: "center",
-      flex: 1,
-      minWidth: 100,
-      renderCell: ({ row }) => (
-        <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+      field: "_id",
+      headerName: "ID",
+      flex: 1.2,
+      minWidth: 120,
+      renderCell: ({ row }: { row: ISalePrice }) => (
+        <Box display="flex" alignItems="center" height="100%">
           <Typography
             sx={{ cursor: "pointer", textDecoration: "underline" }}
             color="primary"
@@ -184,91 +220,86 @@ export default function ExtraFeeManagerView() {
               setOpenDetailDialog(true);
             }}
           >
-            {row.code}
+            #{row._id?.slice(-10)}
           </Typography>
         </Box>
       ),
     },
-    { field: "name", headerName: "TÊN", minWidth: 160, headerAlign: "center", flex: 1.5 },
+    {
+      field: "partnerId",
+      headerName: "PARTNER",
+      flex: 1,
+      minWidth: 150,
+      renderCell: ({ row }) => (typeof row.partnerId === "object" ? row.partnerId?.name : row.partnerId),
+    },
     {
       field: "carrierId",
       headerName: "HÃNG",
-      headerAlign: "center",
+      minWidth: 150,
       flex: 1,
-      minWidth: 130,
       renderCell: ({ row }) => (typeof row.carrierId === "object" ? row.carrierId?.name : row.carrierId),
     },
     {
       field: "serviceId",
       headerName: "DỊCH VỤ",
-      headerAlign: "center",
       flex: 1,
-      minWidth: 130,
+      minWidth: 100,
       renderCell: ({ row }) => (typeof row.serviceId === "object" ? row.serviceId?.code : row.serviceId),
     },
     {
-      field: "value",
-      headerName: "GIÁ TRỊ",
+      field: "zone",
+      headerName: "ZONE",
+      flex: 0.5,
+      minWidth: 80,
       align: "center",
-      headerAlign: "center",
-      flex: 1,
-      minWidth: 150,
-      renderCell: ({ row, value }) => (
-        <Chip
-          label={formatCurrency(value, row.currency)}
-          size="small"
-          sx={{
-            width: "100%",
-            fontSize: "14px",
-            padding: "4px 8px",
-            backgroundColor: orange[100],
-            color: orange[700],
-            "& .MuiChip-label": {
-              fontWeight: "bold",
-            },
-          }}
-        />
-      ),
     },
     {
-      field: "type",
-      headerName: "KIỂU PHÍ",
-      width: 100,
+      field: "weightMin",
+      headerName: "TỪ KG",
+      flex: 0.7,
+      minWidth: 100,
       align: "center",
-      headerAlign: "center",
-      renderCell: ({ value }) => (value === EFEE_TYPE.PERCENT ? <PercentIcon sx={{ color: red[500] }} /> : <PaymentsIcon sx={{ color: orange[500] }} />),
+      renderCell: ({ value }) => value + " KG",
+    },
+    {
+      field: "weightMax",
+      headerName: "ĐẾN KG",
+      flex: 0.7,
+      minWidth: 100,
+      align: "center",
+      renderCell: ({ value }) => value + " KG",
+    },
+    {
+      field: "price",
+      headerName: "GIÁ",
+      minWidth: 150,
+      flex: 1,
+      renderCell: ({ row }) => formatCurrency(row.price, row.currency),
     },
     {
       field: "currency",
       headerName: "TIỀN TỆ",
+      flex: 0.5,
+      minWidth: 80,
       align: "center",
-      headerAlign: "center",
-      width: 100,
-      renderCell: ({ value }) => (
-        <Chip
-          label={value}
-          size="small"
-          sx={{
-            backgroundColor: green[700],
-            color: "#fff",
-            fontWeight: 500,
-          }}
-        />
-      ),
+    },
+    {
+      field: "isPricePerKG",
+      headerName: "LOẠI GIÁ",
+      flex: 1,
+      minWidth: 120,
+      renderCell: ({ value }) => <Chip label={value ? "Giá theo KG" : "Giá theo Gói"} sx={{ color: value ? orange[500] : green[500] }} size="small" />,
     },
     {
       field: "status",
       headerName: "TRẠNG THÁI",
-      align: "center",
-      headerAlign: "center",
-      width: 120,
+      flex: 0.8,
+      minWidth: 120,
       renderCell: ({ value }) => <EnumChip type="recordStatus" value={value} />,
     },
     {
       field: "actions",
       headerName: "",
-      align: "center",
-      headerAlign: "center",
       width: 60,
       renderCell: ({ row }) => (
         <ActionMenu
@@ -284,61 +315,5 @@ export default function ExtraFeeManagerView() {
     },
   ];
 
-  return (
-    <Box className="space-y-4 p-6">
-      <Box display="flex" gap={2} justifyContent="space-between" alignItems="center">
-        <TextField placeholder="Tìm phụ phí..." size="small" onChange={(e) => debouncedSearch(e.target.value)} className="max-w-[250px] w-full" />
-        <Stack direction="row" spacing={1}>
-          <Select size="small" displayEmpty value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} sx={{ minWidth: 180 }}>
-            <MenuItem value="">Tất cả Hãng Vận Chuyển</MenuItem>
-            {carriers?.map((c) => (
-              <MenuItem key={c._id} value={c._id}>
-                {c.name}
-              </MenuItem>
-            ))}
-          </Select>
-          <Select size="small" displayEmpty value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 150 }}>
-            <MenuItem value="">Mặc định</MenuItem>
-            <MenuItem value="all">Tất cả</MenuItem>
-            <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
-            <MenuItem value={ERECORD_STATUS.Locked}>Đã khoá</MenuItem>
-            <MenuItem value={ERECORD_STATUS.NoActive}>Không hoạt động</MenuItem>
-            <MenuItem value={ERECORD_STATUS.Deleted}>Đã xoá</MenuItem>
-          </Select>
-        </Stack>
-        <Stack direction="row" spacing={1}>
-          <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
-            Xuất Excel
-          </Button>
-          <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
-            Tạo mới
-          </Button>
-        </Stack>
-      </Box>
-
-      {loading ? (
-        <Box textAlign="center">
-          <CircularProgress />
-        </Box>
-      ) : (
-        <DataGrid
-          autoHeight
-          rows={fees.map((r) => ({ ...r, id: r._id }))}
-          columns={columns}
-          paginationMode="server"
-          rowCount={total}
-          paginationModel={{ page, pageSize }}
-          onPaginationModelChange={({ page, pageSize }) => {
-            setPage(page);
-            setPageSize(pageSize);
-          }}
-          disableRowSelectionOnClick
-        />
-      )}
-
-      <CreateExtraFeeDialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} onCreated={handleCreated} />
-      <UpdateExtraFeeDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={handleUpdated} extraFee={selected} />
-      <ExtraFeeDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} extraFee={selected} />
-    </Box>
-  );
+  return <Box p={6}>Đang phát triển SalePriceManagerView...</Box>;
 }

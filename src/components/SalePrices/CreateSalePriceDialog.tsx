@@ -1,15 +1,14 @@
 "use client";
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Select, Stack, Grid, InputLabel, FormControl } from "@mui/material";
-import { useEffect, useState } from "react";
-import { ICarrier } from "@/types/typeCarrier";
-import { EFEE_TYPE, ECURRENCY } from "@/types/typeGlobals";
-import { IService } from "@/types/typeService";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Select, Stack, Grid, InputLabel, FormControl, FormControlLabel, Checkbox } from "@mui/material";
+import { useState, useEffect } from "react";
+import { ISalePrice } from "@/types/typeSalePrice";
+import { EPRODUCT_TYPE, ECURRENCY } from "@/types/typeGlobals";
 import { useNotification } from "@/contexts/NotificationProvider";
-import { createExtraFeeApi } from "@/utils/apis/apiExtraFee";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
+import { getPartnersApi } from "@/utils/apis/apiPartner";
 import { getServicesByCarrierApi } from "@/utils/apis/apiService";
-import { feeTypeLabel } from "@/utils/constants/enumLabel";
+import { createSalePriceApi } from "@/utils/apis/apiSalePrice";
 import NumericInput from "../Globals/NumericInput";
 
 interface Props {
@@ -18,86 +17,86 @@ interface Props {
   onCreated: () => void;
 }
 
-export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props) {
-  const [carriers, setCarriers] = useState<ICarrier[]>([]);
-  const [services, setServices] = useState<IService[]>([]);
+export default function CreateSalePriceDialog({ open, onClose, onCreated }: Props) {
+  const [form, setForm] = useState<ISalePrice>({
+    partnerId: "",
+    carrierId: "",
+    serviceId: "",
+    productType: EPRODUCT_TYPE.DOCUMENT,
+    zone: 1,
+    weightMin: 0,
+    weightMax: 0,
+    price: 0,
+    currency: ECURRENCY.VND,
+    isPricePerKG: true,
+  });
 
-  const [carrierId, setCarrierId] = useState("");
-  const [serviceId, setServiceId] = useState("");
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
-  const [type, setType] = useState<EFEE_TYPE>(EFEE_TYPE.FIXED);
-  const [value, setValue] = useState<number | string>("");
-  const [currency, setCurrency] = useState<ECURRENCY>(ECURRENCY.VND);
+  const [carriers, setCarriers] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   const { showNotification } = useNotification();
 
   const fetchCarriers = async () => {
-    try {
-      const res = await getCarriersApi();
-      setCarriers(res?.data?.data?.data || []);
-    } catch (err: any) {
-      console.log(err.message);
-      showNotification("Không thể tải danh sách hãng vận chuyển", "error");
-    }
+    const res = await getCarriersApi();
+    setCarriers(res?.data?.data?.data || []);
+  };
+
+  const fetchPartners = async () => {
+    const res = await getPartnersApi();
+    setPartners(res?.data?.data?.data || []);
   };
 
   const fetchServices = async (carrierId: string) => {
-    const selected = carriers.find((c) => c._id === carrierId);
-    const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
-
-    if (!companyId) return;
-
-    try {
-      const res = await getServicesByCarrierApi(companyId);
-      setServices(res?.data?.data?.data || []);
-    } catch (err: any) {
-      console.log(err.massage);
-      showNotification("Không thể tải dịch vụ!", "error");
-    }
+    if (!carrierId) return;
+    const res = await getServicesByCarrierApi(carrierId);
+    setServices(res?.data?.data?.data || []);
   };
 
   useEffect(() => {
     if (open) {
-      setCarrierId("");
-      setServiceId("");
-      setCode("");
-      setName("");
-      setType(EFEE_TYPE.FIXED);
-      setValue("");
-      setCurrency(ECURRENCY.VND);
+      setForm({
+        partnerId: "",
+        carrierId: "",
+        serviceId: "",
+        productType: EPRODUCT_TYPE.DOCUMENT,
+        zone: 1,
+        weightMin: 0,
+        weightMax: 0,
+        price: 0,
+        currency: ECURRENCY.VND,
+        isPricePerKG: true,
+      });
       setServices([]);
       fetchCarriers();
+      fetchPartners();
     }
   }, [open]);
 
   useEffect(() => {
-    if (carrierId) fetchServices(carrierId);
-  }, [carrierId]);
+    if (form.carrierId) {
+      const carrierIdStr = typeof form.carrierId === "string" ? form.carrierId : form.carrierId._id;
+      if (carrierIdStr) fetchServices(carrierIdStr);
+    }
+  }, [form.carrierId]);
 
   const handleSubmit = async () => {
-    if (!carrierId || !serviceId || !code || !name || value === "") {
+    if (!form.partnerId || !form.carrierId || !form.serviceId || form.zone === null || form.price === null) {
       showNotification("Vui lòng nhập đầy đủ thông tin!", "warning");
       return;
     }
-
+    if (form.isPricePerKG && form.productType !== EPRODUCT_TYPE.PARCEL) {
+      showNotification("Giá theo KG chỉ áp dụng với loại hàng PARCEL", "warning");
+      return;
+    }
     try {
       setLoading(true);
-      await createExtraFeeApi({
-        carrierId,
-        serviceId,
-        code,
-        name,
-        type,
-        value: Number(value),
-        currency,
-        applyToFeeIds: [],
-      });
-      showNotification("Tạo phụ phí thành công!", "success");
+      await createSalePriceApi(form);
+      showNotification("Tạo giá bán thành công", "success");
       onCreated();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi tạo phụ phí", "error");
+      showNotification(err.message || "Lỗi tạo giá bán", "error");
     } finally {
       setLoading(false);
     }
@@ -105,74 +104,74 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Tạo phụ phí mới</DialogTitle>
+      <DialogTitle>Tạo giá bán</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={6}>
-              <TextField label="Mã phụ phí" fullWidth size="small" value={code} onChange={(e) => setCode(e.target.value)} />
+              <TextField select label="Loại hàng" fullWidth size="small" value={form.productType} onChange={(e) => setForm({ ...form, productType: e.target.value as EPRODUCT_TYPE })}>
+                <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>DOCUMENT</MenuItem>
+                <MenuItem value={EPRODUCT_TYPE.PARCEL}>PARCEL</MenuItem>
+              </TextField>
             </Grid>
             <Grid size={6}>
-              <TextField label="Tên phụ phí" fullWidth size="small" value={name} onChange={(e) => setName(e.target.value)} />
+              <TextField select label="Partner" fullWidth size="small" value={form.partnerId} onChange={(e) => setForm({ ...form, partnerId: e.target.value })}>
+                {partners?.map((p) => (
+                  <MenuItem key={p._id} value={p._id}>
+                    {p.name}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
             <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Hãng vận chuyển</InputLabel>
-                <Select label="Hãng vận chuyển" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
-                  {carriers?.map((c) => (
-                    <MenuItem key={c._id} value={c._id}>
-                      {c.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <TextField select label="Hãng" fullWidth size="small" value={form.carrierId} onChange={(e) => setForm({ ...form, carrierId: e.target.value })}>
+                {carriers?.map((c) => (
+                  <MenuItem key={c._id} value={c._id}>
+                    {c.name}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
             <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Dịch vụ</InputLabel>
-                <Select label="Dịch vụ" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
-                  {services.map((s) => (
-                    <MenuItem key={s._id} value={s._id}>
-                      {s.code}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <TextField select label="Dịch vụ" fullWidth size="small" value={form.serviceId} onChange={(e) => setForm({ ...form, serviceId: e.target.value })}>
+                {services?.map((s) => (
+                  <MenuItem key={s._id} value={s._id}>
+                    {s.code}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={4}>
+              <NumericInput label="Zone" fullWidth size="small" value={String(form.zone)} onChange={(val) => setForm({ ...form, zone: Number(val) })} />
+            </Grid>
+            <Grid size={4}>
+              <NumericInput label="Từ KG" fullWidth size="small" value={String(form.weightMin)} onChange={(val) => setForm({ ...form, weightMin: Number(val) })} />
+            </Grid>
+            <Grid size={4}>
+              <NumericInput label="Đến KG" fullWidth size="small" value={String(form.weightMax)} onChange={(val) => setForm({ ...form, weightMax: Number(val) })} />
             </Grid>
             <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Loại phí</InputLabel>
-                <Select label="Loại phí" value={type} onChange={(e) => setType(e.target.value as EFEE_TYPE)}>
-                  {Object.values(EFEE_TYPE).map((val) => (
-                    <MenuItem key={val} value={val}>
-                      {feeTypeLabel[val]}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <NumericInput label="Giá" fullWidth size="small" value={String(form.price)} onChange={(val) => setForm({ ...form, price: Number(val) })} />
             </Grid>
             <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Tiền tệ</InputLabel>
-                <Select label="Tiền tệ" value={currency} onChange={(e) => setCurrency(e.target.value as ECURRENCY)}>
-                  {Object.values(ECURRENCY).map((cur) => (
-                    <MenuItem key={cur} value={cur}>
-                      {cur}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <TextField select label="Tiền tệ" fullWidth size="small" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value as ECURRENCY })}>
+                {Object.values(ECURRENCY).map((cur) => (
+                  <MenuItem key={cur} value={cur}>
+                    {cur}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
             <Grid size={12}>
-              <NumericInput label="Giá trị" fullWidth size="small" value={String(value)} onChange={(val) => setValue(val)} />
+              <FormControlLabel control={<Checkbox checked={form.isPricePerKG} onChange={(e) => setForm({ ...form, isPricePerKG: e.target.checked })} />} label="Giá theo KG" />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Huỷ</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          Tạo mới
+        <Button onClick={handleSubmit} disabled={loading} variant="contained">
+          Tạo
         </Button>
       </DialogActions>
     </Dialog>

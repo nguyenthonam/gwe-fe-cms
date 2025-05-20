@@ -1,4 +1,4 @@
-import { ECURRENCY, EFEE_TYPE, EPRODUCT_TYPE, IBaseRecord } from "./typeGlobals";
+import { ECURRENCY, EPRODUCT_TYPE, IBaseRecord } from "./typeGlobals";
 
 export interface ISalePrice extends IBaseRecord {
   partnerId: { _id?: string; name?: string; code?: string } | string | null; // Type: ECOMPANY_TYPE.Partner
