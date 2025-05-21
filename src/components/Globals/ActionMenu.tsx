@@ -1,5 +1,5 @@
 import { IconButton, ListItemIcon, Menu, MenuItem, Tooltip } from "@mui/material";
-import { MoreVert as MoreVertIcon, Edit as EditIcon, Lock as LockIcon, LockOpen as LockOpenIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import { MoreVert as MoreVertIcon, Edit as EditIcon, Key as ResetPasswordIcon, Lock as LockIcon, LockOpen as LockOpenIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import React, { useState } from "react";
 import { grey, orange, red } from "@mui/material/colors";
 import { ERECORD_STATUS } from "@/types/typeGlobals";
@@ -8,10 +8,11 @@ interface ActionMenuProps {
   onEdit: () => void;
   onLockUnlock: () => void;
   onDelete?: () => void;
+  onResetPassword?: () => void;
   status: ERECORD_STATUS | undefined;
 }
 
-export const ActionMenu: React.FC<ActionMenuProps> = ({ onEdit, onLockUnlock, onDelete, status }) => {
+export const ActionMenu: React.FC<ActionMenuProps> = ({ onEdit, onLockUnlock, onDelete, onResetPassword, status }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -49,6 +50,22 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({ onEdit, onLockUnlock, on
             </ListItemIcon>
           </Tooltip>
         </MenuItem>
+
+        {onResetPassword && (
+          <MenuItem
+            onClick={() => {
+              handleClose();
+              onResetPassword();
+            }}
+            sx={{ display: "flex", justifyContent: "center", minWidth: 0 }}
+          >
+            <Tooltip title="Sửa" placement="right">
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                <ResetPasswordIcon fontSize="small" sx={{ color: orange[500] }} />
+              </ListItemIcon>
+            </Tooltip>
+          </MenuItem>
+        )}
 
         <MenuItem
           onClick={() => {

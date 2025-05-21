@@ -1,4 +1,3 @@
-// SalePriceManagerView.tsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -15,12 +14,12 @@ import { ActionMenu } from "@/components/Globals/ActionMenu";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getPartnersApi } from "@/utils/apis/apiPartner";
-import { getServicesApi, getServicesByCarrierApi } from "@/utils/apis/apiService";
 import { searchSalePricesApi, deleteSalePriceApi, lockSalePriceApi, unlockSalePriceApi } from "@/utils/apis/apiSalePrice";
 import CreateSalePriceDialog from "./CreateSalePriceDialog";
 import UpdateSalePriceDialog from "./UpdateSalePriceDialog";
 import SalePriceDetailDialog from "./SalePriceDetailDialog";
 import { green, orange } from "@mui/material/colors";
+import { getServicesApi, getServicesByCarrierApi } from "@/utils/apis/apiService";
 
 export default function SalePriceManagerView() {
   const [prices, setPrices] = useState<ISalePrice[]>([]);
@@ -55,15 +54,6 @@ export default function SalePriceManagerView() {
     }
   };
 
-  const fetchPartners = async () => {
-    try {
-      const res = await getPartnersApi();
-      setPartners(res?.data?.data?.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const fetchServices = async () => {
     if (carrierIdFilter) {
       const selected = carriers.find((c) => c._id === carrierIdFilter);
@@ -82,6 +72,19 @@ export default function SalePriceManagerView() {
       } catch (err) {
         showNotification("Không thể tải danh sách dịch vụ", "error");
       }
+    }
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, [carrierIdFilter]);
+
+  const fetchPartners = async () => {
+    try {
+      const res = await getPartnersApi();
+      setPartners(res?.data?.data?.data || []);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -111,10 +114,6 @@ export default function SalePriceManagerView() {
     fetchPartners();
     fetchData();
   }, []);
-
-  useEffect(() => {
-    fetchServices();
-  }, [carrierIdFilter]);
 
   useEffect(() => {
     fetchData();
@@ -150,9 +149,9 @@ export default function SalePriceManagerView() {
       .filter((p) => p.productType === EPRODUCT_TYPE.DOCUMENT)
       .map((p) => ({
         "PRODUCT TYPE": "DOCUMENT",
-        PARTNER: typeof p.partnerId === "object" ? p.partnerId?.name : p.partnerId,
         CARRIER: typeof p.carrierId === "object" ? p.carrierId?.name : p.carrierId,
         SERVICE: typeof p.serviceId === "object" ? p.serviceId?.code : p.serviceId,
+        PARTNER: typeof p.partnerId === "object" ? p.partnerId?.name : p.partnerId,
         ZONE: p.zone,
         "FROM WEIGHT": p.weightMin,
         "TO WEIGHT": p.weightMax,
@@ -165,9 +164,9 @@ export default function SalePriceManagerView() {
       .filter((p) => p.productType === EPRODUCT_TYPE.PARCEL)
       .map((p) => ({
         "PRODUCT TYPE": "PARCEL",
-        PARTNER: typeof p.partnerId === "object" ? p.partnerId?.name : p.partnerId,
         CARRIER: typeof p.carrierId === "object" ? p.carrierId?.name : p.carrierId,
         SERVICE: typeof p.serviceId === "object" ? p.serviceId?.code : p.serviceId,
+        PARTNER: typeof p.partnerId === "object" ? p.partnerId?.name : p.partnerId,
         ZONE: p.zone,
         "FROM WEIGHT": p.weightMin,
         "TO WEIGHT": p.weightMax,
@@ -176,19 +175,28 @@ export default function SalePriceManagerView() {
         "PRICE BY KG": p.isPricePerKG ? "YES" : "",
       }));
 
-    const allData = [...documentData, {}, ...parcelData];
+    const allData = [...documentData, {}, ...parcelData]; // empty row between tables
     const ws = XLSX.utils.json_to_sheet(allData);
     ws["!cols"] = Object.keys(allData[0]).map(() => ({ wch: 20 }));
 
+    // Style cho từng cell
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const cell = XLSX.utils.encode_cell({ r: R, c: C });
         if (!ws[cell]) continue;
-        const isHeader = R === 0 || (documentData.length > 0 && R === documentData.length + 1);
+        const isHeader = R === 0 || (documentData.length > 0 && R === documentData.length + 1); // cả 2 header
+
         (ws[cell] as any).s = {
-          font: { bold: isHeader, sz: isHeader ? 12 : 11 },
-          alignment: { horizontal: isHeader ? "center" : "left", vertical: "center", wrapText: true },
+          font: {
+            bold: isHeader,
+            sz: isHeader ? 12 : 11,
+          },
+          alignment: {
+            horizontal: isHeader ? "center" : "left",
+            vertical: "center",
+            wrapText: true,
+          },
           border: {
             top: { style: "thin", color: { auto: 1 } },
             bottom: { style: "thin", color: { auto: 1 } },
@@ -315,5 +323,102 @@ export default function SalePriceManagerView() {
     },
   ];
 
-  return <Box p={6}>Đang phát triển SalePriceManagerView...</Box>;
+  const renderDataGrid = (title: string, data: ISalePrice[]) => (
+    <Box>
+      <Typography variant="h6" sx={{ mb: 1, fontWeight: "bold", color: orange[500] }}>
+        {title}
+      </Typography>
+      <DataGrid
+        rows={data.map((r) => ({ ...r, id: r._id }))}
+        columns={columns}
+        paginationMode="server"
+        rowCount={total}
+        paginationModel={{ page, pageSize }}
+        onPaginationModelChange={({ page, pageSize }) => {
+          setPage(page);
+          setPageSize(pageSize);
+        }}
+        disableRowSelectionOnClick
+        autoHeight
+      />
+    </Box>
+  );
+
+  return (
+    <Box className="space-y-4 p-6">
+      <Box display="flex" flexWrap="wrap" gap={1} justifyContent="space-between" alignItems="center">
+        <TextField placeholder="Tìm kiếm..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 250 }} />
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
+            Xuất Excel
+          </Button>
+          <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
+            Tạo mới
+          </Button>
+        </Stack>
+        <Stack direction="row" spacing={1}>
+          <Select size="small" value={partnerIdFilter} onChange={(e) => setPartnerIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
+            <MenuItem value="">Tất cả Partner</MenuItem>
+            {partners.map((p) => (
+              <MenuItem key={p._id} value={p._id}>
+                {p.name}
+              </MenuItem>
+            ))}
+          </Select>
+          <Select size="small" value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
+            <MenuItem value="">Tất cả Hãng</MenuItem>
+            {carriers.map((c) => (
+              <MenuItem key={c._id} value={c._id}>
+                {c.name}
+              </MenuItem>
+            ))}
+          </Select>
+          <Select size="small" value={serviceIdFilter} onChange={(e) => setServiceIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
+            <MenuItem value="">Tất cả Dịch vụ</MenuItem>
+            {services.map((s) => (
+              <MenuItem key={s._id} value={s._id}>
+                {s.code}
+              </MenuItem>
+            ))}
+          </Select>
+
+          <Select size="small" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} displayEmpty sx={{ minWidth: 150 }}>
+            <MenuItem value="">Mặc định</MenuItem>
+            <MenuItem value="all">Tất cả</MenuItem>
+            <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
+            <MenuItem value={ERECORD_STATUS.Locked}>Đã khoá</MenuItem>
+            <MenuItem value={ERECORD_STATUS.NoActive}>Không hoạt động</MenuItem>
+            <MenuItem value={ERECORD_STATUS.Deleted}>Đã xoá</MenuItem>
+          </Select>
+        </Stack>
+      </Box>
+      {loading ? (
+        <Box textAlign="center">
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Stack spacing={4}>
+          {renderDataGrid(
+            "DOCUMENT",
+            prices.filter((p) => p.productType === EPRODUCT_TYPE.DOCUMENT)
+          )}
+          {renderDataGrid(
+            "PARCEL",
+            prices.filter((p) => p.productType === EPRODUCT_TYPE.PARCEL)
+          )}
+        </Stack>
+      )}
+
+      <CreateSalePriceDialog
+        open={openCreateDialog}
+        onClose={() => setOpenCreateDialog(false)}
+        onCreated={() => {
+          fetchData();
+          setOpenCreateDialog(false);
+        }}
+      />
+      <UpdateSalePriceDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={fetchData} salePrice={selected} />
+      <SalePriceDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} salePrice={selected} />
+    </Box>
+  );
 }

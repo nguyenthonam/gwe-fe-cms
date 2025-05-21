@@ -171,7 +171,7 @@ export default function StaffManagerView() {
       ),
     },
     { field: "fullname", headerName: "HỌ TÊN", flex: 1, minWidth: 150, renderCell: ({ row }: { row: IUser }) => row.contact?.fullname || "" },
-    { field: "companyId", headerName: "CÔNG TY", flex: 1, minWidth: 100, renderCell: ({ row }: { row: IUser }) => row.companyId?.code || "" },
+    { field: "companyId", headerName: "CÔNG TY", flex: 1, minWidth: 100, renderCell: ({ row }) => (typeof row.companyId === "object" ? row.companyId?.name : row.companyId) },
     { field: "email", headerName: "EMAIL", flex: 1, minWidth: 180 },
     { field: "phone", headerName: "SĐT", flex: 1, minWidth: 120, renderCell: ({ row }: { row: IUser }) => row.contact?.phone || "" },
     { field: "gender", headerName: "GIỚI TÍNH", flex: 1, renderCell: ({ row }: { row: IUser }) => <EnumChip type="gender" value={row.gender} /> },

@@ -21,7 +21,7 @@ export const updateUserApi = async (id: string, payload: IUpdateUserRequest) => 
   }
 };
 
-export const getUserApi = async () => {
+export const getUsersApi = async () => {
   try {
     const res = await AxiosAPI.get("/api/users");
     return res;
@@ -40,9 +40,9 @@ export const getUserByIdApi = async (id: string) => {
   }
 };
 
-export const searchUsersApi = async (payload: ISearchQuery & { role?: EUSER_ROLES }) => {
+export const searchUsersApi = async (payload: ISearchQuery & { role?: EUSER_ROLES | ""; companyId?: string }) => {
   try {
-    const { page = 0, perPage = 5, keyword = "", status = "all", role } = payload;
+    const { page = 0, perPage = 5, keyword = "", status = "all", role, companyId } = payload;
     const query = {
       page,
       perPage,
@@ -50,6 +50,7 @@ export const searchUsersApi = async (payload: ISearchQuery & { role?: EUSER_ROLE
       status,
     } as any;
     if (role) query.role = role;
+    if (companyId) query.companyId = companyId;
 
     const res = await AxiosAPI.get(`/api/users/search`, {
       params: query,
@@ -83,6 +84,16 @@ export const lockUserApi = async (id: string) => {
 export const unlockUserApi = async (id: string) => {
   try {
     const res = await AxiosAPI.put(`/api/users/${id}/unlock`);
+    return res;
+  } catch (error: any) {
+    console.error("Error login:", error);
+    throw new Error(error.response.data.message);
+  }
+};
+
+export const resetPasswordUserApi = async (id: string) => {
+  try {
+    const res = await AxiosAPI.put(`/api/users/${id}/reset-password`);
     return res;
   } catch (error: any) {
     console.error("Error login:", error);

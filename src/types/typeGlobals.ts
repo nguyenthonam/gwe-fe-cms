@@ -10,7 +10,7 @@ export enum EFEE_TYPE {
   FIXED = "Fixed",
 }
 export enum EUSER_ROLES {
-  SupperAdmin = "sAdpdine22",
+  // SupperAdmin = "sAdpdine22",
   Admin = "nInAnd043",
   OfficeStaff = "staFctuoud",
   WarehouseStaff = "stCteondf",
