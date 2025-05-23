@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { IBillData, IDimension } from "@/types";
+import { IBillData } from "@/types";
 import CountryInput, { ICountryInputHandle } from "./CountryInput";
 import CarrierInput, { ICarrierInputHandle } from "./CarrierInput";
 import PackageCodeInput, { IPackageCodeInputHandle } from "./PackageCodeInput";
@@ -12,6 +12,7 @@ import { red } from "@mui/material/colors";
 import BillPopup, { IBillPopupHandle } from "./BillPopup";
 import BillShippingMarkPopup, { IBillShippingMarkPopupHandle } from "./BillShippingMarkPopup";
 import { useNotification } from "@/contexts/NotificationProvider";
+import { IDimension } from "@/types/typeGlobals";
 
 const DEFAULT_VALUE = {
   customer: "",

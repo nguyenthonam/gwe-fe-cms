@@ -176,7 +176,7 @@ export default function ZoneManagerView() {
       flex: 1,
       renderCell: ({ value }) => (
         <Box display="flex" alignItems="center" height="100%">
-          <Typography color={orange[500]}>{COUNTRIES.find((c) => c.code === value)?.name || value}</Typography>
+          <Typography color={orange[500]}>{value}</Typography>
         </Box>
       ),
     },

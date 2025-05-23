@@ -9,6 +9,7 @@ import { ICarrier } from "@/types/typeCarrier";
 import { ECountryCode } from "@/types/typeGlobals";
 import { COUNTRIES } from "@/utils/constants";
 import NumericInput from "../Globals/NumericInput";
+import CountrySelect from "../Globals/CountrySelect";
 
 export default function UpdateZoneDialog({ open, onClose, onUpdated, zone, carriers }: { open: boolean; onClose: () => void; onUpdated: () => void; zone: IZone | null; carriers: ICarrier[] }) {
   const [form, setForm] = useState<IZone>({
@@ -57,13 +58,7 @@ export default function UpdateZoneDialog({ open, onClose, onUpdated, zone, carri
               </MenuItem>
             ))}
           </TextField>
-          <TextField label="Quốc gia" select value={form.countryCode} onChange={(e) => setForm({ ...form, countryCode: e.target.value as ECountryCode })} fullWidth>
-            {COUNTRIES.map((c) => (
-              <MenuItem key={c.code} value={c.code}>
-                {c.name}
-              </MenuItem>
-            ))}
-          </TextField>
+          <CountrySelect value={form.countryCode} onChange={(val) => setForm({ ...form, countryCode: val as ECountryCode })} label="Quốc gia" required />
           <NumericInput label="Zone" value={String(form.zone)} onChange={(val) => setForm({ ...form, zone: Number(val) })} fullWidth />
         </Stack>
       </DialogContent>

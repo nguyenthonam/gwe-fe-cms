@@ -5,4 +5,5 @@ export interface ICarrier extends IBaseRecord {
   name: string;
   code: string; // DHLVN, DHLSG, FEDEXVN,...
   chargeableWeightType: ECHARGEABLE_WEIGHT_TYPE;
+  volWeightRate: number;
 }

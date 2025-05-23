@@ -1,10 +1,24 @@
 import { IZone } from "@/types/typeZone";
-import { ISearchQuery } from "@/types/typeGlobals";
+import { ECountryCode, ISearchQuery } from "@/types/typeGlobals";
 import AxiosAPI from "@/utils/configs/axiosClient";
 
 export const getZonesApi = async () => {
   try {
     const res = await AxiosAPI.get("/api/zones");
+    return res;
+  } catch (error: any) {
+    console.error("Error:", error);
+    throw new Error(error.response.data.message);
+  }
+};
+
+export const getZonesByCarrierApi = async (carrierId: string) => {
+  try {
+    const res = await AxiosAPI.get("/api/zones/get-by-carrier", {
+      params: {
+        carrierId,
+      },
+    });
     return res;
   } catch (error: any) {
     console.error("Error:", error);

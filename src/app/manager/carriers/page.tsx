@@ -4,7 +4,7 @@ import { Box, Typography, Paper, Tabs, Tab, Container } from "@mui/material";
 import { lightBlue } from "@mui/material/colors";
 import CompanyCarrierManagerView from "@/components/Carriers/CompanyCarrierManagerView";
 import CarrierManagerView from "@/components/Carriers/CarrierManagerView";
-import CAWBCodeManagerView from "@/components/Carriers/CAWBCodeManagerView";
+import CAWBCodeManagerView from "@/components/CAWBCodes/CAWBCodeManagerView";
 import ServiceManagerView from "@/components/Services/ServiceManagerView";
 import ZoneManagerView from "@/components/Zones/ZoneManagerView";
 

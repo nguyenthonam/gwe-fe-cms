@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Box, Tabs, Tab, Paper, Typography, Container } from "@mui/material";
+import OrderManagerView from "@/components/Orders/OrderManagerView";
 import VATRateManagerView from "@/components/VATRates/VATRateManagerView";
 import { lightBlue } from "@mui/material/colors";
 
@@ -24,14 +25,12 @@ export default function PartnerManagementTabs() {
         <Tabs value={tabIndex} onChange={handleTabChange}>
           <Tab label="Đơn Hàng" />
           <Tab label="VAT (Thuế)" />
-          <Tab label="Hệ số tính VOL WEIGHT" />
         </Tabs>
 
         <Box mt={2} className="w-full ">
           <Paper>
-            {tabIndex === 0 && <VATRateManagerView />}
+            {tabIndex === 0 && <OrderManagerView />}
             {tabIndex === 1 && <VATRateManagerView />}
-            {tabIndex === 2 && <VATRateManagerView />}
           </Paper>
         </Box>
       </Box>

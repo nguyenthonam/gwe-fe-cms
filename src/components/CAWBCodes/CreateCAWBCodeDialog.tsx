@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { ICarrier } from "@/types/typeCarrier";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
-import { createCAWBCodesApi } from "@/utils/apis/apiCAWBCode";
+import { createCAWBCodeApi } from "@/utils/apis/apiCAWBCode";
 
 interface Props {
   open: boolean;
@@ -55,7 +55,7 @@ export default function CreateCAWBCodeDialog({ open, onClose, onCreated }: Props
 
     try {
       setLoading(true);
-      const res = await createCAWBCodesApi({ carrierId, codes: parsedCodes });
+      const res = await createCAWBCodeApi({ carrierId, codes: parsedCodes });
       showNotification(res?.data?.message || "Tạo thành công", "success");
       onCreated();
     } catch (err: any) {

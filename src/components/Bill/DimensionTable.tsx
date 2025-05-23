@@ -1,20 +1,21 @@
 import { useState } from "react";
-import { IDimension } from "@/types";
 import Button from "../Globals/Button";
+import { IDimension } from "@/types/typeGlobals";
+import { useNotification } from "@/contexts/NotificationProvider";
+import { calculateVolumeWeight } from "@/utils/hooks/hookBill";
+import NumericInput from "../Globals/NumericInput";
 
 interface IProps {
+  volWeightRate?: number | null;
   onRowsChange: (updatedRows: IDimension[]) => void;
   className?: string;
 }
-export default function DimensionTable({ onRowsChange, className }: IProps) {
-  const FACTOR = 5000; // Hệ số qui đổi trong vận chuyển (cm³/kg)
-  const [rows, setRows] = useState<IDimension[]>([{ no: 1, length: 0, width: 0, height: 0, gross: 0, volume: 0 }]);
-
-  // Hàm tính Volume (m³)
-  const calculateVolume = (length: number, width: number, height: number) => {
-    if (isNaN(length) || isNaN(width) || isNaN(height)) return 0;
-    return parseFloat(((length * width * height) / FACTOR).toFixed(3)); // cm³ → m³
-  };
+export interface IDimensionForm extends IDimension {
+  no: number;
+}
+export default function DimensionTable({ volWeightRate, onRowsChange, className }: IProps) {
+  const [rows, setRows] = useState<IDimensionForm[]>([{ no: 1, length: 0, width: 0, height: 0, grossWeight: 0, volumeWeight: 0 }]);
+  const { showNotification } = useNotification();
 
   // Hàm cập nhật giá trị khi user chỉnh sửa input
   const handleInputChange = (id: number, field: string, value: number) => {
@@ -24,13 +25,16 @@ export default function DimensionTable({ onRowsChange, className }: IProps) {
           ? {
               ...row,
               [field]: value,
-              volume:
+              volumeWeight:
                 field === "length" || field === "width" || field === "height"
-                  ? calculateVolume(field === "length" ? value : row.length, field === "width" ? value : row.width, field === "height" ? value : row.height)
-                  : row.volume,
+                  ? volWeightRate
+                    ? calculateVolumeWeight(field === "length" ? value : row.length, field === "width" ? value : row.width, field === "height" ? value : row.height, volWeightRate)
+                    : 0
+                  : row.volumeWeight,
             }
           : row
       );
+
       onRowsChange(updatedRows); // Cập nhật dữ liệu ra component cha
       return updatedRows;
     });
@@ -38,12 +42,12 @@ export default function DimensionTable({ onRowsChange, className }: IProps) {
 
   // Thêm hàng mới
   const addRow = () => {
-    setRows([...rows, { no: rows.length + 1, length: 0, width: 0, height: 0, gross: 0, volume: 0 }]);
+    setRows([...rows, { no: rows.length + 1, length: 0, width: 0, height: 0, grossWeight: 0, volumeWeight: 0 }]);
   };
   // Xóa hàng theo ID
   const deleteRow = (id: number) => {
     if (rows.length === 1) {
-      setRows([{ no: 1, length: 0, width: 0, height: 0, gross: 0, volume: 0 }]);
+      setRows([{ no: 1, length: 0, width: 0, height: 0, grossWeight: 0, volumeWeight: 0 }]);
       return;
     }
     setRows(rows.filter((row) => row.no !== id));
@@ -71,18 +75,27 @@ export default function DimensionTable({ onRowsChange, className }: IProps) {
             {rows.map((row, index) => (
               <tr key={row.no} className="border">
                 <td className="border border-gray-400 bg-gray-200 p-2 text-center">{index + 1}</td>
-                {["length", "width", "height", "gross"].map((field) => (
+                {["length", "width", "height", "grossWeight"].map((field) => (
                   <td key={field} className="border border-gray-400 bg-gray-200 p-2">
-                    <input
+                    {/* <input
                       type="number"
                       className="number-input border-2 border-gray-600 rounded text-center min-w-[50px] "
                       min={0}
                       value={row[field as keyof typeof row]}
                       onChange={(e) => handleInputChange(row.no, field, Number(e.target.value))}
+                    /> */}
+
+                    <NumericInput
+                      label={field}
+                      fullWidth
+                      size="small"
+                      value={String(row[field as keyof typeof row])}
+                      onChange={(val) => handleInputChange(row.no, field, Number(val))}
+                      sx={{ bgcolor: "white" }}
                     />
                   </td>
                 ))}
-                <td className="border border-gray-400 bg-gray-200 p-2 text-center">{row.volume}</td>
+                <td className="border border-gray-400 bg-gray-200 p-2 text-center">{row.volumeWeight}</td>
                 <td className="border border-gray-400 bg-gray-200 p-2 text-center">
                   <Button onClick={() => deleteRow(row.no)} className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
                     Xóa

@@ -8,7 +8,7 @@ import Icon from "@mui/material/Icon";
 import Image from "next/image";
 import styles from "@/styles/components/Bill/BillPrint.module.css";
 import "@/styles/components/Bill/BillPrint.css";
-import utilsDate from "@/utils/hooks/hookDate";
+import { getCurrentDate } from "@/utils/hooks/hookDate";
 interface IProps {
   data: IBillData | null;
   billNumber?: number;
@@ -25,8 +25,6 @@ export interface IBillPrintRef {
 
 const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 2 }, ref) => {
   const billPrintRef = useRef<HTMLDivElement>(null);
-
-  const { getCurrentDate } = utilsDate();
 
   const handlePrint = useReactToPrint({
     contentRef: billPrintRef,

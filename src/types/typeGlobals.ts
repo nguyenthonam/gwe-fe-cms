@@ -280,7 +280,7 @@ export interface IDimension {
   width: number;
   height: number;
   grossWeight: number;
-  volumeWeight: number | null;
+  volumeWeight: number;
 }
 export interface IMetaData {
   perPage: number;
