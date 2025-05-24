@@ -42,20 +42,20 @@ export interface IOrder extends IBaseRecord {
       currency: ECURRENCY | null;
     };
   }; // Giá cơ bản được tính từ bảng pricelists theo carrierId, serviceId, supplierId, zoneId, productType, chargeableWeight
-  extraFees: {
-    extraFeeIds: [string];
-    fscFeePercentage: number | null;
-    fscFeeValue: {
+  extraFees?: {
+    extraFeeIds?: string[];
+    fscFeePercentage?: number | null;
+    fscFeeValue?: {
       purchaseFSCFee: number | null;
       saleFSCFee: number | null;
     };
-    extraFeesTotal: number | null;
+    extraFeesTotal?: number | null;
   };
   vat: {
-    systemVATPercentage: number; // Phí VAT được tính từ bảng vatRates theo carrierId, serviceId, supplierId
-    privateVATPercentage: number; // Phí VAT được áp dụng riêng cho từng đơn hàng. Lưu ý: phí VAT này sẻ thay thế systemVAT nếu nó khác -1
-    purchaseVATTotal: number;
-    saleVATTotal: number;
+    systemVATPercentage?: number; // Phí VAT được tính từ bảng vatRates theo carrierId, serviceId, supplierId
+    customVATPercentage?: number; // Phí VAT được áp dụng riêng cho từng đơn hàng. Lưu ý: phí VAT này sẻ thay thế systemVAT nếu nó khác -1
+    purchaseVATTotal?: number;
+    saleVATTotal?: number;
   };
   surcharges: ISurchargeDetail[]; // Thay đổi từ surcharge thành surcharges
   surchargeTotal: number;
@@ -81,4 +81,12 @@ export interface ICreateOrderRequest {
   packageDetail: IPackageDetail;
   note: string | null;
   // zone: number | null;
+  extraFees?: {
+    extraFeeIds?: string[];
+  };
+  vat?: {
+    customVATPercentage: number; // Phí VAT được áp dụng riêng cho từng đơn hàng. Lưu ý: phí VAT này sẻ thay thế systemVAT nếu nó khác -1
+  };
+  surcharges?: ISurchargeDetail[];
+  currency?: ECURRENCY | null;
 }
