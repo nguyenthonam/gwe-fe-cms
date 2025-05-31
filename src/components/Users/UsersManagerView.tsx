@@ -257,6 +257,7 @@ export default function UserManagerView() {
           columns={columns}
           paginationMode="server"
           rowCount={total}
+          pageSizeOptions={[10, 20, 50, 100]}
           paginationModel={{ page, pageSize }}
           onPaginationModelChange={({ page, pageSize }) => {
             setPage(page);

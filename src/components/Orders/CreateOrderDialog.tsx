@@ -8,7 +8,7 @@ import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getPartnersApi } from "@/utils/apis/apiPartner";
 import { getSuppliersApi } from "@/utils/apis/apiSupplier";
 import { getServicesByCarrierApi } from "@/utils/apis/apiService";
-import { ECountryCode, ECURRENCY, EPRODUCT_TYPE, IDimension } from "@/types/typeGlobals";
+import { ECountryCode, ECURRENCY, EPRODUCT_TYPE, IBasicContactInfor, IDimension } from "@/types/typeGlobals";
 import { COUNTRIES } from "@/utils/constants";
 import { ISurchargeDetail } from "@/types/typeOrder";
 import { getExtraFeesApi } from "@/utils/apis/apiExtraFee";
@@ -50,17 +50,17 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
   const [volWeightRate, setVolWeightRate] = useState(null);
 
   // Sender
-  const [sender, setSender] = useState({ name: "", address1: "", address2: "", address3: "", phone: "" });
+  const [sender, setSender] = useState<IBasicContactInfor>({ fullname: "", address1: "", address2: "", address3: "", phone: "" });
 
   // Recipient
-  const [recipient, setRecipient] = useState({
-    name: "",
+  const [recipient, setRecipient] = useState<{ attention?: string | null } & IBasicContactInfor>({
+    fullname: "",
     attention: "",
     address1: "",
     address2: "",
     address3: "",
     phone: "",
-    country: "",
+    country: { code: ECountryCode.VN, name: "Vietnam" },
     city: "",
     state: "",
     postCode: "",
@@ -110,8 +110,8 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
       setServiceId("");
       setSupplierId("");
       setNote("");
-      setSender({ name: "", address1: "", address2: "", address3: "", phone: "" });
-      setRecipient({ name: "", attention: "", address1: "", address2: "", address3: "", phone: "", country: "", city: "", state: "", postCode: "" });
+      setSender({ fullname: "", address1: "", address2: "", address3: "", phone: "" });
+      setRecipient({ fullname: "", attention: "", address1: "", address2: "", address3: "", phone: "", country: { code: ECountryCode.VN, name: "Vietnam" }, city: "", state: "", postCode: "" });
       setContent("");
       setProductType(EPRODUCT_TYPE.DOCUMENT);
       setDeclaredWeight("");
@@ -140,10 +140,10 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
       !carrierId ||
       !serviceId ||
       !supplierId ||
-      !sender.name ||
+      !sender.fullname ||
       !sender.address1 ||
       !sender.phone ||
-      !recipient.name ||
+      !recipient.fullname ||
       !recipient.address1 ||
       !recipient.phone ||
       !recipient.country ||
@@ -162,19 +162,19 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
         supplierId,
         partner: { partnerId, partnerName: partners.find((p) => p._id === partnerId)?.name || "" },
         sender: {
-          fullname: sender.name,
+          fullname: sender.fullname,
           phone: sender.phone,
           address1: sender.address1 || "",
           address2: sender.address2 || "",
           address3: sender.address3 || "",
         },
         recipient: {
-          fullname: recipient.name,
+          fullname: recipient.fullname,
           phone: recipient.phone,
-          address1: sender.address1 || "",
-          address2: sender.address2 || "",
-          address3: sender.address3 || "",
-          country: { code: recipient.country as ECountryCode, name: COUNTRIES.find((c) => c.code === recipient.country)?.name || "" },
+          address1: recipient.address1 || "",
+          address2: recipient.address2 || "",
+          address3: recipient.address3 || "",
+          country: recipient.country,
           attention: recipient.attention,
           city: recipient.city,
           state: recipient.state,

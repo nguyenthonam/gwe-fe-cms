@@ -114,14 +114,14 @@ export default function OrderManagerView() {
       "CHARGE WEIGHT": c.chargeableWeight,
       NOTE: c.note || "",
       "BASE RATE (BUYING RATE)": formatCurrency(c.basePrice?.purchasePrice?.value, c.currency || ECURRENCY.VND),
-      "EXTRA FEE (BUY)": formatCurrency(c.extraFees?.extraFeesTotal, c.currency || ECURRENCY.VND),
-      "PPXD (BUY)": formatCurrency(c.extraFees?.fscFeeValue?.purchaseFSCFee, c.currency || ECURRENCY.VND),
-      "VAT (BUY)": formatCurrency(c.vat?.purchaseVATTotal, c.currency || ECURRENCY.VND),
+      "EXTRA FEE (BUY)": formatCurrency(c.extraFees?.extraFeesTotal || 0, c.currency || ECURRENCY.VND),
+      "PPXD (BUY)": formatCurrency(c.extraFees?.fscFeeValue?.purchaseFSCFee || 0, c.currency || ECURRENCY.VND),
+      "VAT (BUY)": formatCurrency(c.vat?.purchaseVATTotal || 0, c.currency || ECURRENCY.VND),
       "TOTAL (BUY)": formatCurrency(c.totalPrice?.purchaseTotal, c.currency || ECURRENCY.VND),
       "BASE RATE (SELLING RATE)": formatCurrency(c.basePrice?.salePrice?.value, c.currency || ECURRENCY.VND),
-      "EXTRA FEE (SELL)": formatCurrency(c.extraFees?.extraFeesTotal, c.currency || ECURRENCY.VND),
-      "PPXD (SELL)": formatCurrency(c.extraFees?.fscFeeValue?.saleFSCFee, c.currency || ECURRENCY.VND),
-      "VAT (SELL)": formatCurrency(c.vat?.saleVATTotal, c.currency || ECURRENCY.VND),
+      "EXTRA FEE (SELL)": formatCurrency(c.extraFees?.extraFeesTotal || 0, c.currency || ECURRENCY.VND),
+      "PPXD (SELL)": formatCurrency(c.extraFees?.fscFeeValue?.saleFSCFee || 0, c.currency || ECURRENCY.VND),
+      "VAT (SELL)": formatCurrency(c.vat?.saleVATTotal || 0, c.currency || ECURRENCY.VND),
       "TOTAL (SELL)": formatCurrency(c.totalPrice?.saleTotal, c.currency || ECURRENCY.VND),
       PROFIT: formatCurrency((c.totalPrice?.saleTotal || 0) - (c.totalPrice?.purchaseTotal || 0), c.currency || ECURRENCY.VND),
     }));
@@ -606,6 +606,7 @@ export default function OrderManagerView() {
           columns={columns}
           paginationMode="server"
           rowCount={total}
+          pageSizeOptions={[10, 20, 50, 100]}
           paginationModel={{ page, pageSize }}
           onPaginationModelChange={({ page, pageSize }) => {
             setPage(page);

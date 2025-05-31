@@ -41,7 +41,7 @@ export default function CreateZoneDialog({ open, onClose, onCreated, carriers }:
               </MenuItem>
             ))}
           </TextField>
-          <CountrySelect value={form.countryCode} onChange={(val) => setForm({ ...form, countryCode: val as ECountryCode })} label="Quốc gia" required />
+          <CountrySelect value={form.countryCode} onChange={(country) => setForm({ ...form, countryCode: country?.code as ECountryCode })} label="Quốc gia" required />
           <NumericInput label="Zone" value={String(form.zone)} onChange={(val) => setForm({ ...form, zone: Number(val) })} fullWidth />
         </Stack>
       </DialogContent>

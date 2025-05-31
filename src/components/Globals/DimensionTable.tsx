@@ -3,10 +3,10 @@ import { useState, useEffect } from "react";
 import { Box, Button, Table, TableHead, TableBody, TableRow, TableCell, Typography, Stack, IconButton } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
-import NumericInput from "../../Globals/NumericInput";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { calculateVolumeWeight } from "@/utils/hooks/hookBill";
 import { IDimension } from "@/types/typeGlobals";
+import NumericInput from "./NumericInput";
 
 interface IProps {
   volWeightRate?: number | null;
@@ -24,7 +24,6 @@ export interface IDimensionForm extends IDimension {
 export default function DimensionTable({ volWeightRate, dimensions, disabled, setDimensions, onRowsChange, className }: IProps) {
   // Ưu tiên dùng dimensions/setDimensions nếu có truyền vào để đồng bộ với CreateOrderDialog, nếu không thì tự quản lý state local
   const [rows, setRows] = useState<IDimensionForm[]>([{ no: 1, length: 0, width: 0, height: 0, grossWeight: 0, volumeWeight: 0 }]);
-  const { showNotification } = useNotification();
 
   // Đồng bộ nếu có truyền dimensions/setDimensions từ cha (giúp sử dụng chung cho Dialog hoặc page khác)
   useEffect(() => {
@@ -41,14 +40,19 @@ export default function DimensionTable({ volWeightRate, dimensions, disabled, se
 
   // Khi rows thay đổi, gọi callback ra ngoài (giúp truyền dữ liệu về Dialog cha)
   useEffect(() => {
-    // const exportRows = rows.map((r) => {
-    //   const { no, ...rest } = r;
-    //   return rest;
-    // });
     setDimensions?.(rows);
     onRowsChange?.(rows);
     // eslint-disable-next-line
   }, [rows]);
+  useEffect(() => {
+    setRows((prev) => {
+      return prev.map((row) => ({
+        ...row,
+        volumeWeight: volWeightRate && row.length && row.width && row.height ? calculateVolumeWeight(row.length, row.width, row.height, volWeightRate) : 0,
+      }));
+    });
+    // eslint-disable-next-line
+  }, [volWeightRate]);
 
   // Cập nhật field
   const handleInputChange = (no: number, field: keyof IDimension, value: number) => {
@@ -97,25 +101,36 @@ export default function DimensionTable({ volWeightRate, dimensions, disabled, se
 
   return (
     <Box className={className}>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-        <Button variant="outlined" startIcon={<AddIcon />} onClick={addRow} sx={{ bgcolor: "#e3f2fd", color: "#1976d2", borderColor: "#1976d2" }}>
-          Thêm kiện hàng
-        </Button>
-        <Typography variant="caption" color="text.secondary">
-          (Điền thông số từng kiện hàng. VolumeWeight tính tự động)
-        </Typography>
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
+        {!disabled && (
+          <Button variant="outlined" startIcon={<AddIcon />} onClick={addRow} sx={{ bgcolor: "#e3f2fd", color: "#1976d2", borderColor: "#1976d2", fontSize: "12px" }}>
+            Add Package
+          </Button>
+        )}
       </Stack>
       <Box sx={{ overflowX: "auto" }}>
         <Table size="small">
           <TableHead>
             <TableRow sx={{ background: "#e3f2fd" }}>
-              <TableCell align="center">No</TableCell>
-              <TableCell align="center">Length (cm)</TableCell>
-              <TableCell align="center">Width (cm)</TableCell>
-              <TableCell align="center">Height (cm)</TableCell>
-              <TableCell align="center">Gross Weight (kg)</TableCell>
-              <TableCell align="center">Volume Weight</TableCell>
-              <TableCell align="center">Action</TableCell>
+              <TableCell align="center" width={"100px"}>
+                No
+              </TableCell>
+              <TableCell align="center" width={"100px"}>
+                Length (cm)
+              </TableCell>
+              <TableCell align="center" width={"100px"}>
+                Width (cm)
+              </TableCell>
+              <TableCell align="center" width={"100px"}>
+                Height (cm)
+              </TableCell>
+              <TableCell align="center" width={"100px"}>
+                Gross (kg)
+              </TableCell>
+              <TableCell align="center" width={"100px"}>
+                Volume (m³)
+              </TableCell>
+              {!disabled && <TableCell align="center">Action</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -123,10 +138,9 @@ export default function DimensionTable({ volWeightRate, dimensions, disabled, se
               <TableRow key={row.no}>
                 <TableCell align="center">{idx + 1}</TableCell>
                 {(["length", "width", "height", "grossWeight"] as (keyof IDimension)[]).map((field) => (
-                  <TableCell align="center" key={field}>
+                  <TableCell align="center" key={field} sx={{ "& .MuiInputBase-input": { width: "50px" } }}>
                     <NumericInput
                       disabled={disabled}
-                      label=""
                       fullWidth
                       size="small"
                       value={String(row[field] ?? 0)}

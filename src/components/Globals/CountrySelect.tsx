@@ -10,7 +10,7 @@ export interface ICountry {
 
 interface Props {
   value?: string | null; // code, ví dụ: "VN"
-  onChange?: (code: string | null) => void;
+  onChange?: (country: ICountry | null) => void;
   label?: string;
   required?: boolean;
   disabled?: boolean;
@@ -33,7 +33,7 @@ export default function CountrySelect({ value, onChange, label = "Country", requ
         return options.filter((c) => c.code.toLowerCase().includes(v) || c.name.toLowerCase().includes(v));
       }}
       value={selected}
-      onChange={(_, val) => onChange?.(val?.code || null)}
+      onChange={(_, val) => onChange?.(val || null)}
       renderInput={(params) => <TextField {...params} label={label} required={required} disabled={disabled} error={error} helperText={helperText} placeholder={placeholder} fullWidth={fullWidth} />}
       renderOption={(props, option) => (
         <Box component="li" {...props} key={option.code}>

@@ -7,16 +7,17 @@ interface Props {
   volWeightRate: number | null;
   dimensions: IDimension[];
   setDimensions: (rows: IDimension[]) => void;
+  disabled?: boolean;
 }
 
-export default function OrderDimensionSection({ volWeightRate, dimensions, setDimensions }: Props) {
+export default function OrderDimensionSection({ volWeightRate, dimensions, setDimensions, disabled }: Props) {
   return (
     <Box className="mb-2">
       <Paper>
         <Typography variant="h6" sx={{ mb: 2, background: "#2196f3", color: "#fff", px: 2, py: 1 }}>
           Dimension
         </Typography>
-        <DimensionTable className="px-2 mb-2" volWeightRate={volWeightRate} onRowsChange={setDimensions} />
+        <DimensionTable className="px-2 mb-2" volWeightRate={volWeightRate} dimensions={dimensions} onRowsChange={setDimensions} disabled={disabled} />
       </Paper>
     </Box>
   );

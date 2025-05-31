@@ -1,11 +1,11 @@
 import React, { useRef, forwardRef, useImperativeHandle, useState, useEffect } from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
-import BillPrint, { IBillPrintRef } from "./BillPrint";
-import { IBillData } from "@/types/typeBill";
-import BillNumberPopup from "./BillNumberPopup";
+import BillPrintForm, { IBillPrintRef } from "./BillPrintForm";
+import BillNumberDialog from "./NumberOfBillPrintDialog";
+import { IOrder } from "@/types/typeOrder";
 
 interface IProps {
-  data: IBillData | null;
+  data: IOrder | null;
 }
 export interface IBillPopupHandle {
   open: () => void;
@@ -14,41 +14,41 @@ export interface IBillPopupHandle {
 
 const BillPopup = forwardRef<IBillPopupHandle, IProps>(({ data }, ref) => {
   const [open, setOpen] = useState(false);
-  const [billNumber, setBillNumber] = useState(2);
-  const [isConfirm, setIsConfirm] = useState(true);
+  const [billNumber, setBillNumber] = useState<number>(2);
   const [openBillNumber, setOpenBillNumber] = useState(false);
 
   const printRef = useRef<IBillPrintRef | null>(null);
 
-  // Expose functions to parent via ref
+  // Ref expose cho cha
   useImperativeHandle(ref, () => ({
     open: () => setOpen(true),
     close: () => setOpen(false),
   }));
+
+  // Khi xác nhận số bản in, gọi in
   useEffect(() => {
-    if (billNumber > 0) {
+    if (open && billNumber > 0) {
       printRef.current?.handlePrint();
     }
-  }, [billNumber, isConfirm]); // Theo dõi billNumber, tự động gọi print khi cập nhật
+    // eslint-disable-next-line
+  }, [billNumber, open]);
 
+  // Xác nhận số bản in, gọi in lại nếu khác số cũ
   const handleConfirm = (num: number) => {
-    if (billNumber === num) {
-      setIsConfirm(!isConfirm);
-    } else {
-      setBillNumber(num);
-    }
+    setBillNumber(num);
+    setOpenBillNumber(false);
   };
 
   return (
     <>
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle className="mb-2 border-b-2 border-gray-300">
-          <p className="uppercase text-blue-600">THÔNG TIN IN HÓA ĐƠN</p>
+        <DialogTitle sx={{ mb: 2, borderBottom: "2px solid #e0e0e0" }}>
+          <span className="uppercase text-blue-600">THÔNG TIN IN HÓA ĐƠN</span>
         </DialogTitle>
         <DialogContent>
-          <BillPrint ref={printRef} data={data} billNumber={billNumber} />
+          <BillPrintForm ref={printRef} data={data} billNumber={billNumber} />
         </DialogContent>
-        <DialogActions className="border-t-2 border-gray-300">
+        <DialogActions sx={{ borderTop: "2px solid #e0e0e0" }}>
           <Button className="font-bold hover:bg-blue-500 hover:text-white" onClick={() => setOpenBillNumber(true)} color="primary" variant="text">
             In
           </Button>
@@ -57,10 +57,11 @@ const BillPopup = forwardRef<IBillPopupHandle, IProps>(({ data }, ref) => {
           </Button>
         </DialogActions>
       </Dialog>
-      <BillNumberPopup open={openBillNumber} onClose={() => setOpenBillNumber(false)} onConfirm={handleConfirm} />
+      {/* Popup chọn số bản in */}
+      <BillNumberDialog open={openBillNumber} onClose={() => setOpenBillNumber(false)} onConfirm={handleConfirm} />
     </>
   );
 });
 
-BillPopup.displayName = "Bill Popup";
+BillPopup.displayName = "BillPopup";
 export default BillPopup;

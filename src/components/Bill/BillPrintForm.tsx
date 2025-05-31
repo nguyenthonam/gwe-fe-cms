@@ -2,22 +2,20 @@ import React, { useImperativeHandle, useRef } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { useReactToPrint } from "react-to-print";
-import Barcode from "./Barcode";
-import { IBillData } from "@/types";
+import Barcode from "../Globals/Barcode";
 import Icon from "@mui/material/Icon";
 import Image from "next/image";
 import styles from "@/styles/components/Bill/BillPrint.module.css";
 import "@/styles/components/Bill/BillPrint.css";
 import { getCurrentDate } from "@/utils/hooks/hookDate";
+import { IOrder } from "@/types/typeOrder";
+import { EPRODUCT_TYPE } from "@/types/typeGlobals";
+
 interface IProps {
-  data: IBillData | null;
+  data: IOrder | null;
   billNumber?: number;
 }
-interface IBillView {
-  className?: string;
-}
 
-// Định nghĩa kiểu dữ liệu cho ref
 export interface IBillPrintRef {
   handlePrint: () => void;
   handleSaveAndPrint: () => void;
@@ -26,51 +24,44 @@ export interface IBillPrintRef {
 const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 2 }, ref) => {
   const billPrintRef = useRef<HTMLDivElement>(null);
 
+  // In hóa đơn
   const handlePrint = useReactToPrint({
     contentRef: billPrintRef,
-    documentTitle: data?.HAWBCode,
-    preserveAfterPrint: true,
+    documentTitle: data?.trackingCode,
+    // removeAfterPrint: false,
   });
+
+  // Lưu PDF và in (chụp html -> pdf)
   const handleSaveAndPrint = async () => {
     if (!billPrintRef.current) return;
-
-    // Chụp nội dung của hóa đơn thành hình ảnh
-    // const canvas = await html2canvas(billPrintRef.current);
-    const canvas = await html2canvas(billPrintRef.current, {
-      scale: 2, // Tăng gấp 2 lần độ phân giải
-    });
-
+    const canvas = await html2canvas(billPrintRef.current, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
-
-    // Tạo file PDF
     const pdf = new jsPDF("p", "mm", "a4");
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
     pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-    pdf.save(data?.HAWBCode || "GXxxxxxx"); // Lưu file PDF
-
-    // Mở hộp thoại in sau khi lưu
+    pdf.save(data?.trackingCode || "GXxxxxxx");
     setTimeout(() => {
       window.open(pdf.output("bloburl"), "_blank");
     }, 1000);
   };
 
-  useImperativeHandle(ref, () => {
-    return {
-      handlePrint: handlePrint,
-      handleSaveAndPrint: handleSaveAndPrint,
-    };
-  });
+  // Expose ref ra ngoài
+  useImperativeHandle(ref, () => ({
+    handlePrint,
+    handleSaveAndPrint,
+  }));
 
-  const BillView = ({ className }: IBillView) => {
+  // Render từng bản bill
+  const BillView = ({ className }: { className?: string }) => {
+    if (!data) return null;
+
     return (
-      <div className={`${styles.bill} bill a4-portrait ${className}`}>
+      <div className={`${styles.bill} bill a4-portrait ${className || ""}`}>
+        {/* Header */}
         <div className={styles.header}>
           <div className={styles.logo}>
-            <div className="w-full h-full">
-              <Image className="max-w-full w-full h-auto" src="/logo-04.png" alt="Company Logo" width={100} height={100} priority />
-            </div>
+            <Image src="/logo-04.png" alt="Company Logo" width={100} height={100} priority className="max-w-full w-full h-auto" />
           </div>
           <div className="flex flex-col flex-grow">
             <h2 className={styles.headerTitle + " mt-2"}>GATEWAY EXPRESS COMPANY LIMITED</h2>
@@ -96,24 +87,26 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
             </div>
           </div>
           <div className={styles.barcode}>
-            {data?.HAWBCode && <Barcode value={data.HAWBCode} />}{" "}
-            {data?.CAWBCode && (
+            {data?.trackingCode && <Barcode value={data.trackingCode} />}
+            {data?.carrierAirWaybillCode && (
               <p className="text-center text-[10px]">
-                <b>{data?.CAWBCode}</b>
+                <b>{data.carrierAirWaybillCode}</b>
               </p>
             )}
           </div>
         </div>
 
+        {/* Main Table */}
         <table className={styles.table}>
           <tbody>
+            {/* Shipper & Consignee */}
             <tr className={styles.tableRow} style={{ border: "none" }}>
               <td className={styles.tableData} colSpan={2}>
                 <p>
                   <b>Shipper company name and address:</b>
                 </p>
                 <p className="w-full pr-[14px] size-[16px] uppercase text-right min-h-[14px]" style={{ lineHeight: 1 }}>
-                  <b>{data?.carrier}</b>
+                  <b>{typeof data.carrierId === "object" ? data.carrierId?.name : data.carrierId}</b>
                 </p>
               </td>
               <td className={styles.tableData} style={{ border: "none" }}>
@@ -121,16 +114,17 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
               </td>
             </tr>
             <tr className={styles.tableRow}>
+              {/* Shipper Info */}
               <td className={styles.tableData + " uppercase"} colSpan={2}>
-                {data?.customer && (
+                {data.partner?.partnerName && (
                   <>
-                    <b>{data.customer}</b>
+                    <b>{data.partner.partnerName}</b>
                     <br />
                   </>
                 )}
-                <span>ATTN:</span> <span>{data?.sender?.name ? data.sender.name : ""}</span>
+                <span>ATTN:</span> <span>{data?.sender?.fullname || ""}</span>
                 <br />
-                <span>ADD:</span> <span>{data?.sender?.address1 ? data.sender.address1 : ""}</span>
+                <span>ADD:</span> <span>{data?.sender?.address1 || ""}</span>
                 <br />
                 {data?.sender?.address2 && (
                   <>
@@ -144,76 +138,56 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
                     <br />
                   </>
                 )}
-                <span>CONTACT NUMBER:</span> <span>{data?.sender?.phone ? data.sender.phone : ""}</span>
+                <span>CONTACT NUMBER:</span> <span>{data?.sender?.phone || ""}</span>
                 <br />
                 <p style={{ minHeight: "40px" }}>
-                  <span>NOTE:</span> <span>{data?.note ? data.note : ""}</span>
+                  <span>NOTE:</span> <span>{data?.note || ""}</span>
                 </p>
               </td>
+              {/* Consignee Info */}
               <td className={styles.tableData + " uppercase"} style={{ border: "none" }}>
-                {data?.recipient?.address2 && (
-                  <>
-                    <b>{data.recipient.name}</b>
-                    <br />
-                  </>
-                )}
+                <b>{data?.recipient?.fullname || ""}</b>
+                <br />
                 <p>
-                  <span>ATTN:</span> <span>{data?.recipient?.attention ? data.recipient.attention : ""}</span>
+                  <span>ATTN:</span> <span>{data?.recipient?.attention || ""}</span>
                 </p>
                 <p>
-                  <span>ADD:</span> <span>{data?.recipient?.address1 ? data.recipient.address1 : ""}</span>
+                  <span>ADD:</span> <span>{data?.recipient?.address1 || ""}</span>
                 </p>
-                {data?.recipient?.address2 && (
-                  <>
-                    <p>{data.recipient.address2}</p>
-                  </>
-                )}
-                {data?.recipient?.address3 && (
-                  <>
-                    <p>{data.recipient.address3}</p>
-                  </>
-                )}
+                {data?.recipient?.address2 && <p>{data.recipient.address2}</p>}
+                {data?.recipient?.address3 && <p>{data.recipient.address3}</p>}
                 {(data?.recipient?.city || data?.recipient?.state || data?.recipient?.postCode || data?.recipient?.country) && (
-                  <>
-                    <p>
-                      {data?.recipient?.city + " "}
-                      {data?.recipient?.state + " "}
-                      {data?.recipient?.postCode + " "}
-                      {data?.recipient?.country}
-                    </p>
-                  </>
+                  <p>
+                    {data?.recipient?.city ? data.recipient.city + " " : ""}
+                    {data?.recipient?.state ? data.recipient.state + " " : ""}
+                    {data?.recipient?.postCode ? data.recipient.postCode + " " : ""}
+                    {typeof data?.recipient?.country === "object" ? data.recipient.country?.name : data.recipient.country}
+                  </p>
                 )}
                 <p>
-                  <span>CONTACT NUMBER:</span> <span>{data?.recipient?.phone ? data.recipient.phone : ""}</span>
+                  <span>CONTACT NUMBER:</span> <span>{data?.recipient?.phone || ""}</span>
                 </p>
               </td>
             </tr>
+            {/* Product Type, Package */}
             <tr className={styles.tableRow}>
               <td className={styles.tableData} colSpan={2}>
                 <div className="py-[2px] flex justify-between items-center">
                   <b>Type of product:</b>
                   <div className="inline-flex">
                     <p className="inline-flex items-center mr-2">
-                      {data?.package?.code && data.package.code === "DOCUMENT" ? (
-                        <Icon className="my-auto" sx={{ fontSize: "18px !important" }}>
-                          check_box
-                        </Icon>
+                      {data.productType === EPRODUCT_TYPE.DOCUMENT ? (
+                        <Icon sx={{ fontSize: "18px !important" }}>check_box</Icon>
                       ) : (
-                        <Icon className="my-auto" sx={{ fontSize: "18px !important" }}>
-                          check_box_outline_blank
-                        </Icon>
+                        <Icon sx={{ fontSize: "18px !important" }}>check_box_outline_blank</Icon>
                       )}{" "}
                       <span className="mt-[1px]">DOCUMENT</span>
                     </p>
                     <p className="inline-flex items-center mr-2">
-                      {data?.package?.code && data.package.code === "PARCEL" ? (
-                        <Icon className="my-auto" sx={{ fontSize: "18px !important" }}>
-                          check_box
-                        </Icon>
+                      {data.productType === EPRODUCT_TYPE.PARCEL ? (
+                        <Icon sx={{ fontSize: "18px !important" }}>check_box</Icon>
                       ) : (
-                        <Icon className="my-auto" sx={{ fontSize: "18px !important" }}>
-                          check_box_outline_blank
-                        </Icon>
+                        <Icon sx={{ fontSize: "18px !important" }}>check_box_outline_blank</Icon>
                       )}{" "}
                       <span className="mt-[1px]">PARCEL</span>
                     </p>
@@ -223,25 +197,26 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
               <td className={styles.tableData} style={{ border: "none" }}>
                 <div className="py-[2px] flex justify-between items-center">
                   <b>Number of package:</b>
-                  <span> {data?.package?.PCEs || 0}</span>
+                  <span> {data?.packageDetail?.quantity ?? 0}</span>
                   <b>Weight in Kg:</b>
-                  <span className="mr-4">{data?.package?.weight || 0}</span>
+                  <span className="mr-4">{data?.packageDetail?.declaredWeight ?? 0}</span>
                 </div>
               </td>
             </tr>
+            {/* Description/Dimensions */}
             <tr className={styles.tableRow}>
               <td className={styles.tableData}>
                 <p>
                   <b>Description of contents:</b>
                 </p>
-                <p className="text-center uppercase">{data?.package?.content}</p>
+                <p className="text-center uppercase">{data?.packageDetail?.content || ""}</p>
               </td>
               <td className={styles.tableData}>
                 <p>
                   <b>Declared value for custom:</b>
                 </p>
                 <p className="text-center">
-                  {data?.package?.declaredValue} {data?.package?.currency}
+                  {data?.packageDetail?.declaredValue ?? 0} {data?.packageDetail?.currency}
                 </p>
               </td>
               <td className={styles.tableData + " !border-none"}>
@@ -250,12 +225,11 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
                     <b>Dimension in CM (Length x Width x Height):</b>
                   </p>
                   <div className="pl-[40px]">
-                    {data?.package?.dimensions &&
-                      data.package.dimensions.map((item, idx) => (
-                        <p key={item.no + idx}>
-                          PIECE {item.no}: {item?.length || 0}x{item?.width || 0}x{item?.height || 0}
-                        </p>
-                      ))}
+                    {(data?.packageDetail?.dimensions || []).map((item, idx) => (
+                      <p key={item.no + "-" + idx}>
+                        PIECE {item.no}: {item.length}x{item.width}x{item.height}
+                      </p>
+                    ))}
                   </div>
                 </div>
               </td>
@@ -263,6 +237,7 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
           </tbody>
         </table>
 
+        {/* Signatures */}
         <div className="px-[8px] grid grid-cols-[30%_30%_40%] text-[12px]">
           <div className="flex flex-col py-[2px] pr-[8px] border-r-2 border-black">
             <b>Shipper&apos;s signature:</b>
@@ -288,14 +263,12 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
 
   return (
     <div className={styles.container} ref={billPrintRef}>
-      {/* <BillView />
-      <BillView className="print-only" /> */}
-      {Array.from({ length: billNumber }).map((v, idx) => (
+      {Array.from({ length: billNumber }).map((_, idx) => (
         <BillView key={"shipping-mark-" + idx} className={idx > 0 ? "print-only" : ""} />
       ))}
     </div>
   );
 });
 
-BillPrint.displayName = "Bill Print";
+BillPrint.displayName = "BillPrint";
 export default BillPrint;

@@ -232,6 +232,7 @@ export default function StaffManagerView() {
             rows={staffs.map((s) => ({ ...s, id: s._id }))}
             columns={columns}
             rowCount={total}
+            pageSizeOptions={[10, 20, 50, 100]}
             paginationModel={{ page, pageSize }}
             paginationMode="server"
             onPaginationModelChange={({ page, pageSize }) => {

@@ -59,7 +59,7 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({ onEdit, onLockUnlock, on
             }}
             sx={{ display: "flex", justifyContent: "center", minWidth: 0 }}
           >
-            <Tooltip title="Sửa" placement="right">
+            <Tooltip title="Lấy lại mật khẩu" placement="right">
               <ListItemIcon sx={{ minWidth: 32 }}>
                 <ResetPasswordIcon fontSize="small" sx={{ color: orange[500] }} />
               </ListItemIcon>
