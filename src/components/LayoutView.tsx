@@ -130,7 +130,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
     const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
     const showMenu: boolean = Boolean(anchorEl);
     const dispatch: ThunkDispatch<AppState, unknown, AnyAction> = useDispatch();
-    const { accessToken, profile, isLoading }: { accessToken: string | null; profile: IUser | null; isLoading: boolean } = useSelector((state: AppState) => state.auth);
+    const { accessToken, profile, isLoading } = useSelector((state: AppState) => state.auth);
     const { showNotification } = useNotification();
     const router = useRouter();
 
@@ -190,11 +190,9 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
               <IconButton edge="start" color="primary" onClick={() => setShowDrawer(!showDrawer)} sx={{ mr: 2 }}>
                 <MenuIcon />
               </IconButton>
-              <Box sx={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
-                <Link href="/" passHref>
-                  <Image src="/logo.png" alt="Logo" width={150} height={100} priority />
-                </Link>
-              </Box>
+              <Link href="/" style={{ display: "flex", alignItems: "center" }}>
+                <Image src="/logo.png" alt="Logo" width={150} height={100} priority style={{ height: "auto", width: 150 }} />
+              </Link>
               {accessToken ? (
                 <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
                   <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>

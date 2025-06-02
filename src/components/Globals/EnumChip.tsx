@@ -1,11 +1,11 @@
 "use client";
 
 import { Chip } from "@mui/material";
-import { EGENDER, ERECORD_STATUS, EORDER_STATUS, EPaymentTerms, ECHARGEABLE_WEIGHT_TYPE } from "@/types/typeGlobals";
+import { EGENDER, ERECORD_STATUS, EORDER_STATUS, EPaymentTerms, ECHARGEABLE_WEIGHT_TYPE, EUSER_ROLES } from "@/types/typeGlobals";
 import { ECOMPANY_TYPE } from "@/types/typeCompany";
 
 type EnumChipProps = {
-  type: "gender" | "recordStatus" | "orderStatus" | "payment" | "chargeWeightType" | "companyType";
+  type: "gender" | "recordStatus" | "orderStatus" | "payment" | "chargeWeightType" | "companyType" | "userRole";
   value?: string | number | null;
 };
 
@@ -49,6 +49,14 @@ const CHIP_STYLES = {
     [ECOMPANY_TYPE.Customer]: { label: "Khách hàng", bg: "#F3E5F5", color: "#7B1FA2" },
     [ECOMPANY_TYPE.Supplier]: { label: "Nhà cung cấp", bg: "#FFFDE7", color: "#FBC02D" },
   },
+  userRole: {
+    // [EUSER_ROLES.SupperAdmin]: { label: "Supper", bg: "#FFD700", color: "#C62828" },
+    [EUSER_ROLES.Admin]: { label: "Admin", bg: "#E3F2FD", color: "#1565C0" },
+    [EUSER_ROLES.OfficeStaff]: { label: "Văn Phòng", bg: "#FFF9E1", color: "#F9A825" },
+    [EUSER_ROLES.WarehouseStaff]: { label: "Kho", bg: "#E0F2F1", color: "#00897B" },
+    [EUSER_ROLES.Partner]: { label: "Đối tác", bg: "#E8F5E9", color: "#388E3C" },
+    [EUSER_ROLES.Customer]: { label: "Khách hàng", bg: "#F3E5F5", color: "#7B1FA2" },
+  },
 } as const;
 
 export const EnumChip = ({ type, value }: EnumChipProps) => {
@@ -66,6 +74,7 @@ export const EnumChip = ({ type, value }: EnumChipProps) => {
       label={mapped.label}
       size="small"
       sx={{
+        padding: "2px 6px",
         backgroundColor: mapped.bg,
         color: mapped.color,
         fontWeight: 500,

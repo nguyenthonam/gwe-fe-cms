@@ -10,7 +10,7 @@ export enum EFEE_TYPE {
   FIXED = "Fixed",
 }
 export enum EUSER_ROLES {
-  SupperAdmin = "sAdpdine22",
+  // SupperAdmin = "sAdpdine22",
   Admin = "nInAnd043",
   OfficeStaff = "staFctuoud",
   WarehouseStaff = "stCteondf",
@@ -27,17 +27,51 @@ export enum ECHARGEABLE_WEIGHT_TYPE {
   TOTAL = 2,
 }
 export enum EPRODUCT_TYPE {
-  Document = "DOX",
-  Parcel = "WPX",
+  DOCUMENT = "DOX",
+  PARCEL = "WPX",
 }
 export enum ECURRENCY {
-  USD = "USD", // Đô la Mỹ
-  VND = "VND", // Đồng Việt Nam
-  EUR = "EUR", // Euro
-  JPY = "JPY", // Yên Nhật
-  GBP = "GBP", // Bảng Anh
-  CNY = "CNY", // Nhân dân tệ Trung Quốc
+  VND = "VND", // Vietnam
+  USD = "USD", // United States
+  EUR = "EUR", // Eurozone (FR, DE, IT, etc.)
+  GBP = "GBP", // United Kingdom
+  JPY = "JPY", // Japan
+  CNY = "CNY", // China
+  KRW = "KRW", // South Korea
+  AUD = "AUD", // Australia
+  CAD = "CAD", // Canada
+  CHF = "CHF", // Switzerland
+  SGD = "SGD", // Singapore
+  THB = "THB", // Thailand
+  INR = "INR", // India
+  MYR = "MYR", // Malaysia
+  IDR = "IDR", // Indonesia
+  PHP = "PHP", // Philippines
+  HKD = "HKD", // Hong Kong
+  AED = "AED", // United Arab Emirates
+  SAR = "SAR", // Saudi Arabia
+  TRY = "TRY", // Turkey
+  ZAR = "ZAR", // South Africa
+  SEK = "SEK", // Sweden
+  NOK = "NOK", // Norway
+  DKK = "DKK", // Denmark
+  NZD = "NZD", // New Zealand
+  BRL = "BRL", // Brazil
+  MXN = "MXN", // Mexico
+  RUB = "RUB", // Russia
+  PKR = "PKR", // Pakistan
+  EGP = "EGP", // Egypt
+  NGN = "NGN", // Nigeria
+  KES = "KES", // Kenya
+  BDT = "BDT", // Bangladesh
+  LKR = "LKR", // Sri Lanka
+  MMK = "MMK", // Myanmar
+  PLN = "PLN", // Poland
+  CZK = "CZK", // Czechia
+  HUF = "HUF", // Hungary
+  RON = "RON", // Romania
 }
+
 export enum EORDER_STATUS {
   Pending = "Pending",
   Confirmed = "Confirmed",
@@ -246,7 +280,7 @@ export interface IDimension {
   width: number;
   height: number;
   grossWeight: number;
-  volumeWeight: number | null;
+  volumeWeight: number;
 }
 export interface IMetaData {
   perPage: number;

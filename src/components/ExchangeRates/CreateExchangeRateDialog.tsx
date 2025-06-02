@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ECURRENCY } from "@/types/typeGlobals";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { createExchangeRateApi } from "@/utils/apis/apiExchangeRate";
+import NumericInput from "../Globals/NumericInput";
 
 interface Props {
   open: boolean;
@@ -67,7 +68,8 @@ export default function CreateExchangeRateDialog({ open, onClose, onCreated }: P
               </Select>
             </Grid>
             <Grid size={12}>
-              <TextField label="Tỉ giá" fullWidth size="small" type="number" value={rate} onChange={(e) => setRate(Number(e.target.value))} />
+              {/* <TextField label="Tỉ giá" fullWidth size="small" type="number" value={rate} onChange={(e) => setRate(Number(e.target.value))} /> */}
+              <NumericInput label="Tỉ giá" fullWidth size="small" value={String(rate)} onChange={(val) => setRate(Number(val))} />
             </Grid>
           </Grid>
         </Stack>

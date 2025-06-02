@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, Button, TextField, MenuItem, Select, Stack, CircularProgress, Typography } from "@mui/material";
+import { Box, Button, TextField, MenuItem, Select, Stack, CircularProgress, Typography, Chip } from "@mui/material";
 import { Add, Download } from "@mui/icons-material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import debounce from "lodash/debounce";
@@ -16,6 +16,7 @@ import UpdateCarrierDialog from "./UpdateCarrierDialog";
 import { chargeWeightTypeLabel, recordStatusLabel } from "@/utils/constants/enumLabel";
 import * as XLSX from "sheetjs-style";
 import CarrierDetailDialog from "./CarrierDetailDialog";
+import { orange } from "@mui/material/colors";
 
 export default function CarrierManagerView() {
   const [carriers, setCarriers] = useState<ICarrier[]>([]);
@@ -88,6 +89,7 @@ export default function CarrierManagerView() {
       TÊN: c.name,
       "HÃNG BAY": typeof c.companyId === "object" ? c.companyId?.name || "" : String(c.companyId),
       "CÁCH TÍNH CÂN NẶNG": chargeWeightTypeLabel[c.chargeableWeightType],
+      "HỆ SỐ QUY ĐỔI THỂ TÍCH": c.volWeightRate,
       "TRẠNG THÁI": recordStatusLabel[c.status as keyof typeof recordStatusLabel] || c.status,
     }));
 
@@ -172,6 +174,22 @@ export default function CarrierManagerView() {
       renderCell: ({ row }) => <EnumChip type="chargeWeightType" value={row.chargeableWeightType} />,
     },
     {
+      field: "volWeightRate",
+      headerName: "HỆ SỐ QUY ĐỔI THỂ TÍCH",
+      flex: 1,
+      renderCell: ({ value }) => (
+        <Chip
+          label={value}
+          size="small"
+          sx={{
+            backgroundColor: orange[300],
+            color: "#fff",
+            fontWeight: 500,
+          }}
+        />
+      ),
+    },
+    {
       field: "status",
       headerName: "TRẠNG THÁI",
       flex: 1,
@@ -227,6 +245,7 @@ export default function CarrierManagerView() {
             rows={carriers.map((c) => ({ ...c, id: c._id }))}
             columns={columns}
             rowCount={total}
+            pageSizeOptions={[10, 20, 50, 100]}
             paginationModel={{ page, pageSize }}
             paginationMode="server"
             onPaginationModelChange={({ page, pageSize }) => {

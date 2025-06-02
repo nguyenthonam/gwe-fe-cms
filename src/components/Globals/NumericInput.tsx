@@ -1,20 +1,17 @@
 "use client";
 
 import { TextField, TextFieldProps } from "@mui/material";
-import { useState } from "react";
 
 interface NumericInputProps extends Omit<TextFieldProps, "onChange" | "value"> {
+  disabled?: boolean;
   value: string;
   onChange: (value: string) => void;
 }
 
-export default function NumericInput({ value, onChange, ...props }: NumericInputProps) {
-  const [internalValue, setInternalValue] = useState(value);
-
+export default function NumericInput({ value, disabled, onChange, ...props }: NumericInputProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    if (/^\d*$/.test(val)) {
-      setInternalValue(val);
+    if (/^\d*\.?\d*$/.test(val)) {
       onChange(val);
     }
   };
@@ -23,14 +20,12 @@ export default function NumericInput({ value, onChange, ...props }: NumericInput
     <TextField
       {...props}
       type="text"
-      inputMode="numeric"
-      value={internalValue}
+      disabled={disabled}
+      inputMode="decimal"
+      value={value}
       onChange={handleChange}
-      onBlur={() => {
-        if (internalValue === "") onChange("0");
-      }}
       onKeyDown={(e) => {
-        const allowedKeys = ["Backspace", "Tab", "Delete", "ArrowLeft", "ArrowRight", "Home", "End"];
+        const allowedKeys = ["Backspace", "Tab", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "."];
         const isDigit = /^[0-9]$/.test(e.key);
         if (!isDigit && !allowedKeys.includes(e.key)) {
           e.preventDefault();

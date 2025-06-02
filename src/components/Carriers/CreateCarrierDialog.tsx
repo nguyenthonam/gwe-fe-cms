@@ -7,6 +7,7 @@ import { useNotification } from "@/contexts/NotificationProvider";
 import { ECHARGEABLE_WEIGHT_TYPE } from "@/types/typeGlobals";
 import { ICarrier } from "@/types/typeCarrier";
 import { ICompany } from "@/types/typeCompany";
+import NumericInput from "../Globals/NumericInput";
 
 interface Props {
   open: boolean;
@@ -15,7 +16,7 @@ interface Props {
 }
 
 export default function CreateCarrierDialog({ open, onClose, onCreated }: Props) {
-  const [form, setForm] = useState<Partial<ICarrier>>({ chargeableWeightType: ECHARGEABLE_WEIGHT_TYPE.DETAIL });
+  const [form, setForm] = useState<Partial<ICarrier>>({ chargeableWeightType: ECHARGEABLE_WEIGHT_TYPE.DETAIL, volWeightRate: 5000 });
   const [loading, setLoading] = useState(false);
   const [companyOptions, setCompanyOptions] = useState<ICompany[]>([]);
   const { showNotification } = useNotification();
@@ -68,6 +69,9 @@ export default function CreateCarrierDialog({ open, onClose, onCreated }: Props)
                 <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.DETAIL}>Tính theo kiện</MenuItem>
                 <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.TOTAL}>Tính toàn bộ</MenuItem>
               </TextField>
+            </Grid>
+            <Grid size={12}>
+              <NumericInput label="Hệ số quy đổi thể tích" fullWidth size="small" value={String(form.volWeightRate)} onChange={(val) => handleChange("volWeightRate", Number(val))} />
             </Grid>
           </Grid>
         </Stack>

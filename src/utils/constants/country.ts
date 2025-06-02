@@ -1,4 +1,6 @@
-export const COUNTRIES = [
+import { ECountryCode } from "@/types/typeGlobals";
+
+export const COUNTRIES: { code: string; name: string }[] = [
   { code: "AF", name: "Afghanistan" },
   { code: "AX", name: "Aland Islands" },
   { code: "AL", name: "Albania" },

@@ -34,7 +34,7 @@ export const searchCAWBCodesApi = async ({ keyword, page = 1, perPage = 10, stat
   }
 };
 
-export const createCAWBCodesApi = async (payload: { carrierId: string; codes: string[] }) => {
+export const createCAWBCodeApi = async (payload: { carrierId: string; codes: string[] }) => {
   try {
     const res = await AxiosAPI.post("/api/cawb-codes", payload);
     return res;
