@@ -7,6 +7,7 @@ import { getCompanyCarriersApi, updateCarrierApi } from "@/utils/apis/apiCarrier
 import { useNotification } from "@/contexts/NotificationProvider";
 import { ECHARGEABLE_WEIGHT_TYPE } from "@/types/typeGlobals";
 import { ICompany } from "@/types/typeCompany";
+import NumericInput from "../Globals/NumericInput";
 
 interface Props {
   open: boolean;
@@ -62,9 +63,6 @@ export default function UpdateCarrierDialog({ open, onClose, onUpdated, carrier 
             <Grid size={6}>
               <TextField label="Tên" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
             </Grid>
-            {/* <Grid size={12}>
-              <TextField label="Hãng Bay" value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small" />
-            </Grid> */}
 
             <Grid size={12}>
               <TextField label="Hãng bay" select value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
@@ -80,6 +78,9 @@ export default function UpdateCarrierDialog({ open, onClose, onUpdated, carrier 
                 <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.DETAIL}>Tính theo kiện</MenuItem>
                 <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.TOTAL}>Tính toàn bộ</MenuItem>
               </TextField>
+            </Grid>
+            <Grid size={12}>
+              <NumericInput label="Hệ số quy đổi thể tích" fullWidth size="small" value={String(form.volWeightRate)} onChange={(val) => handleChange("volWeightRate", Number(val))} />
             </Grid>
           </Grid>
         </Stack>

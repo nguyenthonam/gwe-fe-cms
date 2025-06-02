@@ -1,5 +1,5 @@
 import { ECOMPANY_TYPE } from "@/types/typeCompany";
-import { EGENDER, ERECORD_STATUS, EORDER_STATUS, EPaymentTerms, EPRODUCT_TYPE, ECHARGEABLE_WEIGHT_TYPE, EFEE_TYPE } from "@/types/typeGlobals";
+import { EGENDER, ERECORD_STATUS, EORDER_STATUS, EPaymentTerms, EPRODUCT_TYPE, ECHARGEABLE_WEIGHT_TYPE, EFEE_TYPE, EUSER_ROLES } from "@/types/typeGlobals";
 
 export const genderLabel: Record<EGENDER, string> = {
   [EGENDER.MALE]: "Nam",
@@ -39,11 +39,20 @@ export const companyTypeLabel: Record<ECOMPANY_TYPE, string> = {
 };
 
 export const productTypeLabel: Record<EPRODUCT_TYPE, string> = {
-  [EPRODUCT_TYPE.Document]: "Tài liệu",
-  [EPRODUCT_TYPE.Parcel]: "Hàng hóa",
+  [EPRODUCT_TYPE.DOCUMENT]: "Tài liệu",
+  [EPRODUCT_TYPE.PARCEL]: "Hàng hóa",
 };
 
 export const chargeWeightTypeLabel: Record<ECHARGEABLE_WEIGHT_TYPE, string> = {
   [ECHARGEABLE_WEIGHT_TYPE.DETAIL]: "Tính theo kiện",
   [ECHARGEABLE_WEIGHT_TYPE.TOTAL]: "Tính toàn bộ",
+};
+
+export const userRoleLabel: Record<EUSER_ROLES, string> = {
+  // [EUSER_ROLES.SupperAdmin]: "Supper Admin",
+  [EUSER_ROLES.Admin]: "Admin",
+  [EUSER_ROLES.OfficeStaff]: "NV Văn Phòng",
+  [EUSER_ROLES.WarehouseStaff]: "NV Kho",
+  [EUSER_ROLES.Partner]: "Đối tác",
+  [EUSER_ROLES.Customer]: "Khách hàng",
 };

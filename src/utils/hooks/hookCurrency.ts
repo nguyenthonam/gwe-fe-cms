@@ -1,6 +1,6 @@
 import { ECURRENCY } from "@/types/typeGlobals";
 
-export function formatCurrency(value: number, currency: ECURRENCY = ECURRENCY.VND): string {
+export function formatCurrency(value: number | null = 0, currency: ECURRENCY | undefined | null = ECURRENCY.VND): string {
   // const roundedValue =
   //   currency === ECURRENCY.VND
   //     ? Math.round(value) // làm tròn VND
@@ -9,7 +9,7 @@ export function formatCurrency(value: number, currency: ECURRENCY = ECURRENCY.VN
   const formatted = new Intl.NumberFormat("vi-VN", {
     minimumFractionDigits: currency === ECURRENCY.VND ? 0 : 2,
     maximumFractionDigits: currency === ECURRENCY.VND ? 0 : 2,
-  }).format(value);
+  }).format(value || 0);
 
   return `${formatted}`;
 }

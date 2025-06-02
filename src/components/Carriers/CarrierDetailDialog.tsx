@@ -1,8 +1,9 @@
 "use client";
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, Typography, Box } from "@mui/material";
-import { ICarrier } from "@/types";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, Typography, Box, Chip } from "@mui/material";
 import { EnumChip } from "../Globals/EnumChip";
+import { ICarrier } from "@/types/typeCarrier";
+import { orange } from "@mui/material/colors";
 
 interface Props {
   open: boolean;
@@ -43,6 +44,20 @@ export default function CarrierDetailDialog({ open, onClose, carrier }: Props) {
               CÁCH TÍNH CÂN NẶNG
             </Typography>
             <EnumChip type="chargeWeightType" value={carrier.chargeableWeightType} />
+          </Grid>
+          <Grid size={12}>
+            <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
+              HỆ SỐ QUY ĐỔI THỂ TÍCH
+            </Typography>
+            <Chip
+              label={carrier.volWeightRate}
+              size="small"
+              sx={{
+                backgroundColor: orange[300],
+                color: "#fff",
+                fontWeight: 500,
+              }}
+            />
           </Grid>
           <Grid size={12}>
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
