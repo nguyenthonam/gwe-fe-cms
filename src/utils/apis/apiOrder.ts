@@ -11,7 +11,15 @@ export const getOrderApi = async () => {
     throw new Error(error.response.data.message);
   }
 };
-
+export const getOrderByIdApi = async (id: string) => {
+  try {
+    const res = await AxiosAPI.get(`/api/orders/${id}`);
+    return res;
+  } catch (error: any) {
+    console.error("Error:", error);
+    throw new Error(error.response.data.message);
+  }
+};
 export const searchOrdersApi = async ({
   keyword,
   page = 1,
@@ -67,7 +75,7 @@ export const updateOrderApi = async (id: string, payload: IOrder) => {
 
 export const calculateOrderTotalApi = async (id: string) => {
   try {
-    const res = await AxiosAPI.get(`/api/orders/${id}/calculate-total-price`);
+    const res = await AxiosAPI.post(`/api/orders/${id}/calculate-total-price`);
     return res;
   } catch (error: any) {
     console.error("Error login:", error);

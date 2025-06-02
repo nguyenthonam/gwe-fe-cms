@@ -14,10 +14,10 @@ import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getPartnersApi } from "@/utils/apis/apiPartner";
 import { getSuppliersApi } from "@/utils/apis/apiSupplier";
 import { getServicesApi } from "@/utils/apis/apiService";
-import { searchOrdersApi, deleteOrderApi, lockOrderApi, unlockOrderApi } from "@/utils/apis/apiOrder";
+import { searchOrdersApi, deleteOrderApi, lockOrderApi, unlockOrderApi, calculateOrderTotalApi } from "@/utils/apis/apiOrder";
 import CreateOrderDialog from "./CreateOrderDialog";
-// import UpdateOrderDialog from "./UpdateOrderDialog";
-// import OrderDetailDialog from "./OrderDetailDialog";
+import UpdateOrderDialog from "./UpdateOrderDialog";
+import OrderDetailDialog from "./OrderDetailDialog";
 import { ECURRENCY, EORDER_STATUS, ERECORD_STATUS } from "@/types/typeGlobals";
 import { formatDate } from "@/utils/hooks/hookDate";
 import { blue, green, grey, orange, pink } from "@mui/material/colors";
@@ -84,14 +84,14 @@ export default function OrderManagerView() {
   }, [keyword, page, pageSize, carrierIdFilter, partnerIdFilter, serviceIdFilter, supplierIdFilter, statusFilter]);
 
   const calculateGrossWeight = (row: IOrder) => {
-    if (row?.packageDetail?.dimensions?.length > 0) {
+    if (row?.packageDetail?.dimensions && row?.packageDetail?.dimensions.length > 0) {
       const totalGrossWeight = row?.packageDetail?.dimensions.reduce((acc, item) => acc + item.grossWeight, 0);
       return totalGrossWeight;
     }
     return 0;
   };
   const calculateVolumeWeight = (row: IOrder) => {
-    if (row?.packageDetail?.dimensions?.length > 0) {
+    if (row?.packageDetail?.dimensions && row?.packageDetail?.dimensions.length > 0) {
       const totalVolumeWeight = row?.packageDetail?.dimensions.reduce((acc, item) => acc + item.volumeWeight, 0);
       return totalVolumeWeight;
     }
@@ -108,21 +108,21 @@ export default function OrderManagerView() {
       CARRIER: typeof c.carrierId === "object" ? c.carrierId?.name : c.carrierId,
       SERVICE: typeof c.serviceId === "object" ? c.serviceId?.code : c.serviceId,
       TYPE: c.productType,
-      DIMENSIONS: c.packageDetail?.dimensions?.length > 0 ? c.packageDetail?.dimensions.map((d) => `${d.length}x${d.width}x${d.height}`).join(", ") : "",
+      DIMENSIONS: c.packageDetail?.dimensions && c.packageDetail?.dimensions?.length > 0 ? c.packageDetail?.dimensions.map((d) => `${d.length}x${d.width}x${d.height}`).join(", ") : "",
       "GROSS WEIGHT": calculateGrossWeight(c),
       "VOLUME WEIGHT": calculateVolumeWeight(c),
       "CHARGE WEIGHT": c.chargeableWeight,
       NOTE: c.note || "",
-      "BASE RATE (BUYING RATE)": formatCurrency(c.basePrice?.purchasePrice?.value, c.currency || ECURRENCY.VND),
+      "BASE RATE (BUYING RATE)": formatCurrency(c.basePrice?.purchasePrice?.value || 0, c.currency || ECURRENCY.VND),
       "EXTRA FEE (BUY)": formatCurrency(c.extraFees?.extraFeesTotal || 0, c.currency || ECURRENCY.VND),
       "PPXD (BUY)": formatCurrency(c.extraFees?.fscFeeValue?.purchaseFSCFee || 0, c.currency || ECURRENCY.VND),
       "VAT (BUY)": formatCurrency(c.vat?.purchaseVATTotal || 0, c.currency || ECURRENCY.VND),
-      "TOTAL (BUY)": formatCurrency(c.totalPrice?.purchaseTotal, c.currency || ECURRENCY.VND),
-      "BASE RATE (SELLING RATE)": formatCurrency(c.basePrice?.salePrice?.value, c.currency || ECURRENCY.VND),
+      "TOTAL (BUY)": formatCurrency(c.totalPrice?.purchaseTotal || 0, c.currency || ECURRENCY.VND),
+      "BASE RATE (SELLING RATE)": formatCurrency(c.basePrice?.salePrice?.value || 0, c.currency || ECURRENCY.VND),
       "EXTRA FEE (SELL)": formatCurrency(c.extraFees?.extraFeesTotal || 0, c.currency || ECURRENCY.VND),
       "PPXD (SELL)": formatCurrency(c.extraFees?.fscFeeValue?.saleFSCFee || 0, c.currency || ECURRENCY.VND),
       "VAT (SELL)": formatCurrency(c.vat?.saleVATTotal || 0, c.currency || ECURRENCY.VND),
-      "TOTAL (SELL)": formatCurrency(c.totalPrice?.saleTotal, c.currency || ECURRENCY.VND),
+      "TOTAL (SELL)": formatCurrency(c.totalPrice?.saleTotal || 0, c.currency || ECURRENCY.VND),
       PROFIT: formatCurrency((c.totalPrice?.saleTotal || 0) - (c.totalPrice?.purchaseTotal || 0), c.currency || ECURRENCY.VND),
     }));
 
@@ -378,7 +378,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(row.fscFeeValue?.purchaseFSCFee, row.currency)}</Typography>
+          <Typography>{formatCurrency(row.extraFees?.fscFeeValue?.purchaseFSCFee, row.currency)}</Typography>
         </Box>
       ),
     },
@@ -443,7 +443,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(row.extraFees?.saleFSCFee, row.currency)}</Typography>
+          <Typography>{formatCurrency(row.extraFees?.fscFeeValue?.saleFSCFee, row.currency)}</Typography>
         </Box>
       ),
     },
@@ -509,6 +509,10 @@ export default function OrderManagerView() {
           }}
           onLockUnlock={() => handleLockToggle(row)}
           onDelete={() => handleDelete(row)}
+          onCaculatePriceOrder={() => {
+            setSelected(row);
+            handleCalculatePrice();
+          }}
           status={row.orderStatus}
         />
       ),
@@ -540,11 +544,16 @@ export default function OrderManagerView() {
     }
   };
 
+  const handleCalculatePrice = () => {
+    if (!selected?._id) return;
+    calculateOrderTotalApi(selected._id);
+  };
+
   return (
     <Box className="space-y-4 p-6">
       <Box display="flex" flexWrap="wrap" gap={1} justifyContent="space-between" alignItems="center">
         <TextField placeholder="Tìm kiếm, tracking..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 250 }} />
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} overflow={"auto"}>
           <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
             Xuất Excel
           </Button>
@@ -552,7 +561,7 @@ export default function OrderManagerView() {
             Tạo mới
           </Button>
         </Stack>
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} overflow={"auto"}>
           <Select size="small" value={partnerIdFilter} onChange={(e) => setPartnerIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 140 }}>
             <MenuItem value="">Tất cả Partner</MenuItem>
             {partners?.map((s) => (
@@ -624,8 +633,8 @@ export default function OrderManagerView() {
           setOpenCreateDialog(false);
         }}
       />
-      {/* <UpdateOrderDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={fetchData} order={selected} /> */}
-      {/* <OrderDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} order={selected} /> */}
+      <UpdateOrderDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={fetchData} order={selected} />
+      <OrderDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} order={selected} />
     </Box>
   );
 }

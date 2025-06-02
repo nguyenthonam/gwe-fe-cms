@@ -131,15 +131,12 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
       setVolWeightRate(null);
     }
     setServiceId("");
-  }, [carrierId]);
+  }, [carrierId, carriers]);
 
   // Validate & Submit
   const handleSubmit = async () => {
     if (
-      !partnerId ||
       !carrierId ||
-      !serviceId ||
-      !supplierId ||
       !sender.fullname ||
       !sender.address1 ||
       !sender.phone ||

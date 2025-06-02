@@ -1,6 +1,6 @@
 import { ECURRENCY } from "@/types/typeGlobals";
 
-export function formatCurrency(value: number | null, currency: ECURRENCY = ECURRENCY.VND): string {
+export function formatCurrency(value: number | null = 0, currency: ECURRENCY | undefined | null = ECURRENCY.VND): string {
   // const roundedValue =
   //   currency === ECURRENCY.VND
   //     ? Math.round(value) // làm tròn VND

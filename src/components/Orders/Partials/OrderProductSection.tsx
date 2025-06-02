@@ -6,7 +6,7 @@ import NumericInput from "@/components/Globals/NumericInput";
 interface Props {
   content: string;
   setContent: (v: string) => void;
-  productType: EPRODUCT_TYPE;
+  productType?: EPRODUCT_TYPE;
   setProductType: (v: EPRODUCT_TYPE) => void;
   declaredWeight: string;
   setDeclaredWeight: (v: string) => void;
@@ -14,7 +14,7 @@ interface Props {
   setQuantity: (v: string) => void;
   declaredValue: string;
   setDeclaredValue: (v: string) => void;
-  currency: ECURRENCY;
+  currency?: ECURRENCY;
   setCurrency: (v: ECURRENCY) => void;
   disabled?: boolean;
 }
