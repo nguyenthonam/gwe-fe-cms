@@ -3,7 +3,6 @@
 import { Dialog, DialogTitle, DialogContent, Stack, Typography } from "@mui/material";
 import { EnumChip } from "@/components/Globals/EnumChip";
 import { IZone } from "@/types/typeZone";
-import { recordStatusLabel } from "@/utils/constants/enumLabel";
 import { COUNTRIES } from "@/utils/constants";
 
 export default function ZoneDetailDialog({ open, onClose, zone }: { open: boolean; onClose: () => void; zone: IZone | null }) {

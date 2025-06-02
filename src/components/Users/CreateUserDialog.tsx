@@ -1,29 +1,10 @@
 "use client";
 
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  MenuItem,
-  Stack,
-  Grid,
-  InputLabel,
-  FormControl,
-  FormControlLabel,
-  Checkbox,
-  Select,
-  Typography,
-  InputAdornment,
-  IconButton,
-} from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Stack, Grid, InputLabel, FormControl, Select, InputAdornment, IconButton } from "@mui/material";
 import { useState, useEffect } from "react";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { createUserApi } from "@/utils/apis/apiUser";
 import { EGENDER, ERECORD_STATUS, EUSER_ROLES } from "@/types/typeGlobals";
-import { userRoleLabel } from "@/utils/constants/enumLabel";
 import { Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon } from "@mui/icons-material";
 import { EnumChip } from "../Globals/EnumChip";
 

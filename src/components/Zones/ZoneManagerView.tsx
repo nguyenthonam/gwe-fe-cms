@@ -19,7 +19,6 @@ import { ICarrier } from "@/types/typeCarrier";
 import CreateZoneDialog from "./CreateZoneDialog";
 import UpdateZoneDialog from "./UpdateZoneDialog";
 import ZoneDetailDialog from "./ZoneDetailDialog";
-import { COUNTRIES } from "@/utils/constants";
 import { orange } from "@mui/material/colors";
 
 export default function ZoneManagerView() {

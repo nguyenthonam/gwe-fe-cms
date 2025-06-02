@@ -1,10 +1,9 @@
 "use client";
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, Typography, Stack, Divider, Avatar } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, Typography, Stack, Avatar } from "@mui/material";
 import { IUser } from "@/types/typeUser";
 import { EnumChip } from "@/components/Globals/EnumChip";
-import { userRoleLabel } from "@/utils/constants/enumLabel";
-import { ERECORD_STATUS, EGENDER, EUSER_ROLES } from "@/types/typeGlobals";
+import { EGENDER } from "@/types/typeGlobals";
 
 interface Props {
   open: boolean;

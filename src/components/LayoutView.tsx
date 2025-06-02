@@ -49,7 +49,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { signOutUser } from "@/store/reducers/authReducer";
 import { useRouter } from "next/navigation";
 import { AppState } from "@/store";
-import { IUser } from "@/types/typeUser";
 import { ThunkDispatch } from "@reduxjs/toolkit";
 import { AnyAction } from "redux";
 

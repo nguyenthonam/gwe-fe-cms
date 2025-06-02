@@ -9,7 +9,6 @@ import { getPartnersApi } from "@/utils/apis/apiPartner";
 import { getSuppliersApi } from "@/utils/apis/apiSupplier";
 import { getServicesByCarrierApi } from "@/utils/apis/apiService";
 import { ECountryCode, ECURRENCY, EPRODUCT_TYPE, IBasicContactInfor, IDimension } from "@/types/typeGlobals";
-import { COUNTRIES } from "@/utils/constants";
 import { ISurchargeDetail } from "@/types/typeOrder";
 import { getExtraFeesApi } from "@/utils/apis/apiExtraFee";
 import OrderBillingInfoSection from "./Partials/OrderBillingInfoSection";

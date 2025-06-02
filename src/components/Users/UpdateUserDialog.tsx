@@ -3,10 +3,9 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Stack, Grid, MenuItem, InputLabel, FormControl, Select } from "@mui/material";
 import { useEffect, useState } from "react";
 import { updateUserApi } from "@/utils/apis/apiUser";
-import { EGENDER, ERECORD_STATUS, EUSER_ROLES } from "@/types/typeGlobals";
+import { EGENDER, EUSER_ROLES } from "@/types/typeGlobals";
 import { IUpdateUserRequest, IUser } from "@/types/typeUser";
 import { useNotification } from "@/contexts/NotificationProvider";
-import { genderLabel, userRoleLabel } from "@/utils/constants/enumLabel";
 import { EnumChip } from "../Globals/EnumChip";
 
 interface Props {
@@ -16,9 +15,6 @@ interface Props {
   user: IUser | null;
   companies: any[];
 }
-
-const genderOptions = Object.entries(EGENDER);
-const statusOptions = Object.entries(ERECORD_STATUS);
 
 export default function UpdateUserDialog({ open, onClose, onUpdated, user, companies }: Props) {
   const [form, setForm] = useState<IUpdateUserRequest>({});
