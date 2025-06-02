@@ -7,7 +7,6 @@ import { useNotification } from "@/contexts/NotificationProvider";
 import { ICarrier } from "@/types/typeCarrier";
 import { ECountryCode } from "@/types/typeGlobals";
 import { IZone } from "@/types/typeZone";
-import { COUNTRIES } from "@/utils/constants";
 import NumericInput from "../Globals/NumericInput";
 import CountrySelect from "../Globals/CountrySelect";
 

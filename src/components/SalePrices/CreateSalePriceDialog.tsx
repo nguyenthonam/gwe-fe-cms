@@ -40,6 +40,7 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
       const res = await getCarriersApi();
       setCarriers(res?.data?.data?.data || []);
     } catch (err) {
+      console.error(err);
       showNotification("Không thể tải danh sách Hãng", "error");
     }
   };
@@ -49,6 +50,7 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
       const res = await getPartnersApi();
       setPartners(res?.data?.data?.data || []);
     } catch (err) {
+      console.error(err);
       showNotification("Không thể tải danh sách Partner", "error");
     }
   };
@@ -61,6 +63,7 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
       const res = await getServicesByCarrierApi(companyId);
       setServices(res?.data?.data?.data || []);
     } catch (err) {
+      console.error(err);
       showNotification("Không thể tải danh sách dịch vụ", "error");
     }
   };

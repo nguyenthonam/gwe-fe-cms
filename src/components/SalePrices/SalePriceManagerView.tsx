@@ -63,6 +63,7 @@ export default function SalePriceManagerView() {
         const res = await getServicesByCarrierApi(companyId);
         setServices(res?.data?.data?.data || []);
       } catch (err) {
+        console.error(err);
         showNotification("Không thể tải danh sách dịch vụ", "error");
       }
     } else {
@@ -70,6 +71,7 @@ export default function SalePriceManagerView() {
         const res = await getServicesApi();
         setServices(res?.data?.data?.data || []);
       } catch (err) {
+        console.error(err);
         showNotification("Không thể tải danh sách dịch vụ", "error");
       }
     }
@@ -103,6 +105,7 @@ export default function SalePriceManagerView() {
       setPrices(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
     } catch (err) {
+      console.error(err);
       showNotification("Không thể tải danh sách giá bán", "error");
     } finally {
       setLoading(false);

@@ -4,7 +4,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, Typogr
 import { ISalePrice } from "@/types/typeSalePrice";
 import { EnumChip } from "@/components/Globals/EnumChip";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
-import { ECURRENCY, EPRODUCT_TYPE } from "@/types/typeGlobals";
+import { EPRODUCT_TYPE } from "@/types/typeGlobals";
 
 interface Props {
   open: boolean;

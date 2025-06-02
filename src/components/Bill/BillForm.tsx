@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Box, Button, Container, Typography, Grid, Stack, MenuItem, Select, TextField, Paper, Table, TableBody, TableRow, TableCell } from "@mui/material";
+import { Box, Button, Container, Typography, Grid, Stack, MenuItem, TextField, Paper } from "@mui/material";
 import { red } from "@mui/material/colors";
 import BillPrintDialog from "./BillPrintDialog";
 import BillShippingMarkDialog from "./BillShippingMarkDialog";
@@ -27,8 +27,6 @@ export default function BillForm() {
   const [carriers, setCarriers] = useState<any[]>([]);
 
   // Form State
-  const [trackingCode, setTrackingCode] = useState("");
-  const [CAWBCode, setCAWBCode] = useState("");
   const [partner, setPartner] = useState({ partnerId: "", partnerName: "" });
   const [carrierId, setCarrierId] = useState("");
 
@@ -279,8 +277,6 @@ export default function BillForm() {
   };
 
   const handleClear = () => {
-    setTrackingCode("");
-    setCAWBCode("");
     setPartner({ partnerId: "", partnerName: "" });
     setCarrierId("");
     setNote("");
@@ -307,7 +303,7 @@ export default function BillForm() {
       </Typography>
       <Box mb={1} className={`py-4 bg-white transition-all sticky top-[56px] md:top-[64px] z-50`}>
         <Stack direction="row" spacing={2} justifyContent={"end"}>
-          <Button variant="contained" color="primary" onClick={handleSubmit} disabled={!!billData?._id}>
+          <Button variant="contained" color="primary" onClick={handleSubmit} disabled={!!billData?._id} loading={loading}>
             Create Bill
           </Button>
           <Button variant="outlined" sx={{ color: red[500], borderColor: red[500] }} onClick={handleClear}>

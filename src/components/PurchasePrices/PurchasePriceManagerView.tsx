@@ -19,7 +19,6 @@ import { searchPurchasePricesApi, deletePurchasePriceApi, lockPurchasePriceApi, 
 import CreatePurchasePriceDialog from "./CreatePurchasePriceDialog";
 import UpdatePurchasePriceDialog from "./UpdatePurchasePriceDialog";
 import PurchasePriceDetailDialog from "./PurchasePriceDetailDialog";
-import { productTypeLabel } from "@/utils/constants/enumLabel";
 import { green, orange } from "@mui/material/colors";
 import { getServicesApi, getServicesByCarrierApi } from "@/utils/apis/apiService";
 
@@ -65,6 +64,7 @@ export default function PurchasePriceManagerView() {
         const res = await getServicesByCarrierApi(companyId);
         setServices(res?.data?.data?.data || []);
       } catch (err) {
+        console.error(err);
         showNotification("Không thể tải danh sách dịch vụ", "error");
       }
     } else {
@@ -72,6 +72,7 @@ export default function PurchasePriceManagerView() {
         const res = await getServicesApi();
         setServices(res?.data?.data?.data || []);
       } catch (err) {
+        console.error(err);
         showNotification("Không thể tải danh sách dịch vụ", "error");
       }
     }
@@ -105,6 +106,7 @@ export default function PurchasePriceManagerView() {
       setPrices(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
     } catch (err) {
+      console.error(err);
       showNotification("Không thể tải danh sách giá mua", "error");
     } finally {
       setLoading(false);

@@ -16,3 +16,8 @@ export const formatDate = (date: string | number | Date): string => {
   const year = d.getFullYear();
   return `${day}/${month}/${year}`;
 };
+
+export default {
+  getCurrentDate,
+  formatDate,
+};
