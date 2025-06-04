@@ -20,7 +20,7 @@ import UpdateOrderDialog from "./UpdateOrderDialog";
 import OrderDetailDialog from "./OrderDetailDialog";
 import { ECURRENCY, EORDER_STATUS, ERECORD_STATUS } from "@/types/typeGlobals";
 import { formatDate } from "@/utils/hooks/hookDate";
-import { blue, green, grey, orange, pink } from "@mui/material/colors";
+import { blue, green, grey, pink } from "@mui/material/colors";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
 
 export default function OrderManagerView() {
@@ -73,6 +73,7 @@ export default function OrderManagerView() {
       setOrders(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
     } catch (err) {
+      console.error(err);
       showNotification("Không thể tải danh sách đơn hàng", "error");
     } finally {
       setLoading(false);

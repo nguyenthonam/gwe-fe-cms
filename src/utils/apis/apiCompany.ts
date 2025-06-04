@@ -1,4 +1,4 @@
-import { ECOMPANY_TYPE, ICompany } from "@/types/typeCompany";
+import { ICompany } from "@/types/typeCompany";
 import { ISearchQuery } from "@/types/typeGlobals";
 import AxiosAPI from "@/utils/configs/axiosClient";
 

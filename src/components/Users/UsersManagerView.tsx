@@ -43,6 +43,7 @@ export default function UserManagerView() {
       const res = await getCompaniesApi();
       setCompanies(res?.data?.data?.data || []);
     } catch (err) {
+      console.error(err);
       showNotification("Không thể tải danh sách công ty", "error");
     }
   };
@@ -61,6 +62,7 @@ export default function UserManagerView() {
       setUsers(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
     } catch (err) {
+      console.error(err);
       showNotification("Không thể tải danh sách User", "error");
     } finally {
       setLoading(false);

@@ -1,5 +1,5 @@
 import { IZone } from "@/types/typeZone";
-import { ECountryCode, ISearchQuery } from "@/types/typeGlobals";
+import { ISearchQuery } from "@/types/typeGlobals";
 import AxiosAPI from "@/utils/configs/axiosClient";
 
 export const getZonesApi = async () => {

@@ -1,4 +1,4 @@
-import { ECURRENCY, EFEE_TYPE, EPRODUCT_TYPE, IBaseRecord } from "./typeGlobals";
+import { ECURRENCY, EPRODUCT_TYPE, IBaseRecord } from "./typeGlobals";
 
 export interface IPurchasePrice extends IBaseRecord {
   carrierId: { _id?: string; name?: string; code?: string; companyId?: string } | string | null;
