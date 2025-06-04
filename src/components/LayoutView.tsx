@@ -1,5 +1,7 @@
 "use client";
 import * as React from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/utils/lib/react-query";
 import Link from "next/link";
 import Image from "next/image";
 import { styled, Theme, CSSObject } from "@mui/material/styles";
@@ -49,7 +51,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { signOutUser } from "@/store/reducers/authReducer";
 import { useRouter } from "next/navigation";
 import { AppState } from "@/store";
-import { IUser } from "@/types/typeUser";
 import { ThunkDispatch } from "@reduxjs/toolkit";
 import { AnyAction } from "redux";
 
@@ -133,33 +134,6 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
     const { accessToken, profile, isLoading } = useSelector((state: AppState) => state.auth);
     const { showNotification } = useNotification();
     const router = useRouter();
-
-    // React.useEffect(() => {
-    //   const fetchProfile = async (): Promise<void> => {
-    //     try {
-    //       const response = await getProfileApi();
-    //       if (!response || response.status === 401) {
-    //         dispatch(signOutUser());
-    //         showNotification("Phiên đăng nhập hết hạn!", "error");
-    //         router.push("/sign-in");
-    //         return;
-    //       }
-    //       const profileData: IUser = response?.data?.data as IUser;
-    //       if (profileData) {
-    //         dispatch(setProfile({ profile: profileData }));
-    //         localStorage.setItem("User", JSON.stringify(profileData));
-    //       }
-    //     } catch (error: unknown) {
-    //       console.error("Fetch user profile error:", error);
-    //       showNotification("Không thể tải thông tin người dùng!", "error");
-    //     }
-    //   };
-
-    //   const storedUser: string | null = localStorage.getItem("User");
-    //   if (accessToken && !profile && !storedUser) {
-    //     fetchProfile();
-    //   }
-    // }, [accessToken, profile, dispatch, router, showNotification]);
 
     const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>): void => {
       setAnchorEl(event.currentTarget);
@@ -373,15 +347,17 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
   };
 
   return (
-    <ReduxProvider>
-      <NotificationProvider>
-        <ProtectedRoute>
-          <ThemeProvider theme={customTheme}>
-            <View>{children}</View>
-          </ThemeProvider>
-        </ProtectedRoute>
-      </NotificationProvider>
-    </ReduxProvider>
+    <QueryClientProvider client={queryClient}>
+      <ReduxProvider>
+        <NotificationProvider>
+          <ProtectedRoute>
+            <ThemeProvider theme={customTheme}>
+              <View>{children}</View>
+            </ThemeProvider>
+          </ProtectedRoute>
+        </NotificationProvider>
+      </ReduxProvider>
+    </QueryClientProvider>
   );
 };
 
