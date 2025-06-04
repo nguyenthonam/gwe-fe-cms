@@ -1,13 +1,5 @@
 import { IconButton, ListItemIcon, Menu, MenuItem, Tooltip } from "@mui/material";
-import {
-  MoreVert as MoreVertIcon,
-  Edit as EditIcon,
-  LocalAtm as PriceCheckIcon,
-  Key as ResetPasswordIcon,
-  Lock as LockIcon,
-  LockOpen as LockOpenIcon,
-  Delete as DeleteIcon,
-} from "@mui/icons-material";
+import { MoreVert as MoreVertIcon, Edit as EditIcon, Key as ResetPasswordIcon, Lock as LockIcon, LockOpen as LockOpenIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import React, { useState } from "react";
 import { green, grey, orange, red } from "@mui/material/colors";
 import { ERECORD_STATUS } from "@/types/typeGlobals";
@@ -17,11 +9,10 @@ interface ActionMenuProps {
   onLockUnlock: () => void;
   onDelete?: () => void;
   onResetPassword?: () => void;
-  onCaculatePriceOrder?: () => void;
   status: ERECORD_STATUS | undefined;
 }
 
-export const ActionMenu: React.FC<ActionMenuProps> = ({ onEdit, onLockUnlock, onDelete, onResetPassword, onCaculatePriceOrder, status }) => {
+export const ActionMenu: React.FC<ActionMenuProps> = ({ onEdit, onLockUnlock, onDelete, onResetPassword, status }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -59,22 +50,6 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({ onEdit, onLockUnlock, on
             </ListItemIcon>
           </Tooltip>
         </MenuItem>
-
-        {onCaculatePriceOrder && (
-          <MenuItem
-            onClick={() => {
-              handleClose();
-              onCaculatePriceOrder();
-            }}
-            sx={{ display: "flex", justifyContent: "center", minWidth: 0 }}
-          >
-            <Tooltip title="Tính giá" placement="right">
-              <ListItemIcon sx={{ minWidth: 32 }}>
-                <PriceCheckIcon fontSize="small" sx={{ color: green[600] }} />
-              </ListItemIcon>
-            </Tooltip>
-          </MenuItem>
-        )}
 
         {onResetPassword && (
           <MenuItem

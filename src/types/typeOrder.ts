@@ -1,4 +1,4 @@
-import { ECURRENCY, EORDER_STATUS, EPRODUCT_TYPE, IBaseRecord, IBasicContactInfor, IDimension } from "./typeGlobals";
+import { ECURRENCY, EORDER_STATUS, EPRODUCT_TYPE, IBaseRecord, IBasicContactInfor, IDimension, ISearchQuery } from "./typeGlobals";
 
 export interface IPackageDetail {
   content: string;
@@ -90,3 +90,5 @@ export interface ICreateOrderRequest {
   surcharges?: ISurchargeDetail[];
   currency?: ECURRENCY | null;
 }
+
+export type IFilterOrder = ISearchQuery & { carrierId?: string; serviceId?: string; supplierId?: string; partnerId?: string };
