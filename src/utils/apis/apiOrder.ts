@@ -1,5 +1,4 @@
-import { ISearchQuery } from "@/types/typeGlobals";
-import { ICreateOrderRequest, IOrder } from "@/types/typeOrder";
+import { ICreateOrderRequest, IFilterOrder, IOrder } from "@/types/typeOrder";
 import AxiosAPI from "@/utils/configs/axiosClient";
 
 export const getOrderApi = async () => {
@@ -20,16 +19,7 @@ export const getOrderByIdApi = async (id: string) => {
     throw new Error(error.response.data.message);
   }
 };
-export const searchOrdersApi = async ({
-  keyword,
-  page = 1,
-  perPage = 10,
-  status = "all",
-  carrierId,
-  serviceId,
-  supplierId,
-  partnerId,
-}: ISearchQuery & { carrierId?: string; serviceId?: string; supplierId?: string; partnerId?: string }) => {
+export const searchOrdersApi = async ({ keyword, page = 1, perPage = 10, status = "all", carrierId, serviceId, supplierId, partnerId }: IFilterOrder) => {
   try {
     const query = {
       page,
@@ -66,16 +56,6 @@ export const createOrderApi = async (payload: ICreateOrderRequest) => {
 export const updateOrderApi = async (id: string, payload: IOrder) => {
   try {
     const res = await AxiosAPI.put(`/api/orders/${id}`, payload);
-    return res;
-  } catch (error: any) {
-    console.error("Error login:", error);
-    throw new Error(error.response.data.message);
-  }
-};
-
-export const calculateOrderTotalApi = async (id: string) => {
-  try {
-    const res = await AxiosAPI.post(`/api/orders/${id}/calculate-total-price`);
     return res;
   } catch (error: any) {
     console.error("Error login:", error);

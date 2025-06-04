@@ -133,7 +133,6 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
       setServices([]);
       setVolWeightRate(null);
     }
-    setServiceId("");
   }, [carrierId, carriers]);
 
   const fetchServices = async (carrierId: string) => {
@@ -188,7 +187,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
         carrierId: carrierId || null,
         serviceId: serviceId || null,
         supplierId: supplierId || null,
-        partner: { partnerId, partnerName: partners.find((p) => p._id === partnerId)?.name || "" },
+        partner: partnerId ? { partnerId, partnerName: partners.find((p) => p._id === partnerId)?.name || "" } : null,
         sender,
         recipient,
         packageDetail: {

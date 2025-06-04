@@ -14,7 +14,7 @@ import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getPartnersApi } from "@/utils/apis/apiPartner";
 import { getSuppliersApi } from "@/utils/apis/apiSupplier";
 import { getServicesApi } from "@/utils/apis/apiService";
-import { searchOrdersApi, deleteOrderApi, lockOrderApi, unlockOrderApi, calculateOrderTotalApi } from "@/utils/apis/apiOrder";
+import { searchOrdersApi, deleteOrderApi, lockOrderApi, unlockOrderApi } from "@/utils/apis/apiOrder";
 import CreateOrderDialog from "./CreateOrderDialog";
 import UpdateOrderDialog from "./UpdateOrderDialog";
 import OrderDetailDialog from "./OrderDetailDialog";
@@ -510,10 +510,6 @@ export default function OrderManagerView() {
           }}
           onLockUnlock={() => handleLockToggle(row)}
           onDelete={() => handleDelete(row)}
-          onCaculatePriceOrder={() => {
-            setSelected(row);
-            handleCalculatePrice();
-          }}
           status={row.orderStatus}
         />
       ),
@@ -543,11 +539,6 @@ export default function OrderManagerView() {
     } catch (err: any) {
       showNotification(err.message || "Lỗi khi xoá", "error");
     }
-  };
-
-  const handleCalculatePrice = () => {
-    if (!selected?._id) return;
-    calculateOrderTotalApi(selected._id);
   };
 
   return (
