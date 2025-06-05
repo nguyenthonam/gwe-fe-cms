@@ -2,27 +2,25 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Box, Typography, Paper, Tabs, Tab, Container } from "@mui/material";
-import CompanySupplierManagerView from "@/components/Suppliers/CompanySupplierManagerView";
-import SupplierManagerView from "@/components/Suppliers/SupplierManagerView";
 import { lightBlue } from "@mui/material/colors";
+import UsersManagerView from "@/components/Users/UsersManagerView";
 
-export default function SuppliersPage() {
+export default function SystemsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Lấy tab index từ URL, mặc định là 0 nếu không có hoặc lỗi
+  // Luôn đọc tab từ query, mặc định là 0 nếu không hợp lệ
   const tabParam = Number(searchParams.get("tab"));
   const [tabIndex, setTabIndex] = useState(Number.isInteger(tabParam) && tabParam >= 0 ? tabParam : 0);
 
-  // Khi query tab thay đổi, đồng bộ lại state
   useEffect(() => {
     const nextTab = Number.isInteger(tabParam) && tabParam >= 0 ? tabParam : 0;
     if (tabIndex !== nextTab) setTabIndex(nextTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabParam]);
 
-  // Khi đổi tab, cập nhật lại url (không reload trang)
+  // Khi đổi tab, cập nhật lại URL query (chuẩn hóa cho đồng bộ)
   const handleTabChange = (_: any, newValue: number) => {
     setTabIndex(newValue);
     const params = new URLSearchParams(searchParams.toString());
@@ -39,19 +37,15 @@ export default function SuppliersPage() {
         }}
       >
         <Typography variant="h5" mb={2} fontWeight="bold" sx={{ color: lightBlue[500] }}>
-          QUẢN LÝ NHÀ CUNG CẤP
+          QUẢN LÝ TÀI KHOẢN
         </Typography>
 
         <Tabs value={tabIndex} onChange={handleTabChange}>
-          <Tab label="Công ty nhà cung cấp" />
-          <Tab label="Nhà cung cấp" />
+          <Tab label="Tài khoản" />
         </Tabs>
 
         <Box mt={2} className="w-full ">
-          <Paper>
-            {tabIndex === 0 && <CompanySupplierManagerView />}
-            {tabIndex === 1 && <SupplierManagerView />}
-          </Paper>
+          <Paper>{tabIndex === 0 && <UsersManagerView />}</Paper>
         </Box>
       </Box>
     </Container>

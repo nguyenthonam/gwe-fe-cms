@@ -8,7 +8,7 @@ import { styled, Theme, CSSObject } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider } from "@mui/material/styles";
 import customTheme from "@/styles/MUI/customTheme";
-import { lightBlue } from "@mui/material/colors";
+import { blue, grey, lightBlue, orange, red } from "@mui/material/colors";
 import MuiAppBar, { AppBarProps as MuiAppBarProps } from "@mui/material/AppBar";
 import {
   Box,
@@ -19,7 +19,6 @@ import {
   Toolbar,
   Divider,
   List,
-  ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
@@ -31,18 +30,26 @@ import {
 import {
   Menu as MenuIcon,
   Business as BusinessIcon,
+  Handshake as PartnerIcon,
   AirplaneTicket as CarrierIcon,
   EmojiTransportation as SupplierIcon,
   CurrencyBitcoin as PriceIcon,
+  LocalAtm as PurchasePriceIcon,
+  MonetizationOn as SalePriceIcon,
+  QueuePlayNext as ExtraFeeIcon,
   Dataset as DatasetIcon,
   ExpandLess as ExpandLessIcon,
   ExpandMore as ExpandMoreIcon,
   Dashboard as DashboardIcon,
   Receipt as ReceiptIcon,
   AccountCircle as AccountCircleIcon,
+  ManageAccounts as ManageAccountsIcon,
+  SupervisedUserCircle as SystemIcon,
   Person as PersonIcon,
-  Subtitles as SubtitlesIcon,
+  QrCode as CAWBCodeIcon,
   Logout as LogoutIcon,
+  Percent as PercentIcon,
+  Layers as ZoneIcon,
 } from "@mui/icons-material";
 import ReduxProvider from "@/components/ReduxProvider";
 import { NotificationProvider, useNotification } from "@/contexts/NotificationProvider";
@@ -58,7 +65,7 @@ interface LayoutViewProps {
   children: React.ReactNode;
 }
 
-const drawerWidth: number = 240;
+const drawerWidth: number = 270;
 
 const openedMixin = (theme: Theme): CSSObject => ({
   width: drawerWidth,
@@ -125,9 +132,53 @@ const Drawer = styled(MuiDrawer, {
 }));
 
 const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
+  // Sidebar group config đặt tại đây:
+  const SIDEBAR_LINKS = [
+    // Dashboard, Bill
+    {
+      section: null,
+      items: [
+        { title: "Dashboard", href: "/dashboard", icon: <DashboardIcon /> },
+        { title: "Bill", href: "/bill", icon: <ReceiptIcon /> },
+      ],
+    },
+    // Member Management
+    {
+      section: "Quản lý đối tác",
+      icon: <BusinessIcon />,
+      items: [
+        { title: "Đối tác", href: "/manager/partners", icon: <PartnerIcon /> },
+        { title: "Hãng bay", href: "/manager/carriers", icon: <CarrierIcon /> },
+        { title: "Dịch vụ", href: "/manager/carriers?tab=2", icon: <DatasetIcon /> },
+        { title: "Nhà cung cấp", href: "/manager/suppliers", icon: <SupplierIcon /> },
+      ],
+    },
+    // Price Management
+    {
+      section: "Quản lý giá",
+      icon: <PriceIcon />,
+      items: [
+        { title: "Giá mua", href: "/manager/prices?tab=0", icon: <PurchasePriceIcon /> },
+        { title: "Giá bán", href: "/manager/prices?tab=1", icon: <SalePriceIcon /> },
+        { title: "Phụ phí", href: "/manager/prices?tab=2", icon: <ExtraFeeIcon /> },
+        { title: "Khu vực", href: "/manager/prices?tab=3", icon: <ZoneIcon /> },
+        { title: "Mã chuyến bay", href: "/manager/prices?tab=4", icon: <CAWBCodeIcon /> },
+        { title: "VAT", href: "/manager/prices?tab=5", icon: <PercentIcon /> },
+        { title: "Tỉ giá", href: "/manager/prices?tab=6", icon: <PriceIcon /> },
+      ],
+    },
+    // Admin System
+    {
+      section: "Quản lý hệ thống",
+      icon: <SystemIcon />,
+      items: [{ title: "Tài khoản", href: "/manager/systems?tab=0", icon: <ManageAccountsIcon /> }],
+    },
+  ];
+
+  // Bên trong View mới sử dụng hook Redux (đảm bảo luôn trong ReduxProvider context)
   const View: React.FC<LayoutViewProps> = ({ children }) => {
     const [showDrawer, setShowDrawer] = React.useState<boolean>(false);
-    const [openManage, setOpenManage] = React.useState<boolean>(false);
+    const [openGroup, setOpenGroup] = React.useState<string | null>(null);
     const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
     const showMenu: boolean = Boolean(anchorEl);
     const dispatch: ThunkDispatch<AppState, unknown, AnyAction> = useDispatch();
@@ -161,7 +212,14 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
         <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
           <AppBar position="fixed" open={showDrawer} sx={{ backgroundColor: "white" }}>
             <Toolbar>
-              <IconButton edge="start" color="primary" onClick={() => setShowDrawer(!showDrawer)} sx={{ mr: 2 }}>
+              <IconButton
+                edge="start"
+                color="primary"
+                onClick={() => {
+                  setShowDrawer(!showDrawer);
+                }}
+                sx={{ mr: 2 }}
+              >
                 <MenuIcon />
               </IconButton>
               <Link href="/" style={{ display: "flex", alignItems: "center" }}>
@@ -183,14 +241,15 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                         handleMenuClose();
                         router.push("/profile");
                       }}
+                      sx={{ color: blue[500] }}
                     >
-                      <ListItemIcon>
+                      <ListItemIcon sx={{ color: blue[500] }}>
                         <PersonIcon fontSize="small" />
                       </ListItemIcon>
                       <ListItemText>Profile</ListItemText>
                     </MenuItem>
-                    <MenuItem onClick={handleLogout} disabled={isLoading}>
-                      <ListItemIcon>
+                    <MenuItem onClick={handleLogout} disabled={isLoading} sx={{ color: red[500] }}>
+                      <ListItemIcon sx={{ color: red[500] }}>
                         <LogoutIcon fontSize="small" />
                       </ListItemIcon>
                       <ListItemText>Logout</ListItemText>
@@ -212,124 +271,54 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
             <Drawer variant="permanent" open={showDrawer} sx={{ "& .MuiDrawer-paper": { bgcolor: lightBlue[900], color: "white" } }}>
               <DrawerHeader />
               <Divider />
-              {accessToken && (
-                <List>
-                  <ListItem disablePadding sx={{ display: "block" }}>
-                    <ListItemButton component={Link} href="/dashboard" onClick={() => setShowDrawer(false)}>
-                      <ListItemIcon>
-                        <DashboardIcon htmlColor="white" />
-                      </ListItemIcon>
-                      <ListItemText primary={"Dashboard"} />
-                    </ListItemButton>
-                    <ListItemButton component={Link} href="/bill" onClick={() => setShowDrawer(false)}>
-                      <ListItemIcon>
-                        <ReceiptIcon htmlColor="white" />
-                      </ListItemIcon>
-                      <ListItemText primary={"Bill"} />
-                    </ListItemButton>
-                  </ListItem>
-                  <ListItemButton
-                    onClick={() => {
-                      setOpenManage(!openManage);
-                      setShowDrawer(true);
-                    }}
-                  >
-                    <ListItemIcon>
-                      <DatasetIcon htmlColor="white" />
-                    </ListItemIcon>
-                    <ListItemText primary="Quản lý" />
-                    {openManage ? <ExpandLessIcon htmlColor="white" /> : <ExpandMoreIcon htmlColor="white" />}
-                  </ListItemButton>
-                  <Collapse in={openManage} timeout="auto" unmountOnExit>
-                    <List component="div" disablePadding>
-                      <ListItemButton
-                        sx={{ pl: 4 }}
-                        component={Link}
-                        href="/manager/orders"
-                        onClick={() => {
-                          setShowDrawer(false);
-                          setOpenManage(false);
-                        }}
-                      >
-                        <ListItemIcon>
-                          <SubtitlesIcon htmlColor="white" />
-                        </ListItemIcon>
-                        <ListItemText primary="Đơn Hàng" />
-                      </ListItemButton>
-                      <ListItemButton
-                        sx={{ pl: 4 }}
-                        component={Link}
-                        href="/manager/users"
-                        onClick={() => {
-                          setShowDrawer(false);
-                          setOpenManage(false);
-                        }}
-                      >
-                        <ListItemIcon>
-                          <PersonIcon htmlColor="white" />
-                        </ListItemIcon>
-                        <ListItemText primary="Tài khoản" />
-                      </ListItemButton>
-                      <ListItemButton
-                        sx={{ pl: 4 }}
-                        component={Link}
-                        href="/manager/partners"
-                        onClick={() => {
-                          setShowDrawer(false);
-                          setOpenManage(false);
-                        }}
-                      >
-                        <ListItemIcon>
-                          <BusinessIcon htmlColor="white" />
-                        </ListItemIcon>
-                        <ListItemText primary="Đối Tác" />
-                      </ListItemButton>
-                      <ListItemButton
-                        sx={{ pl: 4 }}
-                        component={Link}
-                        href="/manager/carriers"
-                        onClick={() => {
-                          setShowDrawer(false);
-                          setOpenManage(false);
-                        }}
-                      >
-                        <ListItemIcon>
-                          <CarrierIcon htmlColor="white" />
-                        </ListItemIcon>
-                        <ListItemText primary="Hãng Bay" />
-                      </ListItemButton>
-                      <ListItemButton
-                        sx={{ pl: 4 }}
-                        component={Link}
-                        href="/manager/suppliers"
-                        onClick={() => {
-                          setShowDrawer(false);
-                          setOpenManage(false);
-                        }}
-                      >
-                        <ListItemIcon>
-                          <SupplierIcon htmlColor="white" />
-                        </ListItemIcon>
-                        <ListItemText primary="Nhà Cung Cấp" />
-                      </ListItemButton>
-                      <ListItemButton
-                        sx={{ pl: 4 }}
-                        component={Link}
-                        href="/manager/prices"
-                        onClick={() => {
-                          setShowDrawer(false);
-                          setOpenManage(false);
-                        }}
-                      >
-                        <ListItemIcon>
-                          <PriceIcon htmlColor="white" />
-                        </ListItemIcon>
-                        <ListItemText primary="Giá" />
-                      </ListItemButton>
-                    </List>
-                  </Collapse>
-                </List>
-              )}
+              <List>
+                {SIDEBAR_LINKS.map((group, gIdx) => (
+                  <React.Fragment key={gIdx}>
+                    {/* Các nhóm không có section (Dashboard, Bill) */}
+                    {!group.section &&
+                      group.items.map((item, idx) => (
+                        <ListItemButton key={item.title} component={Link} href={item.href} onClick={() => setShowDrawer(false)}>
+                          <ListItemIcon sx={{ color: "white" }}>{item.icon}</ListItemIcon>
+                          <ListItemText primary={item.title} />
+                        </ListItemButton>
+                      ))}
+                    {/* Các nhóm accordion */}
+                    {group.section && (
+                      <>
+                        <ListItemButton
+                          onClick={() => {
+                            setOpenGroup(openGroup === group.section ? null : group.section);
+                            setShowDrawer(true);
+                          }}
+                        >
+                          <ListItemIcon sx={{ color: "white" }}>{group.icon}</ListItemIcon>
+                          <ListItemText primary={group.section} />
+                          {openGroup === group.section ? <ExpandLessIcon htmlColor="white" /> : <ExpandMoreIcon htmlColor="white" />}
+                        </ListItemButton>
+                        <Collapse in={openGroup === group.section} timeout="auto" unmountOnExit>
+                          <List component="div" disablePadding>
+                            {group.items.map((item, idx) => (
+                              <ListItemButton
+                                key={item.title}
+                                sx={{ pl: 4 }}
+                                component={Link}
+                                href={item.href}
+                                onClick={() => {
+                                  setShowDrawer(false);
+                                  setOpenGroup(null);
+                                }}
+                              >
+                                <ListItemIcon sx={{ color: "white" }}>{item.icon}</ListItemIcon>
+                                <ListItemText primary={item.title} />
+                              </ListItemButton>
+                            ))}
+                          </List>
+                        </Collapse>
+                      </>
+                    )}
+                  </React.Fragment>
+                ))}
+              </List>
             </Drawer>
             <Box component="main" sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
               <DrawerHeader />
@@ -346,6 +335,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
     );
   };
 
+  // Thứ tự provider giống code cũ (ReduxProvider wrap View bên trong)
   return (
     <QueryClientProvider client={queryClient}>
       <ReduxProvider>
