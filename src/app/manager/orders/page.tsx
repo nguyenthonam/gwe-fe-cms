@@ -1,14 +1,33 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Box, Tabs, Tab, Paper, Typography, Container } from "@mui/material";
 import OrderManagerView from "@/components/Orders/OrderManagerView";
-import VATRateManagerView from "@/components/VATRates/VATRateManagerView";
 import { lightBlue } from "@mui/material/colors";
 
-export default function PartnerManagementTabs() {
-  const [tabIndex, setTabIndex] = useState(0);
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabIndex(newValue);
+export default function OrdersPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Lấy tab index từ URL query, mặc định là 0 nếu không có hoặc không hợp lệ
+  const tabParam = Number(searchParams.get("tab"));
+  const tabDefault = Number.isInteger(tabParam) && tabParam >= 0 ? tabParam : 0;
+  const [tabIndex, setTabIndex] = useState(tabDefault);
+
+  // Khi url ?tab= đổi, sync lại state tabIndex
+  useEffect(() => {
+    const nextTab = Number.isInteger(tabParam) && tabParam >= 0 ? tabParam : 0;
+    if (nextTab !== tabIndex) setTabIndex(nextTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabParam]);
+
+  // Khi đổi tab, cập nhật lại url
+  const handleTabChange = (_: any, newIndex: number) => {
+    setTabIndex(newIndex);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", newIndex.toString());
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   return (
@@ -20,18 +39,14 @@ export default function PartnerManagementTabs() {
         }}
       >
         <Typography variant="h5" mb={2} sx={{ fontWeight: "bold", color: lightBlue[500] }}>
-          QUẢN LÝ ĐỐI TÁC
+          QUẢN LÝ ĐƠN HÀNG
         </Typography>
         <Tabs value={tabIndex} onChange={handleTabChange}>
           <Tab label="Đơn Hàng" />
-          <Tab label="VAT (Thuế)" />
         </Tabs>
 
         <Box mt={2} className="w-full ">
-          <Paper>
-            {tabIndex === 0 && <OrderManagerView />}
-            {tabIndex === 1 && <VATRateManagerView />}
-          </Paper>
+          <Paper>{tabIndex === 0 && <OrderManagerView />}</Paper>
         </Box>
       </Box>
     </Container>
