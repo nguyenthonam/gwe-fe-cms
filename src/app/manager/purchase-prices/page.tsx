@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Box, Typography, Paper, Tabs, Tab, Container } from "@mui/material";
 import { lightBlue } from "@mui/material/colors";
-import UsersManagerView from "@/components/Users/UsersManagerView";
+import ServiceManagerView from "@/components/Services/ServiceManagerView";
 
 export default function CarrierManagementView() {
   const [tabIndex, setTabIndex] = useState(0);
@@ -16,15 +16,15 @@ export default function CarrierManagementView() {
         }}
       >
         <Typography variant="h5" mb={2} fontWeight="bold" sx={{ color: lightBlue[500] }}>
-          QUẢN LÝ TÀI KHOẢN
+          QUẢN LÝ GIÁ MUA
         </Typography>
 
         <Tabs value={tabIndex} onChange={(_, newIndex) => setTabIndex(newIndex)}>
-          <Tab label="Tài khoản" />
+          <Tab label="Dịch vụ" />
         </Tabs>
 
         <Box mt={2} className="w-full ">
-          <Paper>{tabIndex === 0 && <UsersManagerView />}</Paper>
+          <Paper>{tabIndex === 0 && <ServiceManagerView />}</Paper>
         </Box>
       </Box>
     </Container>

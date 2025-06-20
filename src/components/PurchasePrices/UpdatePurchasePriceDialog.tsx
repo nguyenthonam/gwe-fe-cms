@@ -1,225 +1,272 @@
-// UpdatePurchasePriceDialog.tsx (final - preload dropdown before setState)
-
 "use client";
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, MenuItem, Select, Stack, Grid, InputLabel, FormControl, FormControlLabel, Checkbox, Typography } from "@mui/material";
-import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  Box,
+  Stack,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField,
+  IconButton,
+  Grid,
+  CircularProgress,
+} from "@mui/material";
+import { Delete } from "@mui/icons-material";
+import { useEffect, useState } from "react";
+import { IPurchasePriceGroup, IPurchasePriceGroupData } from "@/types/typePurchasePrice";
+import { EPRODUCT_TYPE, ECURRENCY } from "@/types/typeGlobals";
+import { updateGroupPurchasePriceApi } from "@/utils/apis/apiPurchasePrice";
 import { useNotification } from "@/contexts/NotificationProvider";
-import { updatePurchasePriceApi } from "@/utils/apis/apiPurchasePrice";
-import { getCarriersApi } from "@/utils/apis/apiCarrier";
-import { getServicesByCarrierApi } from "@/utils/apis/apiService";
-import { getSuppliersApi } from "@/utils/apis/apiSupplier";
-import { ECURRENCY, EPRODUCT_TYPE } from "@/types/typeGlobals";
-import NumericInput from "../Globals/NumericInput";
-import { IPurchasePrice } from "@/types/typePurchasePrice";
+import { lightBlue } from "@mui/material/colors";
 
 interface Props {
   open: boolean;
+  group: IPurchasePriceGroup;
   onClose: () => void;
   onUpdated: () => void;
-  purchasePrice: IPurchasePrice | null;
 }
 
-export default function UpdatePurchasePriceDialog({ open, onClose, onUpdated, purchasePrice }: Props) {
-  const [carriers, setCarriers] = useState<any[]>([]);
-  const [services, setServices] = useState<any[]>([]);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+const tableTitleStyle = {
+  fontWeight: 700,
+  fontSize: 16,
+  color: "#1b4786",
+  textAlign: "center",
+  background: "#f6f8fc",
+  padding: "12px 0",
+  margin: "18px 0 6px 0",
+} as const;
 
-  const [carrierId, setCarrierId] = useState("");
-  const [serviceId, setServiceId] = useState("");
-  const [supplierId, setSupplierId] = useState("");
-  const [productType, setProductType] = useState(EPRODUCT_TYPE.DOCUMENT);
-  const [zone, setZone] = useState("1");
-  const [weightMin, setWeightMin] = useState("0");
-  const [weightMax, setWeightMax] = useState("0");
-  const [price, setPrice] = useState("0");
-  const [currency, setCurrency] = useState(ECURRENCY.VND);
-  const [isPricePerKG, setIsPricePerKG] = useState(true);
-  const [loading, setLoading] = useState(false);
-
+export default function UpdatePurchasePriceDialog({ open, group, onClose, onUpdated }: Props) {
   const { showNotification } = useNotification();
 
-  const fetchCarriers = async () => {
-    const res = await getCarriersApi();
-    setCarriers(res?.data?.data?.data || []);
-  };
-
-  const fetchSuppliers = async () => {
-    const res = await getSuppliersApi();
-    setSuppliers(res?.data?.data?.data || []);
-  };
-
-  const fetchServices = async (carrierId: string) => {
-    const selected = carriers.find((c) => c._id === carrierId);
-    const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
-    if (!companyId) return;
-    const res = await getServicesByCarrierApi(companyId);
-    setServices(res?.data?.data?.data || []);
-  };
+  const [docRows, setDocRows] = useState<IPurchasePriceGroupData[]>([]);
+  const [parcelRows, setParcelRows] = useState<IPurchasePriceGroupData[]>([]);
+  const [perKgRows, setPerKgRows] = useState<IPurchasePriceGroupData[]>([]);
+  const [currency, setCurrency] = useState<ECURRENCY>(ECURRENCY.VND);
+  const [showParcel, setShowParcel] = useState(false);
+  const [showPerKg, setShowPerKg] = useState(false);
+  const [loadingParcel, setLoadingParcel] = useState(false);
+  const [loadingPerKg, setLoadingPerKg] = useState(false);
 
   useEffect(() => {
-    if (open && purchasePrice) {
-      const init = async () => {
-        await fetchCarriers();
-        await fetchSuppliers();
+    if (!group) return;
+    const docs: IPurchasePriceGroupData[] = [];
+    const parcels: IPurchasePriceGroupData[] = [];
+    const perKgs: IPurchasePriceGroupData[] = [];
 
-        const carrierIdVal = typeof purchasePrice.carrierId === "object" ? purchasePrice.carrierId?._id || "" : purchasePrice.carrierId || "";
-        await fetchServices(carrierIdVal);
+    group.datas.forEach((d) => {
+      if (d.productType === EPRODUCT_TYPE.DOCUMENT) docs.push(d);
+      else if (d.productType === EPRODUCT_TYPE.PARCEL && !d.isPricePerKG) parcels.push(d);
+      else if (d.productType === EPRODUCT_TYPE.PARCEL && d.isPricePerKG) perKgs.push(d);
+    });
 
-        setCarrierId(carrierIdVal);
-        setServiceId(typeof purchasePrice.serviceId === "object" ? purchasePrice.serviceId?._id || "" : purchasePrice.serviceId || "");
-        setSupplierId(typeof purchasePrice.supplierId === "object" ? purchasePrice.supplierId?._id || "" : purchasePrice.supplierId || "");
+    setDocRows(docs);
+    setParcelRows(parcels);
+    setPerKgRows(perKgs);
+    setCurrency(group.datas[0]?.currency || ECURRENCY.VND);
+    setShowParcel(false);
+    setShowPerKg(false);
+  }, [group, open]);
 
-        setProductType(purchasePrice.productType);
-        setZone(String(purchasePrice.zone));
-        setWeightMin(String(purchasePrice.weightMin));
-        setWeightMax(String(purchasePrice.weightMax));
-        setPrice(String(purchasePrice.price));
-        setCurrency(purchasePrice.currency);
-        setIsPricePerKG(purchasePrice.isPricePerKG);
-      };
-      init();
-    }
-  }, [open, purchasePrice]);
+  // ✅ FIX DELETE LOGIC CHUẨN:
+  const handleDeleteRow = (type: "doc" | "parcel" | "perKg", weight: string) => {
+    const updater = type === "doc" ? setDocRows : type === "parcel" ? setParcelRows : setPerKgRows;
+    const rows = type === "doc" ? docRows : type === "parcel" ? parcelRows : perKgRows;
 
-  useEffect(() => {
-    if (carrierId) fetchServices(carrierId);
-  }, [carrierId]);
+    const newRows = rows.filter((r) => {
+      const weightKey = type === "perKg" ? `${r.weightMin.toFixed(1)}–${r.weightMax.toFixed(1)}` : r.weightMax.toFixed(1);
+      return weightKey !== weight;
+    });
+
+    updater(newRows);
+  };
+
+  const handleCellChange = (type: "doc" | "parcel" | "perKg", idx: number, value: number) => {
+    const updater = type === "doc" ? setDocRows : type === "parcel" ? setParcelRows : setPerKgRows;
+    const rows = type === "doc" ? docRows : type === "parcel" ? parcelRows : perKgRows;
+    updater(rows.map((r, i) => (i === idx ? { ...r, price: value } : r)));
+  };
 
   const handleSubmit = async () => {
-    if (!purchasePrice?._id) return;
-    if (!carrierId || !serviceId || !supplierId || !zone || !price) {
-      showNotification("Vui lòng nhập đầy đủ thông tin!", "warning");
-      return;
-    }
-    if (isPricePerKG && productType !== EPRODUCT_TYPE.PARCEL) {
-      showNotification("Giá theo KG chỉ áp dụng với loại hàng PARCEL", "warning");
-      return;
-    }
     try {
-      setLoading(true);
-      await updatePurchasePriceApi(purchasePrice._id, {
-        carrierId,
-        serviceId,
-        supplierId,
-        productType,
-        zone: Number(zone),
-        weightMin: Number(weightMin),
-        weightMax: Number(weightMax),
-        price: Number(price),
-        currency,
-        isPricePerKG,
-      });
-      showNotification("Cập nhật giá mua thành công", "success");
+      const datas = [...docRows, ...parcelRows, ...perKgRows].map((d) => ({ ...d, currency }));
+      const payload = {
+        group: {
+          carrierId: group.carrierId,
+          supplierId: group.supplierId,
+          serviceId: group.serviceId,
+        },
+        datas,
+      };
+      await updateGroupPurchasePriceApi(payload);
+      showNotification("Cập nhật bảng giá thành công", "success");
       onUpdated();
+      onClose();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật giá mua", "error");
-    } finally {
-      setLoading(false);
+      showNotification(err.message || "Lỗi cập nhật", "error");
     }
+  };
+
+  const getZones = (rows: IPurchasePriceGroupData[]) => [...new Set(rows.map((r) => r.zone))].sort((a, b) => a - b);
+  const getWeightKeys = (rows: IPurchasePriceGroupData[], isPerKg = false) =>
+    [...new Set(rows.map((r) => (isPerKg ? `${r.weightMin.toFixed(1)}–${r.weightMax.toFixed(1)}` : r.weightMax.toFixed(1))))].sort((a, b) => {
+      if (!isPerKg) return Number(a) - Number(b);
+      return Number(a.split("–")[0]) - Number(b.split("–")[0]);
+    });
+
+  const renderTable = (title: string, rows: IPurchasePriceGroupData[], type: "doc" | "parcel" | "perKg", isPerKg = false) => {
+    if (!rows.length) return null;
+    const zones = getZones(rows);
+    const weights = getWeightKeys(rows, isPerKg);
+
+    return (
+      <Box mb={3}>
+        <Box sx={tableTitleStyle}>{title}</Box>
+        <Paper variant="outlined" sx={{ overflowX: "auto" }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700, background: "#FFFACD", textAlign: "center" }}>{isPerKg ? "Weight (kg-range)" : "Weight (kg)"}</TableCell>
+                {zones.map((z) => (
+                  <TableCell key={z} sx={{ fontWeight: 700, background: "#FFFACD", textAlign: "center" }}>
+                    Zone {z}
+                  </TableCell>
+                ))}
+                <TableCell sx={{ bgcolor: "#f8d7da", width: 36 }}></TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {weights.map((w) => (
+                <TableRow key={w}>
+                  <TableCell align="center">{w}</TableCell>
+                  {zones.map((z) => {
+                    const idx = rows.findIndex((r) => r.zone === z && (isPerKg ? `${r.weightMin.toFixed(1)}–${r.weightMax.toFixed(1)}` === w : r.weightMax.toFixed(1) === w));
+                    const val = idx > -1 ? rows[idx].price : "";
+                    return (
+                      <TableCell key={z} sx={{ p: 0, minWidth: 90 }}>
+                        {idx > -1 ? (
+                          <TextField
+                            value={val}
+                            type="number"
+                            variant="standard"
+                            onChange={(e) => handleCellChange(type, idx, Number(e.target.value))}
+                            inputProps={{ style: { textAlign: "center" }, min: 0 }}
+                          />
+                        ) : (
+                          ""
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                  <TableCell align="center" sx={{ p: 0 }}>
+                    <IconButton color="error" size="small" onClick={() => handleDeleteRow(type, w)}>
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Paper>
+      </Box>
+    );
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Cập nhật giá mua</DialogTitle>
+    <Dialog open={open} maxWidth="lg" fullWidth onClose={onClose}>
+      <DialogTitle sx={{ color: lightBlue[500], fontWeight: "bold" }}>CẬP NHẬT BẢNG GIÁ MUA</DialogTitle>
       <DialogContent>
-        <Stack spacing={2} mt={1}>
-          <Grid container spacing={2}>
-            <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Loại hàng</InputLabel>
-                <Select label="Loại hàng" value={productType} onChange={(e) => setProductType(e.target.value as EPRODUCT_TYPE)}>
-                  <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>DOCUMENT</MenuItem>
-                  <MenuItem value={EPRODUCT_TYPE.PARCEL}>PARCEL</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Supplier</InputLabel>
-                <Select label="Supplier" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-                  {suppliers?.map((s) => (
-                    <MenuItem key={s._id} value={s._id}>
-                      {s.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Hãng</InputLabel>
-                <Select label="Hãng" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
-                  {carriers?.map((c) => (
-                    <MenuItem key={c._id} value={c._id}>
-                      {c.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Dịch vụ</InputLabel>
-                <Select label="Dịch vụ" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
-                  {services?.map((s) => (
-                    <MenuItem key={s._id} value={s._id}>
-                      {s.code}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={4}>
-              <NumericInput label="Zone" fullWidth size="small" value={zone} onChange={(val) => setZone(val)} />
-            </Grid>
-            <Grid size={4}>
-              <NumericInput label="Từ KG" fullWidth size="small" value={weightMin} onChange={(val) => setWeightMin(val)} />
-            </Grid>
-            <Grid size={4}>
-              <NumericInput label="ĐẾN KG" fullWidth size="small" value={weightMax} onChange={(val) => setWeightMax(val)} />
-            </Grid>
-            <Grid size={6}>
-              <NumericInput label="Giá" fullWidth size="small" value={price} onChange={(val) => setPrice(val)} />
-            </Grid>
-            <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Tiền tệ</InputLabel>
-                <Select label="Tiền tệ" value={currency} onChange={(e) => setCurrency(e.target.value as ECURRENCY)}>
-                  {Object.values(ECURRENCY).map((cur) => (
-                    <MenuItem key={cur} value={cur}>
-                      {cur}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={12}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={isPricePerKG}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setIsPricePerKG(checked);
-                      if (checked) setProductType(EPRODUCT_TYPE.PARCEL);
-                    }}
-                  />
-                }
-                label="Giá theo KG"
-              />
-              {isPricePerKG && productType !== EPRODUCT_TYPE.PARCEL && (
-                <Typography variant="caption" color="error">
-                  Giá theo KG chỉ áp dụng với loại hàng PARCEL. Đã tự động chuyển.
+        <Stack spacing={2}>
+          <Paper sx={{ p: 2, mb: 1 }} variant="outlined">
+            <Grid container spacing={2}>
+              <Grid size={6}>
+                <Typography>
+                  Hãng: <b>{typeof group.carrierId === "object" ? group.carrierId?.name : group.carrierId}</b>
                 </Typography>
-              )}
+              </Grid>
+              <Grid size={6}>
+                <Typography>
+                  Supplier: <b>{typeof group.supplierId === "object" ? group.supplierId?.name : group.supplierId}</b>
+                </Typography>
+              </Grid>
+              <Grid size={6}>
+                <Typography>
+                  Dịch vụ: <b>{typeof group.serviceId === "object" ? group.serviceId?.code : group.serviceId}</b>
+                </Typography>
+              </Grid>
+              <Grid size={6}>
+                <Typography>
+                  Tiền tệ: <b>{currency}</b>
+                </Typography>
+              </Grid>
             </Grid>
-          </Grid>
+          </Paper>
+
+          {renderTable("Document Rates", docRows, "doc")}
+
+          <Box sx={{ minHeight: 50 }}>
+            {!showParcel && parcelRows.length > 0 && (
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setLoadingParcel(true);
+                  setTimeout(() => {
+                    setShowParcel(true);
+                    setLoadingParcel(false);
+                  }, 0);
+                }}
+              >
+                Hiển thị bảng Non-Document Rates
+              </Button>
+            )}
+            {loadingParcel && (
+              <Box display="flex" justifyContent="center" alignItems="center" height={40}>
+                <span style={{ color: lightBlue[500] }}>loading...</span>
+                <CircularProgress size="18px" sx={{ color: lightBlue[800] }} />
+              </Box>
+            )}
+            {showParcel && renderTable("Non-Document Rates", parcelRows, "parcel")}
+          </Box>
+
+          <Box sx={{ minHeight: 50 }}>
+            {!showPerKg && perKgRows.length > 0 && (
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setLoadingPerKg(true);
+                  setTimeout(() => {
+                    setShowPerKg(true);
+                    setLoadingPerKg(false);
+                  }, 0);
+                }}
+              >
+                Hiển thị bảng Per KG Rates
+              </Button>
+            )}
+            {loadingPerKg && (
+              <Box display="flex" justifyContent="center" alignItems="center" height={40}>
+                <span style={{ color: lightBlue[500] }}>loading...</span>
+                <CircularProgress size="18px" sx={{ color: lightBlue[800] }} />
+              </Box>
+            )}
+            {showPerKg && renderTable("Giá cước mỗi kg (Per KG)", perKgRows, "perKg", true)}
+          </Box>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={loading}>
+        <Button onClick={onClose} variant="outlined">
+          Đóng
+        </Button>
+        <Button onClick={handleSubmit} variant="contained">
           Cập nhật
         </Button>
       </DialogActions>

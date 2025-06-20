@@ -1,28 +1,27 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Box, Button, Stack, TextField, Select, MenuItem, CircularProgress, Typography, Chip } from "@mui/material";
+import { Box, Button, Stack, TextField, Select, MenuItem, CircularProgress, Typography } from "@mui/material";
 import { Add, Download } from "@mui/icons-material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import * as XLSX from "sheetjs-style";
 import debounce from "lodash/debounce";
-import { ISalePrice } from "@/types/typeSalePrice";
-import { ERECORD_STATUS, EPRODUCT_TYPE } from "@/types/typeGlobals";
 import { useNotification } from "@/contexts/NotificationProvider";
-import { EnumChip } from "@/components/Globals/EnumChip";
-import { ActionMenu } from "@/components/Globals/ActionMenu";
-import { formatCurrency } from "@/utils/hooks/hookCurrency";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getPartnersApi } from "@/utils/apis/apiPartner";
-import { searchSalePricesApi, deleteSalePriceApi, lockSalePriceApi, unlockSalePriceApi } from "@/utils/apis/apiSalePrice";
+import { getServicesApi, getServicesByCarrierApi } from "@/utils/apis/apiService";
+import { searchSalePriceGroupsApi, deleteSalePriceGroupApi, lockSalePriceGroupApi, unlockSalePriceGroupApi } from "@/utils/apis/apiSalePrice";
 import CreateSalePriceDialog from "./CreateSalePriceDialog";
 import UpdateSalePriceDialog from "./UpdateSalePriceDialog";
 import SalePriceDetailDialog from "./SalePriceDetailDialog";
-import { green, orange } from "@mui/material/colors";
-import { getServicesApi, getServicesByCarrierApi } from "@/utils/apis/apiService";
+import { ERECORD_STATUS } from "@/types/typeGlobals";
+import { getId } from "@/utils/hooks/hookGlobals";
+import { ActionMenu } from "../Globals/ActionMenu";
+import { exportSalePriceGroupToExcelFull } from "@/utils/hooks/hookPrice";
+import { ISalePriceGroup } from "@/types/typeSalePrice";
 
 export default function SalePriceManagerView() {
-  const [prices, setPrices] = useState<ISalePrice[]>([]);
+  const [groups, setGroups] = useState<ISalePriceGroup[]>([]);
+  const [total, setTotal] = useState(0);
   const [keyword, setKeyword] = useState("");
   const [carrierIdFilter, setCarrierIdFilter] = useState("");
   const [serviceIdFilter, setServiceIdFilter] = useState("");
@@ -30,70 +29,43 @@ export default function SalePriceManagerView() {
   const [statusFilter, setStatusFilter] = useState<"" | "all" | ERECORD_STATUS>("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const [carriers, setCarriers] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
 
+  // Dialog & selection state
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openUpdateDialog, setOpenUpdateDialog] = useState(false);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
-  const [selected, setSelected] = useState<ISalePrice | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<ISalePriceGroup | null>(null);
 
   const { showNotification } = useNotification();
   const debouncedSearch = useMemo(() => debounce((v) => setKeyword(v), 500), []);
 
-  const fetchCarriers = async () => {
-    try {
-      const res = await getCarriersApi();
-      setCarriers(res?.data?.data?.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  // Lấy options filter
+  useEffect(() => {
+    getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
+    getPartnersApi().then((res) => setPartners(res?.data?.data?.data || []));
+  }, []);
 
-  const fetchServices = async () => {
+  useEffect(() => {
     if (carrierIdFilter) {
       const selected = carriers.find((c) => c._id === carrierIdFilter);
       const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
       if (!companyId) return;
-      try {
-        const res = await getServicesByCarrierApi(companyId);
-        setServices(res?.data?.data?.data || []);
-      } catch (err) {
-        console.error(err);
-        showNotification("Không thể tải danh sách dịch vụ", "error");
-      }
+      getServicesByCarrierApi(companyId).then((res) => setServices(res?.data?.data?.data || []));
     } else {
-      try {
-        const res = await getServicesApi();
-        setServices(res?.data?.data?.data || []);
-      } catch (err) {
-        console.error(err);
-        showNotification("Không thể tải danh sách dịch vụ", "error");
-      }
+      getServicesApi().then((res) => setServices(res?.data?.data?.data || []));
     }
-  };
+  }, [carrierIdFilter, carriers]);
 
-  useEffect(() => {
-    fetchServices();
-  }, [carrierIdFilter]);
-
-  const fetchPartners = async () => {
-    try {
-      const res = await getPartnersApi();
-      setPartners(res?.data?.data?.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
+  // Fetch group data
   const fetchData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await searchSalePricesApi({
+      const res = await searchSalePriceGroupsApi({
         keyword,
         page: page + 1,
         perPage: pageSize,
@@ -102,274 +74,156 @@ export default function SalePriceManagerView() {
         partnerId: partnerIdFilter,
         status: statusFilter,
       });
-      setPrices(res?.data?.data?.data || []);
+      const arr: ISalePriceGroup[] = Array.isArray(res?.data?.data?.data) ? res.data.data.data.filter(Boolean) : [];
+      setGroups(arr);
       setTotal(res?.data?.data?.meta?.total || 0);
     } catch (err) {
-      console.error(err);
-      showNotification("Không thể tải danh sách giá bán", "error");
-    } finally {
-      setLoading(false);
+      console.error("Error fetching sale price groups:", err);
+      showNotification("Không thể tải danh sách nhóm giá bán", "error");
     }
+    setLoading(false);
   };
 
   useEffect(() => {
-    fetchCarriers();
-    fetchPartners();
     fetchData();
-  }, []);
-
-  useEffect(() => {
-    fetchData();
+    // eslint-disable-next-line
   }, [keyword, page, pageSize, carrierIdFilter, serviceIdFilter, partnerIdFilter, statusFilter]);
 
-  const handleLockToggle = async (item: ISalePrice) => {
+  // ==== Action cho group ====
+  const handleDeleteGroup = async (group: ISalePriceGroup) => {
+    if (!window.confirm("Bạn có chắc muốn xoá group này?")) return;
     try {
-      if (!item._id) return;
-      const confirm = window.confirm(item.status === ERECORD_STATUS.Active ? "Khoá giá này?" : "Mở khoá giá này?");
-      if (!confirm) return;
-      const res = item.status === ERECORD_STATUS.Active ? await lockSalePriceApi(item._id) : await unlockSalePriceApi(item._id);
-      showNotification(res?.data?.message || "Cập nhật thành công", "success");
-      fetchData();
-    } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật trạng thái", "error");
-    }
-  };
-
-  const handleDelete = async (item: ISalePrice) => {
-    if (!item._id) return;
-    if (!window.confirm("Bạn có chắc muốn xoá giá này?")) return;
-    try {
-      await deleteSalePriceApi(item._id);
-      showNotification("Đã xoá thành công", "success");
+      await deleteSalePriceGroupApi({
+        carrierId: getId(group.carrierId),
+        partnerId: getId(group.partnerId),
+        serviceId: getId(group.serviceId),
+        productType: "",
+        currency: "",
+      });
+      showNotification("Đã xoá group!");
       fetchData();
     } catch (err: any) {
       showNotification(err.message || "Lỗi khi xoá", "error");
     }
   };
 
-  const handleExportExcel = () => {
-    const documentData = prices
-      .filter((p) => p.productType === EPRODUCT_TYPE.DOCUMENT)
-      .map((p) => ({
-        "PRODUCT TYPE": "DOCUMENT",
-        CARRIER: typeof p.carrierId === "object" ? p.carrierId?.name : p.carrierId,
-        SERVICE: typeof p.serviceId === "object" ? p.serviceId?.code : p.serviceId,
-        PARTNER: typeof p.partnerId === "object" ? p.partnerId?.name : p.partnerId,
-        ZONE: p.zone,
-        "FROM WEIGHT": p.weightMin,
-        "TO WEIGHT": p.weightMax,
-        PRICE: formatCurrency(p.price, p.currency),
-        CURRENCY: p.currency,
-        "PRICE BY KG": p.isPricePerKG ? "YES" : "",
-      }));
-
-    const parcelData = prices
-      .filter((p) => p.productType === EPRODUCT_TYPE.PARCEL)
-      .map((p) => ({
-        "PRODUCT TYPE": "PARCEL",
-        CARRIER: typeof p.carrierId === "object" ? p.carrierId?.name : p.carrierId,
-        SERVICE: typeof p.serviceId === "object" ? p.serviceId?.code : p.serviceId,
-        PARTNER: typeof p.partnerId === "object" ? p.partnerId?.name : p.partnerId,
-        ZONE: p.zone,
-        "FROM WEIGHT": p.weightMin,
-        "TO WEIGHT": p.weightMax,
-        PRICE: formatCurrency(p.price, p.currency),
-        CURRENCY: p.currency,
-        "PRICE BY KG": p.isPricePerKG ? "YES" : "",
-      }));
-
-    const allData = [...documentData, {}, ...parcelData]; // empty row between tables
-    const ws = XLSX.utils.json_to_sheet(allData);
-    ws["!cols"] = Object.keys(allData[0]).map(() => ({ wch: 20 }));
-
-    // Style cho từng cell
-    const range = XLSX.utils.decode_range(ws["!ref"] || "");
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cell = XLSX.utils.encode_cell({ r: R, c: C });
-        if (!ws[cell]) continue;
-        const isHeader = R === 0 || (documentData.length > 0 && R === documentData.length + 1); // cả 2 header
-
-        (ws[cell] as any).s = {
-          font: {
-            bold: isHeader,
-            sz: isHeader ? 12 : 11,
-          },
-          alignment: {
-            horizontal: isHeader ? "center" : "left",
-            vertical: "center",
-            wrapText: true,
-          },
-          border: {
-            top: { style: "thin", color: { auto: 1 } },
-            bottom: { style: "thin", color: { auto: 1 } },
-            left: { style: "thin", color: { auto: 1 } },
-            right: { style: "thin", color: { auto: 1 } },
-          },
-        };
-      }
+  const handleLockUnlockGroup = async (group: ISalePriceGroup) => {
+    const isLocked = group.datas.length > 0 && group.datas.every((d) => d.status === ERECORD_STATUS.Locked);
+    try {
+      const api = isLocked ? unlockSalePriceGroupApi : lockSalePriceGroupApi;
+      await api({
+        carrierId: getId(group.carrierId),
+        partnerId: getId(group.partnerId),
+        serviceId: getId(group.serviceId),
+        productType: "",
+        currency: "",
+      });
+      showNotification(isLocked ? "Đã mở khoá!" : "Đã khoá!");
+      fetchData();
+    } catch (err: any) {
+      showNotification(err.message || "Lỗi cập nhật trạng thái", "error");
     }
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "BANG_GIA_BAN");
-    XLSX.writeFile(wb, "Bang_Gia_Ban.xlsx");
   };
 
+  // ==== Export Excel cho từng group ====
+  const exportGroupToExcel = (group: ISalePriceGroup) => {
+    if (!group || !group.datas) {
+      showNotification("Không có dữ liệu để xuất Excel!");
+      return;
+    }
+    exportSalePriceGroupToExcelFull(group);
+  };
+
+  // ==== Columns cho 1 DataGrid duy nhất ====
   const columns: GridColDef[] = [
     {
-      field: "_id",
-      headerName: "ID",
+      field: "code",
+      headerName: "CODE",
       flex: 1.2,
-      minWidth: 120,
-      renderCell: ({ row }: { row: ISalePrice }) => (
+      renderCell: ({ row }: { row: ISalePriceGroup }) => (
         <Box display="flex" alignItems="center" height="100%">
           <Typography
             sx={{ cursor: "pointer", textDecoration: "underline" }}
             color="primary"
             onClick={() => {
-              setSelected(row);
+              setSelectedGroup(row);
               setOpenDetailDialog(true);
             }}
           >
-            #{row._id?.slice(-10)}
+            Chi tiết
           </Typography>
         </Box>
       ),
     },
     {
       field: "partnerId",
-      headerName: "PARTNER",
+      headerName: "Đối tác",
+      minWidth: 120,
       flex: 1,
-      minWidth: 150,
-      renderCell: ({ row }) => (typeof row.partnerId === "object" ? row.partnerId?.name : row.partnerId),
+      renderCell: ({ row }: { row: ISalePriceGroup }) => getId(row.partnerId),
     },
     {
       field: "carrierId",
-      headerName: "HÃNG",
-      minWidth: 150,
+      headerName: "Hãng",
+      minWidth: 120,
       flex: 1,
-      renderCell: ({ row }) => (typeof row.carrierId === "object" ? row.carrierId?.name : row.carrierId),
+      renderCell: ({ row }: { row: ISalePriceGroup }) => getId(row.carrierId),
     },
     {
       field: "serviceId",
-      headerName: "DỊCH VỤ",
-      flex: 1,
-      minWidth: 100,
-      renderCell: ({ row }) => (typeof row.serviceId === "object" ? row.serviceId?.code : row.serviceId),
-    },
-    {
-      field: "zone",
-      headerName: "ZONE",
-      flex: 0.5,
-      minWidth: 80,
-      align: "center",
-    },
-    {
-      field: "weightMin",
-      headerName: "TỪ KG",
-      flex: 0.7,
-      minWidth: 100,
-      align: "center",
-      renderCell: ({ value }) => value + " KG",
-    },
-    {
-      field: "weightMax",
-      headerName: "ĐẾN KG",
-      flex: 0.7,
-      minWidth: 100,
-      align: "center",
-      renderCell: ({ value }) => value + " KG",
-    },
-    {
-      field: "price",
-      headerName: "GIÁ",
-      minWidth: 150,
-      flex: 1,
-      renderCell: ({ row }) => formatCurrency(row.price, row.currency),
-    },
-    {
-      field: "currency",
-      headerName: "TIỀN TỆ",
-      flex: 0.5,
-      minWidth: 80,
-      align: "center",
-    },
-    {
-      field: "isPricePerKG",
-      headerName: "LOẠI GIÁ",
-      flex: 1,
+      headerName: "Dịch vụ",
       minWidth: 120,
-      renderCell: ({ value }) => <Chip label={value ? "Giá theo KG" : "Giá theo Gói"} sx={{ color: value ? orange[500] : green[500] }} size="small" />,
-    },
-    {
-      field: "status",
-      headerName: "TRẠNG THÁI",
-      flex: 0.8,
-      minWidth: 120,
-      renderCell: ({ value }) => <EnumChip type="recordStatus" value={value} />,
+      flex: 1,
+      renderCell: ({ row }: { row: ISalePriceGroup }) => getId(row.serviceId),
     },
     {
       field: "actions",
-      headerName: "",
-      width: 60,
-      renderCell: ({ row }) => (
-        <ActionMenu
-          onEdit={() => {
-            setSelected(row);
-            setOpenUpdateDialog(true);
-          }}
-          onLockUnlock={() => handleLockToggle(row)}
-          onDelete={() => handleDelete(row)}
-          status={row.status}
-        />
+      headerName: "Thao tác",
+      minWidth: 100,
+      flex: 1.2,
+      renderCell: ({ row }: { row: ISalePriceGroup }) => (
+        <Stack direction="row" height={"100%"} spacing={1} alignItems={"center"} justifyItems={"center"}>
+          <Button size="small" startIcon={<Download />} onClick={() => exportGroupToExcel(row)}>
+            Xuất Excel
+          </Button>
+
+          <ActionMenu
+            onEdit={() => {
+              setSelectedGroup(row);
+              setOpenUpdateDialog(true);
+            }}
+            onLockUnlock={() => handleLockUnlockGroup(row)}
+            onDelete={() => handleDeleteGroup(row)}
+            status={row.datas?.length ? row.datas[0].status : undefined}
+          />
+        </Stack>
       ),
     },
   ];
 
-  const renderDataGrid = (title: string, data: ISalePrice[]) => (
-    <Box>
-      <Typography variant="h6" sx={{ mb: 1, fontWeight: "bold", color: orange[500] }}>
-        {title}
-      </Typography>
-      <DataGrid
-        rows={data.map((r) => ({ ...r, id: r._id }))}
-        columns={columns}
-        paginationMode="server"
-        rowCount={total}
-        pageSizeOptions={[10, 20, 50, 100]}
-        paginationModel={{ page, pageSize }}
-        onPaginationModelChange={({ page, pageSize }) => {
-          setPage(page);
-          setPageSize(pageSize);
-        }}
-        disableRowSelectionOnClick
-        autoHeight
-      />
-    </Box>
-  );
+  // ==== Render DataGrid duy nhất ====
+  const rows = useMemo(() => groups.map((g, idx) => ({ ...g, id: idx })), [groups]);
 
   return (
     <Box className="space-y-4 p-6">
+      {/* Toolbar */}
       <Box display="flex" flexWrap="wrap" gap={1} justifyContent="space-between" alignItems="center">
-        <TextField placeholder="Tìm kiếm..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 250 }} />
+        <TextField placeholder="Tìm kiếm..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 220 }} />
         <Stack direction="row" spacing={1}>
-          <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
-            Xuất Excel
-          </Button>
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
             Tạo mới
           </Button>
         </Stack>
         <Stack direction="row" spacing={1}>
-          <Select size="small" value={partnerIdFilter} onChange={(e) => setPartnerIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
+          <Select size="small" value={partnerIdFilter} onChange={(e) => setPartnerIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 130 }}>
             <MenuItem value="">Tất cả Partner</MenuItem>
-            {partners.map((p) => (
-              <MenuItem key={p._id} value={p._id}>
-                {p.name}
+            {partners.map((s) => (
+              <MenuItem key={s._id} value={s._id}>
+                {s.name}
               </MenuItem>
             ))}
           </Select>
-          <Select size="small" value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
+          <Select size="small" value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 130 }}>
             <MenuItem value="">Tất cả Hãng</MenuItem>
             {carriers.map((c) => (
               <MenuItem key={c._id} value={c._id}>
@@ -377,7 +231,7 @@ export default function SalePriceManagerView() {
               </MenuItem>
             ))}
           </Select>
-          <Select size="small" value={serviceIdFilter} onChange={(e) => setServiceIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
+          <Select size="small" value={serviceIdFilter} onChange={(e) => setServiceIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 130 }}>
             <MenuItem value="">Tất cả Dịch vụ</MenuItem>
             {services.map((s) => (
               <MenuItem key={s._id} value={s._id}>
@@ -385,8 +239,7 @@ export default function SalePriceManagerView() {
               </MenuItem>
             ))}
           </Select>
-
-          <Select size="small" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} displayEmpty sx={{ minWidth: 150 }}>
+          <Select size="small" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} displayEmpty sx={{ minWidth: 120 }}>
             <MenuItem value="">Mặc định</MenuItem>
             <MenuItem value="all">Tất cả</MenuItem>
             <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
@@ -396,33 +249,37 @@ export default function SalePriceManagerView() {
           </Select>
         </Stack>
       </Box>
+
+      {/* DataGrid 1 bảng duy nhất */}
       {loading ? (
         <Box textAlign="center">
           <CircularProgress />
         </Box>
       ) : (
-        <Stack spacing={4}>
-          {renderDataGrid(
-            "DOCUMENT",
-            prices.filter((p) => p.productType === EPRODUCT_TYPE.DOCUMENT)
-          )}
-          {renderDataGrid(
-            "PARCEL",
-            prices.filter((p) => p.productType === EPRODUCT_TYPE.PARCEL)
-          )}
-        </Stack>
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          paginationMode="server"
+          rowCount={total}
+          pageSizeOptions={[10, 20, 50, 100]}
+          paginationModel={{ page, pageSize }}
+          onPaginationModelChange={({ page, pageSize }) => {
+            setPage(page);
+            setPageSize(pageSize);
+          }}
+          disableRowSelectionOnClick
+          autoHeight
+        />
       )}
 
-      <CreateSalePriceDialog
-        open={openCreateDialog}
-        onClose={() => setOpenCreateDialog(false)}
-        onCreated={() => {
-          fetchData();
-          setOpenCreateDialog(false);
-        }}
-      />
-      <UpdateSalePriceDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={fetchData} salePrice={selected} />
-      <SalePriceDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} salePrice={selected} />
+      {/* Dialogs */}
+      <CreateSalePriceDialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} onCreated={fetchData} />
+      {selectedGroup && (
+        <>
+          <UpdateSalePriceDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} group={selectedGroup} onUpdated={fetchData} />
+          <SalePriceDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} group={selectedGroup} />
+        </>
+      )}
     </Box>
   );
 }
