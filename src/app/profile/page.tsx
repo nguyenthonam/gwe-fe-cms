@@ -170,7 +170,7 @@ export default function ProfilePage() {
             <Grid size={12} key={field} container alignItems="center" sx={{ mb: 1 }} spacing={"2px"}>
               <Grid size={{ xs: 12, md: 2 }}>
                 <Typography variant="body2" sx={{ color: lightBlue[500], fontWeight: "bold" }}>
-                  {field.charAt(0).toUpperCase() + field.slice(1)}:
+                  {field === "address1" ? "Address" : field.charAt(0).toUpperCase() + field.slice(1)}:
                 </Typography>
               </Grid>
               <Grid size={{ xs: 10, md: 9 }}>

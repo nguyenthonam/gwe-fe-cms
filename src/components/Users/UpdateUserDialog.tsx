@@ -45,7 +45,11 @@ export default function UpdateUserDialog({ open, onClose, onUpdated, user, compa
 
   const handleChange = (field: keyof IUpdateUserRequest, value: any) => {
     if (!form) return;
-    setForm({ ...form, [field]: value });
+    if (field === "role" && value !== EUSER_ROLES.Partner) {
+      setForm({ ...form, [field]: value, companyId: null }); // Reset companyId if role is Partner
+    } else {
+      setForm({ ...form, [field]: value });
+    }
   };
 
   const handleNestedChange = (group: "contact" | "identity_key", key: string, value: any) => {

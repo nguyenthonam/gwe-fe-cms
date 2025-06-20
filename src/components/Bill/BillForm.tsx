@@ -103,21 +103,21 @@ export default function BillForm() {
             <Typography variant="body2">Customer</Typography>
           </Grid>
           <Grid size={8}>
-            <TextField disabled value={billData?.partner?.partnerName || partner?.partnerName} size="small" fullWidth placeholder="Auto-generate..." sx={{ fontWeight: "bold" }} />
+            <TextField disabled value={billData?.partner?.partnerName || partner?.partnerName} size="small" fullWidth placeholder="Auto generate..." sx={{ fontWeight: "bold" }} />
           </Grid>
 
           <Grid size={4}>
             <Typography variant="body2">HAWB Code</Typography>
           </Grid>
           <Grid size={8}>
-            <TextField disabled value={billData?.trackingCode} size="small" fullWidth placeholder="Auto generate after create" sx={{ fontWeight: "bold" }} />
+            <TextField disabled value={billData?.trackingCode} size="small" fullWidth placeholder="Auto generate..." sx={{ fontWeight: "bold" }} />
           </Grid>
 
           <Grid size={4}>
             <Typography variant="body2">CAWB Code</Typography>
           </Grid>
           <Grid size={8}>
-            <TextField disabled value={billData?.carrierAirWaybillCode} size="small" fullWidth placeholder="Auto generate after create" sx={{ fontWeight: "bold" }} />
+            <TextField disabled value={billData?.carrierAirWaybillCode} size="small" fullWidth placeholder="Auto generate..." sx={{ fontWeight: "bold" }} />
           </Grid>
 
           <Grid size={4}>

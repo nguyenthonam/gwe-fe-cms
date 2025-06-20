@@ -8,7 +8,7 @@ import { styled, Theme, CSSObject } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider } from "@mui/material/styles";
 import customTheme from "@/styles/MUI/customTheme";
-import { blue, grey, lightBlue, orange, red } from "@mui/material/colors";
+import { blue, lightBlue, red } from "@mui/material/colors";
 import MuiAppBar, { AppBarProps as MuiAppBarProps } from "@mui/material/AppBar";
 import {
   Box,
@@ -60,6 +60,7 @@ import { useRouter } from "next/navigation";
 import { AppState } from "@/store";
 import { ThunkDispatch } from "@reduxjs/toolkit";
 import { AnyAction } from "redux";
+import ClientOnly from "@/components/ClientOnly"; // <-- THÊM DÒNG NÀY
 
 interface LayoutViewProps {
   children: React.ReactNode;
@@ -132,9 +133,7 @@ const Drawer = styled(MuiDrawer, {
 }));
 
 const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
-  // Sidebar group config đặt tại đây:
   const SIDEBAR_LINKS = [
-    // Dashboard, Bill
     {
       section: null,
       items: [
@@ -142,7 +141,6 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
         { title: "Bill", href: "/bill", icon: <ReceiptIcon /> },
       ],
     },
-    // Member Management
     {
       section: "Quản lý đối tác",
       icon: <BusinessIcon />,
@@ -153,7 +151,6 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
         { title: "Nhà cung cấp", href: "/manager/suppliers", icon: <SupplierIcon /> },
       ],
     },
-    // Price Management
     {
       section: "Quản lý giá",
       icon: <PriceIcon />,
@@ -167,7 +164,6 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
         { title: "Tỉ giá", href: "/manager/prices?tab=6", icon: <PriceIcon /> },
       ],
     },
-    // Admin System
     {
       section: "Quản lý hệ thống",
       icon: <SystemIcon />,
@@ -175,7 +171,6 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
     },
   ];
 
-  // Bên trong View mới sử dụng hook Redux (đảm bảo luôn trong ReduxProvider context)
   const View: React.FC<LayoutViewProps> = ({ children }) => {
     const [showDrawer, setShowDrawer] = React.useState<boolean>(false);
     const [openGroup, setOpenGroup] = React.useState<string | null>(null);
@@ -185,6 +180,10 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
     const { accessToken, profile, isLoading } = useSelector((state: AppState) => state.auth);
     const { showNotification } = useNotification();
     const router = useRouter();
+
+    React.useEffect(() => {
+      if (!accessToken) setShowDrawer(false);
+    }, [accessToken]);
 
     const handleMenuClick = (event: React.MouseEvent<HTMLButtonElement>): void => {
       setAnchorEl(event.currentTarget);
@@ -223,7 +222,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                 <MenuIcon />
               </IconButton>
               <Link href="/" style={{ display: "flex", alignItems: "center" }}>
-                <Image src="/logo.png" alt="Logo" width={150} height={100} priority style={{ height: "auto", width: 150 }} />
+                <Image src="/logo.png" alt="Logo" width={150} height={50} priority style={{ width: 150, height: "auto" }} />
               </Link>
               {accessToken ? (
                 <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
@@ -258,8 +257,8 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                 </Box>
               ) : (
                 <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
-                  <Link href="/sign-in" passHref>
-                    <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[500] }}>
+                  <Link href="/sign-in" passHref legacyBehavior>
+                    <Typography component="a" variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[500], textDecoration: "none", cursor: "pointer" }}>
                       Sign in
                     </Typography>
                   </Link>
@@ -268,58 +267,59 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
             </Toolbar>
           </AppBar>
           <Box sx={{ display: "flex", flexGrow: 1 }}>
-            <Drawer variant="permanent" open={showDrawer} sx={{ "& .MuiDrawer-paper": { bgcolor: lightBlue[900], color: "white" } }}>
-              <DrawerHeader />
-              <Divider />
-              <List>
-                {SIDEBAR_LINKS.map((group, gIdx) => (
-                  <React.Fragment key={gIdx}>
-                    {/* Các nhóm không có section (Dashboard, Bill) */}
-                    {!group.section &&
-                      group.items.map((item, idx) => (
-                        <ListItemButton key={item.title} component={Link} href={item.href} onClick={() => setShowDrawer(false)}>
-                          <ListItemIcon sx={{ color: "white" }}>{item.icon}</ListItemIcon>
-                          <ListItemText primary={item.title} />
-                        </ListItemButton>
-                      ))}
-                    {/* Các nhóm accordion */}
-                    {group.section && (
-                      <>
-                        <ListItemButton
-                          onClick={() => {
-                            setOpenGroup(openGroup === group.section ? null : group.section);
-                            setShowDrawer(true);
-                          }}
-                        >
-                          <ListItemIcon sx={{ color: "white" }}>{group.icon}</ListItemIcon>
-                          <ListItemText primary={group.section} />
-                          {openGroup === group.section ? <ExpandLessIcon htmlColor="white" /> : <ExpandMoreIcon htmlColor="white" />}
-                        </ListItemButton>
-                        <Collapse in={openGroup === group.section} timeout="auto" unmountOnExit>
-                          <List component="div" disablePadding>
-                            {group.items.map((item, idx) => (
-                              <ListItemButton
-                                key={item.title}
-                                sx={{ pl: 4 }}
-                                component={Link}
-                                href={item.href}
-                                onClick={() => {
-                                  setShowDrawer(false);
-                                  setOpenGroup(null);
-                                }}
-                              >
-                                <ListItemIcon sx={{ color: "white" }}>{item.icon}</ListItemIcon>
-                                <ListItemText primary={item.title} />
-                              </ListItemButton>
-                            ))}
-                          </List>
-                        </Collapse>
-                      </>
-                    )}
-                  </React.Fragment>
-                ))}
-              </List>
-            </Drawer>
+            {accessToken && (
+              <Drawer variant="permanent" open={showDrawer} sx={{ "& .MuiDrawer-paper": { bgcolor: lightBlue[900], color: "white" } }}>
+                <DrawerHeader />
+                <Divider />
+                <List>
+                  {SIDEBAR_LINKS.map((group, gIdx) => (
+                    <React.Fragment key={gIdx}>
+                      {!group.section &&
+                        group.items.map((item) => (
+                          <ListItemButton key={item.title} component={Link} href={item.href} onClick={() => setShowDrawer(false)}>
+                            <ListItemIcon sx={{ color: "white" }}>{item.icon}</ListItemIcon>
+                            <ListItemText primary={item.title} />
+                          </ListItemButton>
+                        ))}
+                      {group.section && (
+                        <>
+                          <ListItemButton
+                            onClick={() => {
+                              setOpenGroup(openGroup === group.section ? null : group.section);
+                              setShowDrawer(true);
+                            }}
+                          >
+                            <ListItemIcon sx={{ color: "white" }}>{group.icon}</ListItemIcon>
+                            <ListItemText primary={group.section} />
+                            {openGroup === group.section ? <ExpandLessIcon htmlColor="white" /> : <ExpandMoreIcon htmlColor="white" />}
+                          </ListItemButton>
+                          <Collapse in={openGroup === group.section} timeout="auto" unmountOnExit>
+                            <List component="div" disablePadding>
+                              {group.items.map((item) => (
+                                <ListItemButton
+                                  key={item.title}
+                                  sx={{ pl: 4 }}
+                                  component={Link}
+                                  href={item.href}
+                                  onClick={() => {
+                                    setShowDrawer(false);
+                                    setOpenGroup(null);
+                                  }}
+                                >
+                                  <ListItemIcon sx={{ color: "white" }}>{item.icon}</ListItemIcon>
+                                  <ListItemText primary={item.title} />
+                                </ListItemButton>
+                              ))}
+                            </List>
+                          </Collapse>
+                        </>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </List>
+              </Drawer>
+            )}
+
             <Box component="main" sx={{ flexGrow: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
               <DrawerHeader />
               <Box component="div" sx={{ flexGrow: 1, p: 1 }}>
@@ -335,14 +335,15 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
     );
   };
 
-  // Thứ tự provider giống code cũ (ReduxProvider wrap View bên trong)
   return (
     <QueryClientProvider client={queryClient}>
       <ReduxProvider>
         <NotificationProvider>
           <ProtectedRoute>
             <ThemeProvider theme={customTheme}>
-              <View>{children}</View>
+              <ClientOnly>
+                <View>{children}</View>
+              </ClientOnly>
             </ThemeProvider>
           </ProtectedRoute>
         </NotificationProvider>
