@@ -32,7 +32,7 @@ export interface IUser extends IBaseRecord {
 
 export interface IUpdateUserRequest {
   email?: string;
-  companyId?: string;
+  companyId?: string | null;
   contact?: IBasicContactInfor;
   gender?: EGENDER;
   birthday?: Date | null | string;

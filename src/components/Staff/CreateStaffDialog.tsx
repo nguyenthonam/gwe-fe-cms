@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Stack, Grid, MenuItem } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Stack, Grid, MenuItem, FormControl, InputLabel, Select } from "@mui/material";
 import { useEffect, useState } from "react";
 import { createUserApi } from "@/utils/apis/apiUser";
 import { EGENDER, EUSER_ROLES } from "@/types/typeGlobals";
@@ -14,8 +14,6 @@ interface Props {
   onClose: () => void;
   onCreated: () => void;
 }
-
-const genderOptions = Object.entries(EGENDER);
 
 export default function CreateStaffDialog({ open, onClose, onCreated }: Props) {
   const [form, setForm] = useState<ICreateUserRequest>({
@@ -100,14 +98,15 @@ export default function CreateStaffDialog({ open, onClose, onCreated }: Props) {
               <TextField label="SĐT" value={form.contact?.phone || ""} onChange={(e) => handleNestedChange("contact", "phone", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Giới tính" select value={form.gender} onChange={(e) => handleChange("gender", e.target.value)} fullWidth size="small">
-                {genderOptions.map(([k, v]) => (
-                  <MenuItem key={k} value={v}>
-                    {k}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <FormControl fullWidth size="small">
+                <InputLabel>Giới tính</InputLabel>
+                <Select label="Giới tính" value={form.gender} onChange={(e) => handleChange("gender", e.target.value)}>
+                  <MenuItem value={EGENDER.MALE}>Nam</MenuItem>
+                  <MenuItem value={EGENDER.FEMALE}>Nữ</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
+
             <Grid size={6}>
               <TextField
                 label="Ngày sinh"
