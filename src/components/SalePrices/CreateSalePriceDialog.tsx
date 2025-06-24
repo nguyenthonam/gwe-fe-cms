@@ -21,6 +21,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Typography,
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import { useNotification } from "@/contexts/NotificationProvider";
@@ -71,7 +72,6 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
     if (!open) {
       setExcelInput("");
       setParsedTable(null);
-      // Reset thêm các state khác nếu muốn
       setCarrierId("");
       setServiceId("");
       setPartnerId("");
@@ -86,12 +86,19 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
     }
   }, [open]);
 
+  // Nếu user chọn "Giá theo KG" thì luôn set productType = PARCEL
+  useEffect(() => {
+    if (isPricePerKG && productType !== EPRODUCT_TYPE.PARCEL) {
+      setProductType(EPRODUCT_TYPE.PARCEL);
+    }
+    // eslint-disable-next-line
+  }, [isPricePerKG]);
+
   const fetchCarriers = async () => {
     try {
       const res = await getCarriersApi();
       setCarriers(res?.data?.data?.data || []);
-    } catch (err) {
-      console.error("Error fetching carriers:", err);
+    } catch {
       showNotification("Không thể tải danh sách Hãng", "error");
     }
   };
@@ -99,8 +106,7 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
     try {
       const res = await getPartnersApi();
       setPartners(res?.data?.data?.data || []);
-    } catch (err) {
-      console.error("Error fetching partners:", err);
+    } catch {
       showNotification("Không thể tải danh sách Partner", "error");
     }
   };
@@ -111,13 +117,13 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
     try {
       const res = await getServicesByCarrierApi(companyId);
       setServices(res?.data?.data?.data || []);
-    } catch (err) {
-      console.error("Error fetching services:", err);
+    } catch {
       showNotification("Không thể tải danh sách dịch vụ", "error");
     }
   };
   useEffect(() => {
     if (carrierId) fetchServices(carrierId);
+    // eslint-disable-next-line
   }, [carrierId]);
 
   // --- Excel Paste & Parse ---
@@ -161,14 +167,12 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
         .trim()
         .split(/\t| +/)
         .filter((s) => s !== "");
-      // Bỏ dấu phẩy (ngăn cách nghìn)
       arr = arr.map((x) => x.replace(/,/g, ""));
       if (arr.length < 2) continue;
 
       let min = 0,
         max = 0,
         label = arr[0];
-      // Nếu là range dạng 1.1-2.0 hoặc 300.1-1.000
       if (/^\d+(\.\d+)?-\d+(\.\d+)?$/.test(arr[0])) {
         [min, max] = arr[0].split("-").map(Number);
         label = arr[0];
@@ -184,14 +188,13 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
       zones = prices[0].map((_, idx) => idx + 1);
     }
 
-    // Nếu là từng mức lẻ (0.5, 1.0, 1.5...), tự động convert thành khoảng (row 1: 0–0.5, row 2: 0.51–1.0, row 3: 1.01–1.5...)
     const isSingle = weightRanges.length > 1 && weightRanges.every((w, i, arr) => w.min === w.max && (i === 0 || arr[i - 1].min < w.min));
     if (isSingle) {
       const newRanges: WeightRange[] = [];
       for (let i = 0; i < weightRanges.length; ++i) {
         let min = 0,
           max = 0;
-        const label = lines[startLine + i].trim().split(/\t| +/)[0]; // lấy arr[0] gốc từ dòng paste
+        const label = lines[startLine + i].trim().split(/\t| +/)[0];
         if (i === 0) {
           min = 0;
           max = weightRanges[0].min;
@@ -239,7 +242,6 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
       setExcelInput("");
       setParsedTable(null);
     } catch (err: any) {
-      console.error("Error creating sale prices:", err);
       showNotification(err.message || "Lỗi tạo giá bán", "error");
     } finally {
       setLoading(false);
@@ -255,11 +257,16 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
             <Grid size={6}>
               <FormControl fullWidth size="small">
                 <InputLabel>Loại hàng</InputLabel>
-                <Select label="Loại hàng" value={productType} onChange={(e) => setProductType(e.target.value as EPRODUCT_TYPE)}>
+                <Select label="Loại hàng" value={productType} onChange={(e) => setProductType(e.target.value as EPRODUCT_TYPE)} disabled={isPricePerKG}>
                   <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>DOCUMENT</MenuItem>
                   <MenuItem value={EPRODUCT_TYPE.PARCEL}>PARCEL</MenuItem>
                 </Select>
               </FormControl>
+              {isPricePerKG && (
+                <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, ml: 1 }}>
+                  {`Nếu chọn "Giá theo KG", loại hàng sẽ tự động là "Parcel" (bắt buộc)`}
+                </Typography>
+              )}
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
