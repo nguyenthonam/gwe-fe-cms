@@ -21,6 +21,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Typography,
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import { useNotification } from "@/contexts/NotificationProvider";
@@ -86,12 +87,19 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
     }
   }, [open]);
 
+  // Nếu user chọn "Giá theo KG" thì luôn set productType = PARCEL
+  useEffect(() => {
+    if (isPricePerKG && productType !== EPRODUCT_TYPE.PARCEL) {
+      setProductType(EPRODUCT_TYPE.PARCEL);
+    }
+    // eslint-disable-next-line
+  }, [isPricePerKG]);
+
   const fetchCarriers = async () => {
     try {
       const res = await getCarriersApi();
       setCarriers(res?.data?.data?.data || []);
-    } catch (err) {
-      console.error("Error fetching carriers:", err);
+    } catch {
       showNotification("Không thể tải danh sách Hãng", "error");
     }
   };
@@ -99,8 +107,7 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
     try {
       const res = await getSuppliersApi();
       setSuppliers(res?.data?.data?.data || []);
-    } catch (err) {
-      console.error("Error fetching suppliers:", err);
+    } catch {
       showNotification("Không thể tải danh sách Supplier", "error");
     }
   };
@@ -111,13 +118,13 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
     try {
       const res = await getServicesByCarrierApi(companyId);
       setServices(res?.data?.data?.data || []);
-    } catch (err) {
-      console.error("Error fetching services:", err);
+    } catch {
       showNotification("Không thể tải danh sách dịch vụ", "error");
     }
   };
   useEffect(() => {
     if (carrierId) fetchServices(carrierId);
+    // eslint-disable-next-line
   }, [carrierId]);
 
   // --- Excel Paste & Parse ---
@@ -254,11 +261,16 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
             <Grid size={6}>
               <FormControl fullWidth size="small">
                 <InputLabel>Loại hàng</InputLabel>
-                <Select label="Loại hàng" value={productType} onChange={(e) => setProductType(e.target.value as EPRODUCT_TYPE)}>
+                <Select label="Loại hàng" value={productType} onChange={(e) => setProductType(e.target.value as EPRODUCT_TYPE)} disabled={isPricePerKG}>
                   <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>DOCUMENT</MenuItem>
                   <MenuItem value={EPRODUCT_TYPE.PARCEL}>PARCEL</MenuItem>
                 </Select>
               </FormControl>
+              {isPricePerKG && (
+                <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, ml: 1 }}>
+                  {`Nếu chọn "Giá theo KG", loại hàng sẽ tự động là "Parcel" (bắt buộc)`}
+                </Typography>
+              )}
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
