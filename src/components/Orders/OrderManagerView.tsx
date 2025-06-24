@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Box, Button, Stack, TextField, Select, MenuItem, CircularProgress, Typography, Chip } from "@mui/material";
 import { Add, Download } from "@mui/icons-material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
@@ -22,6 +22,8 @@ import { ECURRENCY, EORDER_STATUS, ERECORD_STATUS } from "@/types/typeGlobals";
 import { formatDate } from "@/utils/hooks/hookDate";
 import { blue, green, grey, pink } from "@mui/material/colors";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
+import BillPrintDialog from "@/components/Bill/BillPrintDialog";
+import BillShippingMarkDialog from "@/components/Bill/BillShippingMarkDialog";
 
 export default function OrderManagerView() {
   const [orders, setOrders] = useState<IOrder[]>([]);
@@ -35,6 +37,12 @@ export default function OrderManagerView() {
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // Bill
+  const billPopupRef = useRef<any>(null);
+  const shippingMarkPopupRef = useRef<any>(null);
+  const [openBillDialog, setOpenBillDialog] = useState(false);
+  const [openShippingMarkDialog, setOpenShippingMarkDialog] = useState(false);
 
   // Dropdown preload
   const [carriers, setCarriers] = useState<any[]>([]);
@@ -56,6 +64,18 @@ export default function OrderManagerView() {
     getServicesApi().then((res) => setServices(res?.data?.data?.data || []));
     getSuppliersApi().then((res) => setSuppliers(res?.data?.data?.data || []));
   }, []);
+  useEffect(() => {
+    if (openBillDialog && selected && billPopupRef.current) {
+      billPopupRef.current.open();
+      setOpenBillDialog(false);
+    }
+  }, [openBillDialog, selected]);
+  useEffect(() => {
+    if (openShippingMarkDialog && selected && shippingMarkPopupRef.current) {
+      shippingMarkPopupRef.current.open();
+      setOpenShippingMarkDialog(false);
+    }
+  }, [openShippingMarkDialog, selected]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -418,7 +438,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(row.basePrice?.purchasePrice?.value, row.currency)}</Typography>
+          <Typography>{formatCurrency(row.basePrice?.salePrice?.value, row.currency)}</Typography>
         </Box>
       ),
     },
@@ -501,17 +521,41 @@ export default function OrderManagerView() {
     {
       field: "actions",
       headerName: "",
-      width: 70,
+      width: 260,
       renderCell: ({ row }) => (
-        <ActionMenu
-          onEdit={() => {
-            setSelected(row);
-            setOpenUpdateDialog(true);
-          }}
-          onLockUnlock={() => handleLockToggle(row)}
-          onDelete={() => handleDelete(row)}
-          status={row.orderStatus}
-        />
+        <Stack direction="row" height={"100%"} spacing={1} gap={1} justifyContent="center" alignItems="center">
+          <Button
+            size="small"
+            variant="outlined"
+            color="primary"
+            onClick={() => {
+              setSelected(row);
+              setOpenBillDialog(true);
+            }}
+          >
+            Print Bill
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            color="secondary"
+            onClick={() => {
+              setSelected(row);
+              setOpenShippingMarkDialog(true);
+            }}
+          >
+            Print Mark
+          </Button>
+          <ActionMenu
+            onEdit={() => {
+              setSelected(row);
+              setOpenUpdateDialog(true);
+            }}
+            onLockUnlock={() => handleLockToggle(row)}
+            onDelete={() => handleDelete(row)}
+            status={row.orderStatus}
+          />
+        </Stack>
       ),
     },
   ];
@@ -627,6 +671,8 @@ export default function OrderManagerView() {
       />
       <UpdateOrderDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={fetchData} order={selected} />
       <OrderDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} order={selected} />
+      <BillPrintDialog ref={billPopupRef} data={selected} />
+      <BillShippingMarkDialog ref={shippingMarkPopupRef} data={selected} />
     </Box>
   );
 }
