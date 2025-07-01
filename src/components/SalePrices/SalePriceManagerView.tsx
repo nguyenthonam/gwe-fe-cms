@@ -92,13 +92,24 @@ export default function SalePriceManagerView() {
   // ==== Action cho group ====
   const handleDeleteGroup = async (group: ISalePriceGroup) => {
     if (!window.confirm("Bạn có chắc muốn xoá group này?")) return;
+    if (!group || !group.carrierId || !group.partnerId || !group.serviceId) {
+      showNotification("Thông tin group không đầy đủ để xoá!", "error");
+      return;
+    }
+    const carrierId = typeof group.carrierId === "object" ? group.carrierId._id : group.carrierId;
+    const partnerId = typeof group.partnerId === "object" ? group.partnerId._id : group.partnerId;
+    const serviceId = typeof group.serviceId === "object" ? group.serviceId._id : group.serviceId;
+
+    if (!carrierId || !partnerId || !serviceId) {
+      showNotification("Không tìm thấy ID để xoá!", "error");
+      return;
+    }
+
     try {
       await deleteSalePriceGroupApi({
-        carrierId: getId(group.carrierId),
-        partnerId: getId(group.partnerId),
-        serviceId: getId(group.serviceId),
-        productType: "",
-        currency: "",
+        carrierId,
+        partnerId,
+        serviceId,
       });
       showNotification("Đã xoá group!");
       fetchData();
@@ -108,15 +119,27 @@ export default function SalePriceManagerView() {
   };
 
   const handleLockUnlockGroup = async (group: ISalePriceGroup) => {
+    if (!group || !group.carrierId || !group.partnerId || !group.serviceId) {
+      showNotification("Thông tin group không đầy đủ để khoá/mở khoá!", "error");
+      return;
+    }
+    const carrierId = typeof group.carrierId === "object" ? group.carrierId._id : group.carrierId;
+    const partnerId = typeof group.partnerId === "object" ? group.partnerId._id : group.partnerId;
+    const serviceId = typeof group.serviceId === "object" ? group.serviceId._id : group.serviceId;
+
+    if (!carrierId || !partnerId || !serviceId) {
+      showNotification("Không tìm thấy ID để khoá/mở khoá!", "error");
+      return;
+    }
+
     const isLocked = group.datas.length > 0 && group.datas.every((d) => d.status === ERECORD_STATUS.Locked);
+
     try {
       const api = isLocked ? unlockSalePriceGroupApi : lockSalePriceGroupApi;
       await api({
-        carrierId: getId(group.carrierId),
-        partnerId: getId(group.partnerId),
-        serviceId: getId(group.serviceId),
-        productType: "",
-        currency: "",
+        carrierId,
+        partnerId,
+        serviceId,
       });
       showNotification(isLocked ? "Đã mở khoá!" : "Đã khoá!");
       fetchData();

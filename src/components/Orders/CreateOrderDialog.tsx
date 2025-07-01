@@ -10,7 +10,7 @@ import { getSuppliersApi } from "@/utils/apis/apiSupplier";
 import { getServicesByCarrierApi } from "@/utils/apis/apiService";
 import { ECountryCode, ECURRENCY, EPRODUCT_TYPE, IBasicContactInfor, IDimension } from "@/types/typeGlobals";
 import { ISurchargeDetail } from "@/types/typeOrder";
-import { getExtraFeesApi } from "@/utils/apis/apiExtraFee";
+import { getExtraFeesByCarrierServiceApi } from "@/utils/apis/apiExtraFee";
 import OrderBillingInfoSection from "./Partials/OrderBillingInfoSection";
 import OrderAddressSection from "./Partials/OrderAddressSection";
 import OrderProductSection from "./Partials/OrderProductSection";
@@ -40,7 +40,8 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
   const [supplierId, setSupplierId] = useState("");
   const [surcharges, setSurcharges] = useState<ISurchargeDetail[]>([]);
   const [extraFeeIds, setExtraFeeIds] = useState<string[]>([]);
-  const [customVATPercentage, setCustomVATPercentage] = useState<number | "">("");
+  const [customVATPercentage, setCustomVATPercentage] = useState<number>(8);
+  const [fscFeePercentage, setFSCFeePercentage] = useState<number>(35);
 
   // Billing Info
   const [note, setNote] = useState("");
@@ -93,6 +94,13 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
       showNotification("Không thể tải dịch vụ!", "error");
     }
   };
+  useEffect(() => {
+    // Tính lại quantity (số dòng dimension) và tổng grossWeight
+    const qty = dimensions && Array.isArray(dimensions) ? dimensions.length : 0;
+    const dw = dimensions && Array.isArray(dimensions) ? dimensions.reduce((sum, d) => sum + Number(d.grossWeight || 0), 0) : 0;
+    setQuantity(qty.toString());
+    setDeclaredWeight(dw > 0 ? dw.toString() : "");
+  }, [dimensions]);
 
   // Preload Dropdown
   useEffect(() => {
@@ -101,9 +109,6 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
       getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
       getSuppliersApi().then((res) => setSuppliers(res?.data?.data?.data || []));
 
-      getExtraFeesApi().then((res) => {
-        setExtraFeeList(res?.data?.data?.data || []);
-      });
       setPartnerId("");
       setCarrierId("");
       setServiceId("");
@@ -131,6 +136,22 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
     }
     setServiceId("");
   }, [carrierId, carriers]);
+
+  useEffect(() => {
+    if (carrierId && serviceId) {
+      // Lấy danh sách phụ phí theo carrier và service đã chọn
+      getExtraFeesByCarrierServiceApi(carrierId, serviceId)
+        .then((res) => {
+          setExtraFeeList(res?.data?.data?.data || []);
+        })
+        .catch((err) => {
+          console.error("Error fetching extra fees:", err);
+          showNotification("Không thể tải phụ phí!", "error");
+        });
+    } else {
+      setExtraFeeList([]);
+    }
+  }, [carrierId, serviceId]);
 
   // Validate & Submit
   const handleSubmit = async () => {
@@ -259,9 +280,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
                 productType={productType}
                 setProductType={setProductType}
                 declaredWeight={declaredWeight}
-                setDeclaredWeight={setDeclaredWeight}
                 quantity={quantity}
-                setQuantity={setQuantity}
                 declaredValue={declaredValue}
                 setDeclaredValue={setDeclaredValue}
                 currency={currency}
@@ -286,8 +305,8 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
           </Box>
 
           {/* Extra Fee, VAT, Surcharges */}
-          <OrderExtraFeeSection extraFeeList={extraFeeList} extraFeeIds={extraFeeIds} setExtraFeeIds={setExtraFeeIds} />
           <OrderVATSection customVATPercentage={customVATPercentage} setCustomVATPercentage={setCustomVATPercentage} />
+          <OrderExtraFeeSection fscFeePercentage={fscFeePercentage} setFSCFeePercentage={setFSCFeePercentage} extraFeeList={extraFeeList} extraFeeIds={extraFeeIds} setExtraFeeIds={setExtraFeeIds} />
           <OrderSurchargeSection surcharges={surcharges} setSurcharges={setSurcharges} />
         </Stack>
       </DialogContent>

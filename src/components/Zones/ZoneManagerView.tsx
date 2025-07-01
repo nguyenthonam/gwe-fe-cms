@@ -1,4 +1,3 @@
-// ZoneManagerView.tsx (đã cập nhật thêm Carrier)
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -7,112 +6,135 @@ import { Add, Download } from "@mui/icons-material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import debounce from "lodash/debounce";
 import * as XLSX from "sheetjs-style";
-import { EnumChip } from "@/components/Globals/EnumChip";
-import { ActionMenu } from "@/components/Globals/ActionMenu";
 import { useNotification } from "@/contexts/NotificationProvider";
-import { recordStatusLabel } from "@/utils/constants/enumLabel";
-import { ERECORD_STATUS } from "@/types/typeGlobals";
-import { IZone } from "@/types/typeZone";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
-import { searchZonesApi, deleteZoneApi, lockZoneApi, unlockZoneApi } from "@/utils/apis/apiZone";
-import { ICarrier } from "@/types/typeCarrier";
+import { getZoneGroupByCarrierApi, deleteZoneGroupByCarrierApi, lockZoneGroupByCarrierApi, unlockZoneGroupByCarrierApi } from "@/utils/apis/apiZone";
 import CreateZoneDialog from "./CreateZoneDialog";
 import UpdateZoneDialog from "./UpdateZoneDialog";
 import ZoneDetailDialog from "./ZoneDetailDialog";
-import { orange } from "@mui/material/colors";
+import { ActionMenu } from "@/components/Globals/ActionMenu";
+import { ERECORD_STATUS } from "@/types/typeGlobals";
+import { COUNTRIES } from "@/utils/constants";
 
 export default function ZoneManagerView() {
-  const [zones, setZones] = useState<IZone[]>([]);
-  const [keyword, setKeyword] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"" | "all" | ERECORD_STATUS>("");
-  const [carrierFilter, setCarrierFilter] = useState("");
-  const [carriers, setCarriers] = useState<ICarrier[]>([]);
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
+  const [groups, setGroups] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
+  const [keyword, setKeyword] = useState("");
+  const [carrierIdFilter, setCarrierIdFilter] = useState("");
+  const [carriers, setCarriers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openUpdateDialog, setOpenUpdateDialog] = useState(false);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
-  const [selectedZone, setSelectedZone] = useState<IZone | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
 
   const { showNotification } = useNotification();
   const debouncedSearch = useMemo(() => debounce((v) => setKeyword(v), 500), []);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const res = await searchZonesApi({ keyword, page: page + 1, perPage: pageSize, status: statusFilter, carrierId: carrierFilter });
-      setZones(res?.data?.data?.data || []);
-      setTotal(res?.data?.data?.meta?.total || 0);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCarriers = async () => {
-    try {
-      const res = await getCarriersApi();
-      setCarriers(res?.data?.data?.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
+  // Lấy danh sách Carrier
   useEffect(() => {
-    fetchCarriers();
+    getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [keyword, page, pageSize, statusFilter, carrierFilter]);
-
-  const handleLockToggle = async (item: IZone) => {
+  // Lấy danh sách group zone (mỗi Carrier là 1 record)
+  const fetchGroups = async () => {
+    setLoading(true);
     try {
-      if (!item._id) return;
-      const confirm = window.confirm(item.status === ERECORD_STATUS.Active ? "Khoá Zone này?" : "Mở khoá Zone này?");
-      if (!confirm) return;
+      let filteredCarriers = carriers;
+      if (carrierIdFilter) {
+        filteredCarriers = carriers.filter((c) => c._id === carrierIdFilter);
+      }
+      if (keyword) {
+        filteredCarriers = filteredCarriers.filter((c) => c.name.toLowerCase().includes(keyword.toLowerCase()));
+      }
 
-      const res = item.status === ERECORD_STATUS.Active ? await lockZoneApi(item._id) : await unlockZoneApi(item._id);
-      showNotification(res?.data?.message || "Cập nhật trạng thái thành công", "success");
-      fetchData();
-    } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật trạng thái", "error");
+      const groupList: any[] = [];
+      for (const carrier of filteredCarriers) {
+        const res = await getZoneGroupByCarrierApi(carrier._id);
+        const zones: any[] = res?.data?.data || [];
+        if (zones.length > 0) {
+          // Nhóm trạng thái: Nếu tất cả zone đều locked thì group là locked, ngược lại active
+          const allLocked = zones.every((z) => z.status === ERECORD_STATUS.Locked);
+          groupList.push({
+            id: carrier._id,
+            carrier,
+            zones,
+            zoneCount: zones.length,
+            status: allLocked ? ERECORD_STATUS.Locked : ERECORD_STATUS.Active,
+          });
+        }
+      }
+      setGroups(groupList);
+      setTotal(groupList.length);
+      // eslint-disable-next-line
+    } catch (err) {
+      showNotification("Lỗi khi tải group zone!", "error");
     }
+    setLoading(false);
   };
 
-  const handleDelete = async (item: IZone) => {
-    if (!item._id) return;
-    if (!window.confirm("Bạn có chắc muốn xoá?")) return;
+  useEffect(() => {
+    if (carriers.length) fetchGroups();
+    // eslint-disable-next-line
+  }, [carriers, carrierIdFilter, keyword]);
+
+  // ==== Action cho group ====
+  const handleDeleteGroup = async (group: any) => {
+    if (!window.confirm("Bạn có chắc muốn xoá group Zone này?")) return;
     try {
-      await deleteZoneApi(item._id);
-      showNotification("Đã xoá thành công", "success");
-      fetchData();
+      await deleteZoneGroupByCarrierApi(group.carrier._id);
+      showNotification("Đã xoá group!");
+      fetchGroups();
     } catch (err: any) {
       showNotification(err.message || "Lỗi khi xoá", "error");
     }
   };
 
-  const handleExportExcel = () => {
-    const data = zones.map((z) => ({
-      CARRIER: typeof z.carrierId === "object" ? z.carrierId?.name || "" : String(z.carrierId),
-      ZONE: z.zone,
-      COUNTRY: z.countryCode,
-      STATUS: recordStatusLabel[z.status as keyof typeof recordStatusLabel] || z.status,
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
+  const handleLockUnlockGroup = async (group: any) => {
+    try {
+      if (group.status === ERECORD_STATUS.Locked) {
+        await unlockZoneGroupByCarrierApi(group.carrier._id);
+        showNotification("Đã mở khoá group Zone!", "success");
+      } else {
+        await lockZoneGroupByCarrierApi(group.carrier._id);
+        showNotification("Đã khoá group Zone!", "success");
+      }
+      fetchGroups();
+    } catch (err: any) {
+      showNotification(err.message || "Lỗi lock/unlock", "error");
+    }
+  };
 
-    // Style cho từng cell
+  const exportGroupToExcel = (group: any) => {
+    if (!group || !group.zones) {
+      showNotification("Không có dữ liệu để xuất Excel!");
+      return;
+    }
+    // Build data chuẩn và map Country Name
+    const data = group.zones.map((z: any) => {
+      const countryObj = COUNTRIES.find((c) => c.code === z.countryCode);
+      return {
+        "COUNTRY NAME": countryObj?.name || "",
+        "COUNTRY CODE": z.countryCode,
+        ZONE: z.zone,
+      };
+    });
+
+    // Tạo sheet & styling đẹp
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws["!cols"] = [
+      { wch: 26 }, // Country Name
+      { wch: 16 }, // Country Code
+      { wch: 10 }, // Zone
+    ];
+
+    // Style cho từng cell (in đậm, căn giữa header, viền rõ)
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const cell = XLSX.utils.encode_cell({ r: R, c: C });
         if (!ws[cell]) continue;
         const isHeader = R === 0;
-
         (ws[cell] as any).s = {
           font: {
             bold: isHeader,
@@ -134,139 +156,125 @@ export default function ZoneManagerView() {
     }
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "ZONE");
-    XLSX.writeFile(wb, "DANH_SACH_ZONE.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, `ZONE_${group.carrier?.name || ""}`);
+    XLSX.writeFile(wb, `ZONE_GROUP_${group.carrier?.name || "CARRIER"}.xlsx`);
   };
 
-  const handleCreated = () => {
-    setOpenCreateDialog(false);
-    fetchData();
-  };
-
+  // ==== Columns cho DataGrid ====
   const columns: GridColDef[] = [
     {
       field: "code",
-      headerName: "ID",
+      headerName: "CODE",
       flex: 1.2,
-      renderCell: ({ row }: { row: IZone }) => (
+      renderCell: ({ row }: { row: any }) => (
         <Box display="flex" alignItems="center" height="100%">
           <Typography
             sx={{ cursor: "pointer", textDecoration: "underline" }}
             color="primary"
             onClick={() => {
-              setSelectedZone(row);
+              setSelectedGroup(row);
               setOpenDetailDialog(true);
             }}
           >
-            #{row._id?.slice(-8)}
+            Chi tiết
           </Typography>
         </Box>
       ),
     },
     {
-      field: "carrierId",
-      headerName: "CARRIER",
-      flex: 1,
-      renderCell: ({ row }) => (typeof row.carrierId === "object" ? row.carrierId?.name : row.carrierId),
-    },
-    {
-      field: "countryCode",
-      headerName: "QUỐC GIA",
-      flex: 1,
-      renderCell: ({ value }) => (
-        <Box display="flex" alignItems="center" height="100%">
-          <Typography color={orange[500]}>{value}</Typography>
+      field: "carrier",
+      headerName: "Carrier",
+      flex: 1.3,
+      renderCell: ({ row }: { row: any }) => (
+        <Box>
+          <Typography fontWeight={500}>{row.carrier?.name}</Typography>
+          <Typography fontSize={12} color="gray">
+            {row.carrier?.code}
+          </Typography>
         </Box>
       ),
     },
     {
-      field: "zone",
-      headerName: "ZONE",
-      flex: 0.6,
-    },
-    {
-      field: "status",
-      headerName: "TRẠNG THÁI",
-      flex: 1,
-      renderCell: ({ value }) => <EnumChip type="recordStatus" value={value} />,
+      field: "zoneCount",
+      headerName: "Số zone",
+      flex: 0.5,
+      align: "center",
+      renderCell: ({ row }) => (
+        <Box display="flex" height={"100%"} justifyContent="center" alignItems="center">
+          <Typography>{row.zoneCount}</Typography>
+        </Box>
+      ),
     },
     {
       field: "actions",
-      headerName: "",
-      width: 60,
+      headerName: "Thao tác",
+      flex: 1,
       renderCell: ({ row }) => (
-        <ActionMenu
-          onEdit={() => {
-            setSelectedZone(row);
-            setOpenUpdateDialog(true);
-          }}
-          onLockUnlock={() => handleLockToggle(row)}
-          onDelete={() => handleDelete(row)}
-          status={row.status}
-        />
+        <Stack direction="row" height={"100%"} spacing={1} alignItems={"center"} justifyItems={"center"}>
+          <Button size="small" startIcon={<Download />} onClick={() => exportGroupToExcel(row)}>
+            Xuất Excel
+          </Button>
+
+          <ActionMenu
+            onEdit={() => {
+              setSelectedGroup(row);
+              setOpenUpdateDialog(true);
+            }}
+            onLockUnlock={() => handleLockUnlockGroup(row)}
+            onDelete={() => handleDeleteGroup(row)}
+            status={row.zones?.length ? row.zones[0].status : undefined}
+          />
+        </Stack>
       ),
     },
   ];
 
   return (
     <Box className="space-y-4 p-6">
-      <Box mb={2} display="flex" gap={2} alignItems="center" justifyContent="flex-end">
+      {/* Toolbar */}
+      <Box display="flex" flexWrap="wrap" gap={1} justifyContent="space-between" alignItems="center">
+        <TextField placeholder="Tìm Carrier..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 220 }} />
         <Stack direction="row" spacing={1}>
-          <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
-            Xuất Excel
-          </Button>
+          <Select size="small" value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
+            <MenuItem value="">Tất cả Carrier</MenuItem>
+            {carriers.map((c) => (
+              <MenuItem key={c._id} value={c._id}>
+                {c.name}
+              </MenuItem>
+            ))}
+          </Select>
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
-            Tạo Zone
+            Tạo Group Zone
           </Button>
         </Stack>
       </Box>
-      <Box mb={2} display="flex" gap={2} alignItems="center" justifyContent="space-between">
-        <TextField placeholder="Tìm mã Zone..." size="small" onChange={(e) => debouncedSearch(e.target.value)} className="max-w-[250px] w-full" />
 
-        <Select size="small" displayEmpty value={carrierFilter} onChange={(e) => setCarrierFilter(e.target.value)} sx={{ minWidth: 200 }}>
-          <MenuItem value="">Tất cả Carrier</MenuItem>
-          {carriers.map((c) => (
-            <MenuItem key={c._id} value={c._id}>
-              {c.name}
-            </MenuItem>
-          ))}
-        </Select>
-
-        <Select size="small" displayEmpty value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 150 }}>
-          <MenuItem value="">Mặc định</MenuItem>
-          <MenuItem value="all">Tất cả</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Locked}>Đã khoá</MenuItem>
-          <MenuItem value={ERECORD_STATUS.NoActive}>Không hoạt động</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Deleted}>Đã xoá</MenuItem>
-        </Select>
-      </Box>
-
+      {/* DataGrid 1 bảng duy nhất */}
       {loading ? (
         <Box textAlign="center">
           <CircularProgress />
         </Box>
       ) : (
-        <Box sx={{ width: "100%", overflow: "auto" }}>
-          <DataGrid
-            rows={zones.map((z) => ({ ...z, id: z._id }))}
-            columns={columns}
-            rowCount={total}
-            pageSizeOptions={[10, 20, 50, 100]}
-            paginationModel={{ page, pageSize }}
-            paginationMode="server"
-            onPaginationModelChange={({ page, pageSize }) => {
-              setPage(page);
-              setPageSize(pageSize);
-            }}
-            disableRowSelectionOnClick
-          />
-        </Box>
+        <DataGrid
+          rows={groups}
+          columns={columns}
+          paginationMode="server"
+          rowCount={total}
+          pageSizeOptions={[10, 20, 50, 100]}
+          autoHeight
+          getRowId={(row) => row.carrier._id}
+          disableRowSelectionOnClick
+        />
       )}
 
-      <ZoneDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} zone={selectedZone} />
-      <CreateZoneDialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} onCreated={handleCreated} carriers={carriers} />
-      <UpdateZoneDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={handleCreated} zone={selectedZone} carriers={carriers} />
+      {/* Dialogs */}
+      <CreateZoneDialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} onCreated={fetchGroups} carriers={carriers} />
+      {selectedGroup && (
+        <>
+          <UpdateZoneDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={fetchGroups} carriers={carriers} groupZones={selectedGroup.zones} />
+          <ZoneDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} groupZones={selectedGroup.zones} carrier={selectedGroup.carrier} />
+        </>
+      )}
     </Box>
   );
 }

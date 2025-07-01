@@ -93,13 +93,27 @@ export default function PurchasePriceManagerView() {
   const handleDeleteGroup = async (group: IPurchasePriceGroup) => {
     if (!window.confirm("Bạn có chắc muốn xoá group này?")) return;
     try {
+      if (!group || !group.carrierId || !group.supplierId || !group.serviceId) {
+        showNotification("Thông tin group không đầy đủ để xoá!", "error");
+        return;
+      }
+
+      // Lấy _id nếu object, còn không thì giữ nguyên (giả sử là string ObjectId)
+      const carrierId = typeof group.carrierId === "object" ? group.carrierId._id : group.carrierId;
+      const supplierId = typeof group.supplierId === "object" ? group.supplierId._id : group.supplierId;
+      const serviceId = typeof group.serviceId === "object" ? group.serviceId._id : group.serviceId;
+
+      if (!carrierId || !supplierId || !serviceId) {
+        showNotification("Không tìm thấy ID để xoá!", "error");
+        return;
+      }
+
       await deletePurchasePriceGroupApi({
-        carrierId: getId(group.carrierId),
-        supplierId: getId(group.supplierId),
-        serviceId: getId(group.serviceId),
-        productType: "",
-        currency: "",
+        carrierId,
+        supplierId,
+        serviceId,
       });
+
       showNotification("Đã xoá group!");
       fetchData();
     } catch (err: any) {
@@ -109,15 +123,28 @@ export default function PurchasePriceManagerView() {
   };
 
   const handleLockUnlockGroup = async (group: IPurchasePriceGroup) => {
+    if (!group || !group.carrierId || !group.supplierId || !group.serviceId) {
+      showNotification("Thông tin group không đầy đủ để khoá/mở khoá!", "error");
+      return;
+    }
+
+    const carrierId = typeof group.carrierId === "object" ? group.carrierId._id : group.carrierId;
+    const supplierId = typeof group.supplierId === "object" ? group.supplierId._id : group.supplierId;
+    const serviceId = typeof group.serviceId === "object" ? group.serviceId._id : group.serviceId;
+
+    if (!carrierId || !supplierId || !serviceId) {
+      showNotification("Không tìm thấy ID để khoá/mở khoá!", "error");
+      return;
+    }
+
     const isLocked = group.datas.length > 0 && group.datas.every((d) => d.status === ERECORD_STATUS.Locked);
+
     try {
       const api = isLocked ? unlockPurchasePriceGroupApi : lockPurchasePriceGroupApi;
       await api({
-        carrierId: getId(group.carrierId),
-        supplierId: getId(group.supplierId),
-        serviceId: getId(group.serviceId),
-        productType: "",
-        currency: "",
+        carrierId,
+        supplierId,
+        serviceId,
       });
       showNotification(isLocked ? "Đã mở khoá!" : "Đã khoá!");
       fetchData();

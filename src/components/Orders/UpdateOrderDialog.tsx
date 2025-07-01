@@ -9,7 +9,7 @@ import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getPartnersApi } from "@/utils/apis/apiPartner";
 import { getSuppliersApi } from "@/utils/apis/apiSupplier";
 import { getServicesByCarrierApi } from "@/utils/apis/apiService";
-import { getExtraFeesApi } from "@/utils/apis/apiExtraFee";
+import { getExtraFeesByCarrierServiceApi } from "@/utils/apis/apiExtraFee";
 import OrderBillingInfoSection from "./Partials/OrderBillingInfoSection";
 import OrderAddressSection from "./Partials/OrderAddressSection";
 import OrderProductSection from "./Partials/OrderProductSection";
@@ -43,7 +43,8 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
   const [supplierId, setSupplierId] = useState("");
   const [surcharges, setSurcharges] = useState<ISurchargeDetail[]>([]);
   const [extraFeeIds, setExtraFeeIds] = useState<string[]>([]);
-  const [customVATPercentage, setCustomVATPercentage] = useState<number | "">("");
+  const [customVATPercentage, setCustomVATPercentage] = useState<number>(8);
+  const [fscFeePercentage, setFSCFeePercentage] = useState<number>(35);
 
   // Billing Info
   const [note, setNote] = useState("");
@@ -82,6 +83,13 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
   const [loading, setLoading] = useState(false);
   const { showNotification } = useNotification();
 
+  useEffect(() => {
+    // Tính lại quantity (số dòng dimension) và tổng grossWeight
+    const qty = dimensions && Array.isArray(dimensions) ? dimensions.length : 0;
+    const dw = dimensions && Array.isArray(dimensions) ? dimensions.reduce((sum, d) => sum + Number(d.grossWeight || 0), 0) : 0;
+    setQuantity(qty.toString());
+    setDeclaredWeight(dw > 0 ? dw.toString() : "");
+  }, [dimensions]);
   // Fill lại dữ liệu khi order thay đổi
   useEffect(() => {
     if (open && order) {
@@ -89,7 +97,6 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
       getPartnersApi().then((res) => setPartners(res?.data?.data?.data || []));
       getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
       getSuppliersApi().then((res) => setSuppliers(res?.data?.data?.data || []));
-      getExtraFeesApi().then((res) => setExtraFeeList(res?.data?.data?.data || []));
 
       setPartnerId(typeof order?.partner?.partnerId === "object" ? order.partner?.partnerId?._id || "" : order.partner?.partnerId || "");
       setCarrierId(typeof order.carrierId === "object" ? order.carrierId?._id || "" : order.carrierId || "");
@@ -120,7 +127,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
       setDimensions(order.packageDetail?.dimensions || []);
       setSurcharges(order.surcharges || []);
       setExtraFeeIds(order.extraFees?.extraFeeIds || []);
-      setCustomVATPercentage(order.vat?.customVATPercentage ?? "");
+      setCustomVATPercentage(order.vat?.customVATPercentage ?? 8);
     }
   }, [order, open]);
 
@@ -134,6 +141,22 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
       setVolWeightRate(null);
     }
   }, [carrierId, carriers]);
+
+  useEffect(() => {
+    if (carrierId && serviceId) {
+      // Lấy danh sách phụ phí theo carrier và service đã chọn
+      getExtraFeesByCarrierServiceApi(carrierId, serviceId)
+        .then((res) => {
+          setExtraFeeList(res?.data?.data?.data || []);
+        })
+        .catch((err) => {
+          console.error("Error fetching extra fees:", err);
+          showNotification("Không thể tải phụ phí!", "error");
+        });
+    } else {
+      setExtraFeeList([]);
+    }
+  }, [carrierId, serviceId]);
 
   const fetchServices = async (carrierId: string) => {
     const selected = carriers.find((c) => c._id === carrierId);
@@ -307,9 +330,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
                 productType={productType}
                 setProductType={setProductType}
                 declaredWeight={declaredWeight}
-                setDeclaredWeight={setDeclaredWeight}
                 quantity={quantity}
-                setQuantity={setQuantity}
                 declaredValue={declaredValue}
                 setDeclaredValue={setDeclaredValue}
                 currency={currency}
@@ -334,8 +355,8 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
           </Box>
 
           {/* Extra Fee, VAT, Surcharges */}
-          <OrderExtraFeeSection extraFeeList={extraFeeList} extraFeeIds={extraFeeIds} setExtraFeeIds={setExtraFeeIds} />
           <OrderVATSection customVATPercentage={customVATPercentage} setCustomVATPercentage={setCustomVATPercentage} />
+          <OrderExtraFeeSection fscFeePercentage={fscFeePercentage} setFSCFeePercentage={setFSCFeePercentage} extraFeeList={extraFeeList} extraFeeIds={extraFeeIds} setExtraFeeIds={setExtraFeeIds} />
           <OrderSurchargeSection surcharges={surcharges} setSurcharges={setSurcharges} />
         </Stack>
       </DialogContent>
