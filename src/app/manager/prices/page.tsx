@@ -9,7 +9,7 @@ import PurchasePriceManagerView from "@/components/PurchasePrices/PurchasePriceM
 import SalePriceManagerView from "@/components/SalePrices/SalePriceManagerView";
 import ZoneManagerView from "@/components/Zones/ZoneManagerView";
 import CAWBCodeManagerView from "@/components/CAWBCodes/CAWBCodeManagerView";
-import VATRateManagerView from "@/components/VATRates/VATRateManagerView";
+// import VATRateManagerView from "@/components/VATRates/VATRateManagerView";
 
 export default function PricesPage() {
   const searchParams = useSearchParams();
@@ -54,7 +54,7 @@ export default function PricesPage() {
           <Tab label="Phụ phí" />
           <Tab label="Khu vực" />
           <Tab label="Mã chuyến bay" />
-          <Tab label="Thuế" />
+          {/* <Tab label="Thuế" /> */}
           <Tab label="Tỉ giá" />
         </Tabs>
 
@@ -65,8 +65,8 @@ export default function PricesPage() {
             {tabIndex === 2 && <ExtraFeeManagerView />}
             {tabIndex === 3 && <ZoneManagerView />}
             {tabIndex === 4 && <CAWBCodeManagerView />}
-            {tabIndex === 5 && <VATRateManagerView />}
-            {tabIndex === 6 && <ExchangeRateManagerView />}
+            {/* {tabIndex === 5 && <VATRateManagerView />} */}
+            {tabIndex === 5 && <ExchangeRateManagerView />}
           </Paper>
         </Box>
       </Box>

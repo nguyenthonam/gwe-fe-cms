@@ -142,16 +142,6 @@ export default function UpdateVATRateDialog({ open, onClose, onUpdated, vatRate 
             <Grid size={6}>
               <NumericInput label="VAT (%)" fullWidth size="small" value={value} onChange={setValue} />
             </Grid>
-            {/* <Grid size={12}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Trạng thái</InputLabel>
-                <Select label="Trạng thái" value={status} onChange={(e) => setStatus(e.target.value as ERECORD_STATUS)}>
-                  <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
-                  <MenuItem value={ERECORD_STATUS.Locked}>Đã khoá</MenuItem>
-                  <MenuItem value={ERECORD_STATUS.NoActive}>Không hoạt động</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid> */}
           </Grid>
         </Stack>
       </DialogContent>

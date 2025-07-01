@@ -50,12 +50,6 @@ export default function CreateCarrierDialog({ open, onClose, onCreated }: Props)
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={12}>
-              <TextField label="Tên" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
-            </Grid>
-            <Grid size={12}>
-              <TextField label="Mã code" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
-            </Grid>
-            <Grid size={12}>
               <TextField label="Hãng bay" select value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
                 {companyOptions.map((c) => (
                   <MenuItem key={c._id} value={c._id}>
@@ -65,13 +59,20 @@ export default function CreateCarrierDialog({ open, onClose, onCreated }: Props)
               </TextField>
             </Grid>
             <Grid size={12}>
+              <TextField label="Mã code" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
+            </Grid>
+            <Grid size={12}>
+              <TextField label="Tên nhà vận chuyển" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
+            </Grid>
+
+            <Grid size={12}>
               <TextField label="Cách tính cân nặng" select value={form.chargeableWeightType || ""} onChange={(e) => handleChange("chargeableWeightType", e.target.value)} fullWidth size="small">
                 <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.DETAIL}>Tính theo kiện</MenuItem>
                 <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.TOTAL}>Tính toàn bộ</MenuItem>
               </TextField>
             </Grid>
             <Grid size={12}>
-              <NumericInput label="Hệ số quy đổi thể tích" fullWidth size="small" value={String(form.volWeightRate)} onChange={(val) => handleChange("volWeightRate", Number(val))} />
+              <NumericInput label="Hệ số quy đổi thể tích" fullWidth size="small" value={String(form.volWeightRate || "")} onChange={(val) => handleChange("volWeightRate", Number(val))} />
             </Grid>
           </Grid>
         </Stack>

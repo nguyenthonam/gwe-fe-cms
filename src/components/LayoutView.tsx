@@ -48,7 +48,7 @@ import {
   Person as PersonIcon,
   QrCode as CAWBCodeIcon,
   Logout as LogoutIcon,
-  Percent as PercentIcon,
+  // Percent as PercentIcon,
   Layers as ZoneIcon,
 } from "@mui/icons-material";
 import ReduxProvider from "@/components/ReduxProvider";
@@ -160,8 +160,8 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
         { title: "Phụ phí", href: "/manager/prices?tab=2", icon: <ExtraFeeIcon /> },
         { title: "Khu vực", href: "/manager/prices?tab=3", icon: <ZoneIcon /> },
         { title: "Mã chuyến bay", href: "/manager/prices?tab=4", icon: <CAWBCodeIcon /> },
-        { title: "VAT", href: "/manager/prices?tab=5", icon: <PercentIcon /> },
-        { title: "Tỉ giá", href: "/manager/prices?tab=6", icon: <PriceIcon /> },
+        // { title: "VAT", href: "/manager/prices?tab=5", icon: <PercentIcon /> },
+        { title: "Tỉ giá", href: "/manager/prices?tab=5", icon: <PriceIcon /> },
       ],
     },
     {

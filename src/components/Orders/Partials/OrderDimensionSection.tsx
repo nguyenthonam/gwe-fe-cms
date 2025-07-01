@@ -16,17 +16,41 @@ interface Props {
 
 export default function OrderDimensionSection({ volWeightRate, dimensions, setDimensions, disabled, className, title = "Dimension" }: Props) {
   // Hàm cập nhật field (dùng array mới, KHÔNG dùng state local)
-  const handleInputChange = (no: number, field: keyof IDimension, value: number) => {
+  // const handleInputChange = (no: number, field: keyof IDimension, value: number) => {
+  //   setDimensions(
+  //     dimensions.map((row, idx) =>
+  //       idx === no - 1
+  //         ? {
+  //             ...row,
+  //             [field]: value,
+  //             volumeWeight:
+  //               field === "length" || field === "width" || field === "height"
+  //                 ? volWeightRate
+  //                   ? calculateVolumeWeight(field === "length" ? value : row.length, field === "width" ? value : row.width, field === "height" ? value : row.height, volWeightRate)
+  //                   : 0
+  //                 : row.volumeWeight,
+  //           }
+  //         : row
+  //     )
+  //   );
+  // };
+  const handleInputChange = (no: number, field: keyof IDimension, value: string) => {
     setDimensions(
       dimensions.map((row, idx) =>
         idx === no - 1
           ? {
               ...row,
-              [field]: value,
+              [field]: value, // để nguyên string ở state!
+              // Nếu muốn tính toán volumeWeight thì phải kiểm tra giá trị có hợp lệ mới convert
               volumeWeight:
                 field === "length" || field === "width" || field === "height"
-                  ? volWeightRate
-                    ? calculateVolumeWeight(field === "length" ? value : row.length, field === "width" ? value : row.width, field === "height" ? value : row.height, volWeightRate)
+                  ? volWeightRate && value && !isNaN(Number(value))
+                    ? calculateVolumeWeight(
+                        field === "length" ? Number(value) : Number(row.length),
+                        field === "width" ? Number(value) : Number(row.width),
+                        field === "height" ? Number(value) : Number(row.height),
+                        volWeightRate
+                      )
                     : 0
                   : row.volumeWeight,
             }
@@ -111,14 +135,7 @@ export default function OrderDimensionSection({ volWeightRate, dimensions, setDi
                   <TableCell align="center">{idx + 1}</TableCell>
                   {(["length", "width", "height", "grossWeight"] as (keyof IDimension)[]).map((field) => (
                     <TableCell align="center" key={field} sx={{ "& .MuiInputBase-input": { width: "50px" } }}>
-                      <NumericInput
-                        disabled={disabled}
-                        fullWidth
-                        size="small"
-                        value={String(row[field] ?? 0)}
-                        onChange={(val) => handleInputChange(row.no, field, Number(val))}
-                        sx={{ bgcolor: "#fff" }}
-                      />
+                      <NumericInput disabled={disabled} fullWidth size="small" value={String(row[field] ?? "")} onChange={(val) => handleInputChange(row.no, field, val)} sx={{ bgcolor: "#fff" }} />
                     </TableCell>
                   ))}
                   <TableCell align="center">

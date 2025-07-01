@@ -38,19 +38,7 @@ export default function PartnerDetailDialog({ open, onClose, partner }: Props) {
             <Grid size={8}>
               <Typography fontWeight={500}>{partner.name}</Typography>
             </Grid>
-            <Grid size={4}>
-              <Typography variant="body2">Mã số thuế</Typography>
-            </Grid>
-            <Grid size={8}>
-              <Typography fontWeight={500}>{partner.taxCode}</Typography>
-            </Grid>
 
-            <Grid size={4}>
-              <Typography variant="body2">Trạng thái</Typography>
-            </Grid>
-            <Grid size={8}>
-              <EnumChip type="recordStatus" value={partner.status} />
-            </Grid>
             <Grid size={4}>
               <Typography variant="body2">Địa chỉ</Typography>
             </Grid>
@@ -60,76 +48,65 @@ export default function PartnerDetailDialog({ open, onClose, partner }: Props) {
           </Grid>
 
           {/* ĐẠI DIỆN */}
-          {partner.representative?.name && (
-            <>
-              <Divider sx={{ my: 1 }} />
-              <Typography fontWeight={600}>Người đại diện</Typography>
-              <Grid container spacing={2}>
-                <Grid size={4}>
-                  <Typography variant="body2">Họ tên</Typography>
-                </Grid>
-                <Grid size={8}>
-                  <Typography fontWeight={500}>{partner.representative?.name}</Typography>
-                </Grid>
-                <Grid size={4}>
-                  <Typography variant="body2">Điện thoại</Typography>
-                </Grid>
-                <Grid size={8}>
-                  <Typography fontWeight={500}>{partner.representative?.phone}</Typography>
-                </Grid>
-              </Grid>
-            </>
-          )}
+          <Divider sx={{ my: 1 }} />
+          <Typography fontWeight={600}>Người đại diện</Typography>
+          <Grid container spacing={2}>
+            <Grid size={4}>
+              <Typography variant="body2">Họ tên</Typography>
+            </Grid>
+            <Grid size={8}>
+              <Typography fontWeight={500}>{partner.representative?.name}</Typography>
+            </Grid>
+            <Grid size={4}>
+              <Typography variant="body2">Điện thoại</Typography>
+            </Grid>
+            <Grid size={8}>
+              <Typography fontWeight={500}>{partner.representative?.phone}</Typography>
+            </Grid>
+          </Grid>
 
           {/* LIÊN HỆ */}
-          {(partner.contact?.email || partner.contact?.hotline) && (
-            <>
-              <Divider sx={{ my: 1 }} />
-              <Typography fontWeight={600}>Thông tin liên hệ</Typography>
-              <Grid container spacing={2}>
-                <Grid size={4}>
-                  <Typography variant="body2">Email</Typography>
-                </Grid>
-                <Grid size={8}>
-                  <Typography fontWeight={500}>{partner.contact?.email}</Typography>
-                </Grid>
-                <Grid size={4}>
-                  <Typography variant="body2">Hotline</Typography>
-                </Grid>
-                <Grid size={8}>
-                  <Typography fontWeight={500}>{partner.contact?.hotline}</Typography>
-                </Grid>
-                <Grid size={4}>
-                  <Typography variant="body2">Website</Typography>
-                </Grid>
-                <Grid size={8}>
-                  <Typography fontWeight={500}>{partner.contact?.website}</Typography>
-                </Grid>
-              </Grid>
-            </>
-          )}
+          <Divider sx={{ my: 1 }} />
+          <Typography fontWeight={600}>Thông tin liên hệ</Typography>
+          <Grid container spacing={2}>
+            <Grid size={4}>
+              <Typography variant="body2">Email</Typography>
+            </Grid>
+            <Grid size={8}>
+              <Typography fontWeight={500}>{partner.contact?.email}</Typography>
+            </Grid>
+            <Grid size={4}>
+              <Typography variant="body2">Hotline</Typography>
+            </Grid>
+            <Grid size={8}>
+              <Typography fontWeight={500}>{partner.contact?.hotline}</Typography>
+            </Grid>
+            <Grid size={4}>
+              <Typography variant="body2">Website</Typography>
+            </Grid>
+            <Grid size={8}>
+              <Typography fontWeight={500}>{partner.contact?.website}</Typography>
+            </Grid>
+          </Grid>
 
           {/* HỢP ĐỒNG */}
-          {(partner.contract?.startDate || partner.contract?.paymentTerms) && (
-            <>
-              <Divider sx={{ my: 1 }} />
-              <Typography fontWeight={600}>Thông tin hợp đồng</Typography>
-              <Grid container spacing={2}>
-                <Grid size={4}>
-                  <Typography variant="body2">Bắt đầu</Typography>
-                </Grid>
-                <Grid size={8}>
-                  <Typography fontWeight={500}>{formatDate(partner.contract?.startDate)}</Typography>
-                </Grid>
-                <Grid size={4}>
-                  <Typography variant="body2">Kết thúc</Typography>
-                </Grid>
-                <Grid size={8}>
-                  <Typography fontWeight={500}>{formatDate(partner.contract?.endDate)}</Typography>
-                </Grid>
-              </Grid>
-            </>
-          )}
+
+          <Divider sx={{ my: 1 }} />
+          <Typography fontWeight={600}>Thông tin hợp đồng</Typography>
+          <Grid container spacing={2}>
+            <Grid size={4}>
+              <Typography variant="body2">Mã số thuế</Typography>
+            </Grid>
+            <Grid size={8}>
+              <Typography fontWeight={500}>{partner.taxCode}</Typography>
+            </Grid>
+            <Grid size={4}>
+              <Typography variant="body2">Trạng thái</Typography>
+            </Grid>
+            <Grid size={8}>
+              <EnumChip type="recordStatus" value={partner.status} />
+            </Grid>
+          </Grid>
 
           {/* TẠO LÚC */}
           {partner.createdAt && (

@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Stack, Grid } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createCompanyCarrierApi } from "@/utils/apis/apiCarrier";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { ECOMPANY_TYPE, ICompany } from "@/types/typeCompany";
@@ -13,17 +13,27 @@ interface Props {
   onCreated: () => void;
 }
 
+const defaultForm: ICompany = {
+  code: "",
+  name: "",
+  taxCode: "",
+  address: "",
+  status: ERECORD_STATUS.Active,
+  type: ECOMPANY_TYPE.Carrier,
+};
+
 export default function CreateCompanyCarrierDialog({ open, onClose, onCreated }: Props) {
-  const [form, setForm] = useState<ICompany>({
-    code: "",
-    name: "",
-    taxCode: "",
-    address: "",
-    status: ERECORD_STATUS.Active,
-    type: ECOMPANY_TYPE.Carrier,
-  });
+  const [form, setForm] = useState<ICompany>(defaultForm);
   const [loading, setLoading] = useState(false);
   const { showNotification } = useNotification();
+
+  useEffect(() => {
+    // if (!open) setForm(defaultForm);
+
+    return () => {
+      setForm(defaultForm);
+    };
+  }, [open]);
 
   const handleChange = (field: keyof ICompany, value: any) => {
     setForm({ ...form, [field]: value });
@@ -55,10 +65,10 @@ export default function CreateCompanyCarrierDialog({ open, onClose, onCreated }:
             <Grid size={12}>
               <TextField label="Tên Hãng Bay" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
             </Grid>
-            <Grid size={6}>
+            <Grid size={12}>
               <TextField label="Mã số thuế" value={form.taxCode || ""} onChange={(e) => handleChange("taxCode", e.target.value)} fullWidth size="small" />
             </Grid>
-            <Grid size={6}>
+            <Grid size={12}>
               <TextField label="Địa chỉ" value={form.address || ""} onChange={(e) => handleChange("address", e.target.value)} fullWidth size="small" />
             </Grid>
           </Grid>
