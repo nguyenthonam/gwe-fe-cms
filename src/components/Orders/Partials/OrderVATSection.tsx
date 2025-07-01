@@ -4,7 +4,7 @@ import { Typography } from "@mui/material";
 
 interface Props {
   customVATPercentage: number | "";
-  setCustomVATPercentage: (v: number | "") => void;
+  setCustomVATPercentage: (v: number) => void;
 }
 
 export default function OrderVATSection({ customVATPercentage, setCustomVATPercentage }: Props) {

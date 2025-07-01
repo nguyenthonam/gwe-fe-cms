@@ -71,6 +71,14 @@ export default function BillForm() {
   const { showNotification } = useNotification();
 
   useEffect(() => {
+    // Tính lại quantity (số dòng dimension) và tổng grossWeight
+    const qty = dimensions && Array.isArray(dimensions) ? dimensions.length : 0;
+    const dw = dimensions && Array.isArray(dimensions) ? dimensions.reduce((sum, d) => sum + Number(d.grossWeight || 0), 0) : 0;
+    setQuantity(qty.toString());
+    setDeclaredWeight(dw > 0 ? dw.toString() : "");
+  }, [dimensions]);
+
+  useEffect(() => {
     getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
   }, []);
   useEffect(() => {
@@ -178,9 +186,7 @@ export default function BillForm() {
           productType={billData?.productType ?? productType}
           setProductType={setProductType}
           declaredWeight={billData?.packageDetail?.declaredWeight?.toString() ?? declaredWeight}
-          setDeclaredWeight={setDeclaredWeight}
           quantity={billData?.packageDetail?.quantity?.toString() ?? quantity}
-          setQuantity={setQuantity}
           declaredValue={billData?.packageDetail?.declaredValue?.toString() ?? declaredValue}
           setDeclaredValue={setDeclaredValue}
           currency={billData?.packageDetail?.currency ?? currency}

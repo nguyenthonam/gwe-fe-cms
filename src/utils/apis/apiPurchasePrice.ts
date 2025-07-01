@@ -59,7 +59,7 @@ export const searchPurchasePriceGroupsApi = async ({
 };
 
 /** Lock group */
-export const lockPurchasePriceGroupApi = async (payload: { carrierId: string; supplierId: string; serviceId: string; productType: string; currency: string }) => {
+export const lockPurchasePriceGroupApi = async (payload: { carrierId: string; supplierId: string; serviceId: string }) => {
   try {
     const res = await AxiosAPI.put(`/api/purchase-prices/lock-group`, payload);
     return res;
@@ -68,7 +68,7 @@ export const lockPurchasePriceGroupApi = async (payload: { carrierId: string; su
   }
 };
 /** Unlock group */
-export const unlockPurchasePriceGroupApi = async (payload: { carrierId: string; supplierId: string; serviceId: string; productType: string; currency: string }) => {
+export const unlockPurchasePriceGroupApi = async (payload: { carrierId: string; supplierId: string; serviceId: string }) => {
   try {
     const res = await AxiosAPI.put(`/api/purchase-prices/unlock-group`, payload);
     return res;
@@ -78,7 +78,7 @@ export const unlockPurchasePriceGroupApi = async (payload: { carrierId: string; 
 };
 
 /** Delete group */
-export const deletePurchasePriceGroupApi = async (payload: { carrierId: string; supplierId: string; serviceId: string; productType: string; currency: string }) => {
+export const deletePurchasePriceGroupApi = async (payload: { carrierId: string; supplierId: string; serviceId: string }) => {
   try {
     // DELETE truyền body cần config Axios: { data: ... }
     const res = await AxiosAPI.delete(`/api/purchase-prices/delete-group`, { data: payload });

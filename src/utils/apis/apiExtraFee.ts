@@ -11,6 +11,20 @@ export const getExtraFeesApi = async () => {
     throw new Error(error.response.data.message);
   }
 };
+export const getExtraFeesByCarrierServiceApi = async (carrierId: string, serviceId: string) => {
+  try {
+    const res = await AxiosAPI.get("/api/extra-fees", {
+      params: {
+        carrierId,
+        serviceId,
+      },
+    });
+    return res;
+  } catch (error: any) {
+    console.error("Error:", error);
+    throw new Error(error.response.data.message);
+  }
+};
 
 export const searchExtraFeesApi = async ({ keyword, page = 1, perPage = 10, status = "all", carrierId, serviceId }: ISearchQuery & { carrierId?: string; serviceId?: string }) => {
   try {

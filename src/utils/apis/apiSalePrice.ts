@@ -60,7 +60,7 @@ export const searchSalePriceGroupsApi = async ({
 };
 
 /** Lock group */
-export const lockSalePriceGroupApi = async (payload: { carrierId: string; partnerId: string; serviceId: string; productType: string; currency: string }) => {
+export const lockSalePriceGroupApi = async (payload: { carrierId: string; partnerId: string; serviceId: string }) => {
   try {
     const res = await AxiosAPI.put(`/api/sale-prices/lock-group`, payload);
     return res;
@@ -70,7 +70,7 @@ export const lockSalePriceGroupApi = async (payload: { carrierId: string; partne
 };
 
 /** Unlock group */
-export const unlockSalePriceGroupApi = async (payload: { carrierId: string; partnerId: string; serviceId: string; productType: string; currency: string }) => {
+export const unlockSalePriceGroupApi = async (payload: { carrierId: string; partnerId: string; serviceId: string }) => {
   try {
     const res = await AxiosAPI.put(`/api/sale-prices/unlock-group`, payload);
     return res;
@@ -80,7 +80,7 @@ export const unlockSalePriceGroupApi = async (payload: { carrierId: string; part
 };
 
 /** Delete group */
-export const deleteSalePriceGroupApi = async (payload: { carrierId: string; partnerId: string; serviceId: string; productType: string; currency: string }) => {
+export const deleteSalePriceGroupApi = async (payload: { carrierId: string; partnerId: string; serviceId: string }) => {
   try {
     const res = await AxiosAPI.delete(`/api/sale-prices/delete-group`, { data: payload });
     return res;

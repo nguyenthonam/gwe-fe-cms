@@ -93,3 +93,69 @@ export const deleteZoneApi = async (id: string) => {
     throw new Error(error.response.data.message);
   }
 };
+
+// Tạo mới group Zone (chỉ insert zone chưa có)
+export const createZoneGroupApi = async (carrierId: string, zones: IZone[]) => {
+  try {
+    const res = await AxiosAPI.post("/api/zones/group", { carrierId, zones });
+    return res;
+  } catch (error: any) {
+    console.error("Error:", error);
+    throw new Error(error.response.data.message);
+  }
+};
+
+// Update group Zone (chỉ update các zone đã có)
+export const updateZoneGroupApi = async (carrierId: string, zones: IZone[]) => {
+  try {
+    const res = await AxiosAPI.put("/api/zones/group", { carrierId, zones });
+    return res;
+  } catch (error: any) {
+    console.error("Error:", error);
+    throw new Error(error.response.data.message);
+  }
+};
+
+// Xoá group Zone (soft delete)
+export const deleteZoneGroupByCarrierApi = async (carrierId: string) => {
+  try {
+    const res = await AxiosAPI.delete(`/api/zones/group/${carrierId}`);
+    return res;
+  } catch (error: any) {
+    console.error("Error:", error);
+    throw new Error(error.response.data.message);
+  }
+};
+
+// Lấy danh sách group Zone theo Carrier
+export const getZoneGroupByCarrierApi = async (carrierId: string) => {
+  try {
+    const res = await AxiosAPI.get(`/api/zones/group/${carrierId}`);
+    return res;
+  } catch (error: any) {
+    console.error("Error:", error);
+    throw new Error(error.response.data.message);
+  }
+};
+
+// Lock group zone
+export const lockZoneGroupByCarrierApi = async (carrierId: string) => {
+  try {
+    const res = await AxiosAPI.put(`/api/zones/group/${carrierId}/lock`);
+    return res;
+  } catch (error: any) {
+    console.error("Error:", error);
+    throw new Error(error.response.data.message);
+  }
+};
+
+// Unlock group zone
+export const unlockZoneGroupByCarrierApi = async (carrierId: string) => {
+  try {
+    const res = await AxiosAPI.put(`/api/zones/group/${carrierId}/unlock`);
+    return res;
+  } catch (error: any) {
+    console.error("Error:", error);
+    throw new Error(error.response.data.message);
+  }
+};

@@ -143,7 +143,7 @@ export default function DimensionTable({ volWeightRate, dimensions, disabled, se
                       disabled={disabled}
                       fullWidth
                       size="small"
-                      value={String(row[field] ?? 0)}
+                      value={String(row[field] ?? "")}
                       onChange={(val) => handleInputChange(row.no, field, Number(val))}
                       sx={{ bgcolor: "#fff" }}
                     />

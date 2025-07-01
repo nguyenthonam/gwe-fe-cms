@@ -9,9 +9,7 @@ interface Props {
   productType?: EPRODUCT_TYPE;
   setProductType: (v: EPRODUCT_TYPE) => void;
   declaredWeight: string;
-  setDeclaredWeight: (v: string) => void;
   quantity: string;
-  setQuantity: (v: string) => void;
   declaredValue: string;
   setDeclaredValue: (v: string) => void;
   currency?: ECURRENCY;
@@ -20,7 +18,7 @@ interface Props {
 }
 
 export default function OrderProductSection(props: Props) {
-  const { disabled, content, setContent, productType, setProductType, declaredWeight, setDeclaredWeight, quantity, setQuantity, declaredValue, setDeclaredValue, currency, setCurrency } = props;
+  const { disabled, content, setContent, productType, setProductType, declaredWeight, quantity, declaredValue, setDeclaredValue, currency, setCurrency } = props;
   return (
     <Box sx={{ p: 2 }}>
       {/* Contents */}
@@ -29,7 +27,7 @@ export default function OrderProductSection(props: Props) {
           <Typography variant="body2">Contents</Typography>
         </Grid>
         <Grid size={8}>
-          <TextField disabled={disabled} value={content} onChange={(e) => setContent(e.target.value)} fullWidth size="small" required />
+          <TextField disabled={disabled} value={content || ""} onChange={(e) => setContent(e.target.value)} fullWidth size="small" required />
         </Grid>
       </Grid>
       {/* Product Type */}
@@ -52,16 +50,15 @@ export default function OrderProductSection(props: Props) {
           <Typography variant="body2">PCEs</Typography>
         </Grid>
         <Grid size={8}>
-          <NumericInput disabled={disabled} label="" value={quantity} onChange={setQuantity} fullWidth size="small" required />
+          <TextField value={quantity || ""} size="small" fullWidth disabled InputProps={{ readOnly: true }} sx={{ bgcolor: "#f5f5f5" }} />
         </Grid>
       </Grid>
-      {/* Declared Weight */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
           <Typography variant="body2">Declared Weight (kg)</Typography>
         </Grid>
         <Grid size={8}>
-          <NumericInput disabled={disabled} value={declaredWeight} onChange={setDeclaredWeight} fullWidth size="small" required />
+          <TextField value={declaredWeight || ""} size="small" fullWidth disabled InputProps={{ readOnly: true }} sx={{ bgcolor: "#f5f5f5" }} />
         </Grid>
       </Grid>
 

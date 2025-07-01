@@ -1,5 +1,4 @@
 "use client";
-
 import { TextField, TextFieldProps } from "@mui/material";
 
 interface NumericInputProps extends Omit<TextFieldProps, "onChange" | "value"> {
@@ -8,29 +7,14 @@ interface NumericInputProps extends Omit<TextFieldProps, "onChange" | "value"> {
   onChange: (value: string) => void;
 }
 
-export default function NumericInput({ value, disabled, onChange, ...props }: NumericInputProps) {
+export default function NumericInput({ value, onChange, disabled, ...props }: NumericInputProps) {
+  const regex = /^(\d+)?(\.\d*)?$/;
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    if (/^\d*\.?\d*$/.test(val)) {
+    if (val === "" || regex.test(val)) {
       onChange(val);
     }
   };
 
-  return (
-    <TextField
-      {...props}
-      type="text"
-      disabled={disabled}
-      inputMode="decimal"
-      value={value}
-      onChange={handleChange}
-      onKeyDown={(e) => {
-        const allowedKeys = ["Backspace", "Tab", "Delete", "ArrowLeft", "ArrowRight", "Home", "End", "."];
-        const isDigit = /^[0-9]$/.test(e.key);
-        if (!isDigit && !allowedKeys.includes(e.key)) {
-          e.preventDefault();
-        }
-      }}
-    />
-  );
+  return <TextField {...props} value={value} onChange={handleChange} disabled={disabled} inputMode="decimal" type="text" autoComplete="off" />;
 }
