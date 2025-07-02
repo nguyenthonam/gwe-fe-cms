@@ -40,6 +40,28 @@ export const getUserByIdApi = async (id: string) => {
   }
 };
 
+export const getStaffsOfPartnerApi = async (payload: ISearchQuery & { companyId?: string }) => {
+  try {
+    const { page = 0, perPage = 5, keyword = "", status = "all", companyId } = payload;
+    const query = {
+      page,
+      perPage,
+      keyword,
+      status,
+      role: EUSER_ROLES.Partner,
+    } as any;
+    if (companyId) query.companyId = companyId;
+
+    const res = await AxiosAPI.get(`/api/users/search`, {
+      params: query,
+    });
+    return res;
+  } catch (error: any) {
+    console.error("Error login:", error);
+    throw new Error(error.response.data.message);
+  }
+};
+
 export const searchUsersApi = async (payload: ISearchQuery & { role?: EUSER_ROLES | ""; companyId?: string }) => {
   try {
     const { page = 0, perPage = 5, keyword = "", status = "all", role, companyId } = payload;

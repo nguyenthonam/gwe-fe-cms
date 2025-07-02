@@ -9,7 +9,7 @@ import { ActionMenu } from "@/components/Globals/ActionMenu";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { IUser } from "@/types/typeUser";
 import { ERECORD_STATUS, EUSER_ROLES } from "@/types/typeGlobals";
-import { searchUsersApi, lockUserApi, unlockUserApi, deleteUserApi } from "@/utils/apis/apiUser";
+import { getStaffsOfPartnerApi, lockUserApi, unlockUserApi, deleteUserApi } from "@/utils/apis/apiUser";
 import * as XLSX from "sheetjs-style";
 import CreateStaffDialog from "./CreateStaffDialog";
 import UpdateStaffDialog from "./UpdateStaffDialog";
@@ -44,12 +44,11 @@ export default function StaffManagerView() {
   const fetchStaffs = async () => {
     try {
       setLoading(true);
-      const res = await searchUsersApi({
+      const res = await getStaffsOfPartnerApi({
         keyword,
         page: page + 1,
         perPage: pageSize,
         status: statusFilter,
-        role: EUSER_ROLES.Partner,
       });
       setStaffs(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
