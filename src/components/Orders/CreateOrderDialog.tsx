@@ -108,21 +108,9 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
       getPartnersApi().then((res) => setPartners(res?.data?.data?.data || []));
       getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
       getSuppliersApi().then((res) => setSuppliers(res?.data?.data?.data || []));
-
-      setPartnerId("");
-      setCarrierId("");
-      setServiceId("");
-      setSupplierId("");
-      setNote("");
-      setSender({ fullname: "", address1: "", address2: "", address3: "", phone: "" });
-      setRecipient({ fullname: "", attention: "", address1: "", address2: "", address3: "", phone: "", country: { code: ECountryCode.VN, name: "Vietnam" }, city: "", state: "", postCode: "" });
-      setContent("");
-      setProductType(EPRODUCT_TYPE.DOCUMENT);
-      setDeclaredWeight("");
-      setQuantity("1");
-      setDeclaredValue("");
-      setCurrency(ECURRENCY.USD);
-      setDimensions([]);
+    }
+    if (!open) {
+      resetForm();
     }
   }, [open]);
 
@@ -152,6 +140,38 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
       setExtraFeeList([]);
     }
   }, [carrierId, serviceId]);
+
+  const resetForm = () => {
+    setPartnerId("");
+    setCarrierId("");
+    setServiceId("");
+    setSupplierId("");
+    setNote("");
+    setSender({ fullname: "", address1: "", address2: "", address3: "", phone: "" });
+    setRecipient({
+      fullname: "",
+      attention: "",
+      address1: "",
+      address2: "",
+      address3: "",
+      phone: "",
+      country: { code: ECountryCode.VN, name: "Vietnam" },
+      city: "",
+      state: "",
+      postCode: "",
+    });
+    setContent("");
+    setProductType(EPRODUCT_TYPE.DOCUMENT);
+    setDeclaredWeight("");
+    setQuantity("1");
+    setDeclaredValue("");
+    setCurrency(ECURRENCY.USD);
+    setDimensions([]);
+    setExtraFeeIds([]);
+    setCustomVATPercentage(8);
+    setFSCFeePercentage(35); // hoặc giá trị mặc định bạn muốn
+    setSurcharges([]);
+  };
 
   // Validate & Submit
   const handleSubmit = async () => {
@@ -208,7 +228,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
         note,
         productType: productType,
         surcharges,
-        extraFees: { extraFeeIds: extraFeeIds },
+        extraFees: { extraFeeIds: extraFeeIds, fscFeePercentage: Number(fscFeePercentage) },
         vat: { customVATPercentage: Number(customVATPercentage) },
       });
       showNotification("Tạo đơn hàng thành công", "success");

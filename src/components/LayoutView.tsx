@@ -181,6 +181,11 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
     const { showNotification } = useNotification();
     const router = useRouter();
 
+    const [hydrated, setHydrated] = React.useState(false);
+    React.useEffect(() => {
+      setHydrated(true);
+    }, []);
+
     React.useEffect(() => {
       if (!accessToken) setShowDrawer(false);
     }, [accessToken]);
@@ -226,9 +231,12 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
               </Link>
               {accessToken ? (
                 <Box sx={{ display: "flex", alignItems: "center", ml: "auto" }}>
-                  <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>
-                    {profile?.contact?.fullname || "User"}
-                  </Typography>
+                  {hydrated && (
+                    <Typography variant="body1" sx={{ mr: 1, fontWeight: 600, color: lightBlue[900] }}>
+                      {profile?.contact?.fullname || "User"}
+                    </Typography>
+                  )}
+
                   <IconButton onClick={handleMenuClick} sx={{ p: "2px" }}>
                     <Avatar alt="User" sx={{ bgcolor: lightBlue[500] }}>
                       <AccountCircleIcon />
