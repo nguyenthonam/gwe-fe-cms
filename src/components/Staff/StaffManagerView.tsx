@@ -8,7 +8,7 @@ import debounce from "lodash/debounce";
 import { ActionMenu } from "@/components/Globals/ActionMenu";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { IUser } from "@/types/typeUser";
-import { ERECORD_STATUS, EUSER_ROLES } from "@/types/typeGlobals";
+import { ERECORD_STATUS } from "@/types/typeGlobals";
 import { getStaffsOfPartnerApi, lockUserApi, unlockUserApi, deleteUserApi } from "@/utils/apis/apiUser";
 import * as XLSX from "sheetjs-style";
 import CreateStaffDialog from "./CreateStaffDialog";
