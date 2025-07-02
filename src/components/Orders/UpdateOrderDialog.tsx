@@ -224,7 +224,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
         note,
         productType,
         surcharges,
-        extraFees: { extraFeeIds },
+        extraFees: { extraFeeIds, fscFeePercentage: Number(fscFeePercentage) },
         vat: { customVATPercentage: Number(customVATPercentage) },
       };
 

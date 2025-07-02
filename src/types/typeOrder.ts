@@ -82,6 +82,7 @@ export interface ICreateOrderRequest {
   note: string | null;
   // zone: number | null;
   extraFees?: {
+    fscFeePercentage?: number;
     extraFeeIds?: string[];
   };
   vat?: {
