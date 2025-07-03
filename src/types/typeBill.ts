@@ -1,3 +1,5 @@
+import { IDimension } from "./typeGlobals";
+
 export interface ISenderData {
   name: string | null; // MR Thuận
   address1: string | null;
@@ -16,14 +18,6 @@ export interface IRecipientData {
   city: string | null;
   state: string | null;
   postCode: string | null;
-}
-export interface IDimension {
-  no: number;
-  length: number;
-  width: number;
-  height: number;
-  gross: number;
-  volume: number;
 }
 export interface IPackageData {
   content: string | null;

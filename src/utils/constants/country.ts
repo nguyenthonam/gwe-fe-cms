@@ -1,4 +1,4 @@
-export const COUNTRIES = [
+export const COUNTRIES: { code: string; name: string }[] = [
   { code: "AF", name: "Afghanistan" },
   { code: "AX", name: "Aland Islands" },
   { code: "AL", name: "Albania" },
@@ -45,6 +45,8 @@ export const COUNTRIES = [
   { code: "TD", name: "Chad" },
   { code: "CL", name: "Chile" },
   { code: "CN", name: "China" },
+  { code: "CN1", name: "China (Zone 1)" },
+  { code: "CN2", name: "China (Zone 2)" },
   { code: "CX", name: "Christmas Island" },
   { code: "CC", name: "Cocos (Keeling) Islands" },
   { code: "CO", name: "Colombia" },
@@ -142,6 +144,8 @@ export const COUNTRIES = [
   { code: "AE", name: "United Arab Emirates" },
   { code: "GB", name: "United Kingdom" },
   { code: "US", name: "United States" },
+  { code: "US1", name: "United States (Zone 1)" },
+  { code: "US2", name: "United States (Zone 2)" },
   { code: "VN", name: "Vietnam" },
   { code: "YE", name: "Yemen" },
   { code: "ZW", name: "Zimbabwe" },

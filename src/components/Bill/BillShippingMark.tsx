@@ -1,7 +1,7 @@
 import React, { useImperativeHandle, useRef } from "react";
 import { useReactToPrint } from "react-to-print";
-import { IBillData } from "@/types";
 import "@/styles/components/Bill/BillPrint.css";
+import { IBillData } from "@/types/typeBill";
 interface IProps {
   data: IBillData | null;
   billNumber: number;
@@ -20,7 +20,7 @@ const BillShippingMark = React.forwardRef<IBillShippingMarkRef, IProps>(({ data,
 
   const handlePrint = useReactToPrint({
     contentRef: billPrintRef,
-    documentTitle: data?.HAWBCode + "-shipping-mark" || `GX-${Date.now().toString()}-shipping-mark`,
+    documentTitle: data?.HAWBCode + "-shipping-mark",
     preserveAfterPrint: true,
   });
 
