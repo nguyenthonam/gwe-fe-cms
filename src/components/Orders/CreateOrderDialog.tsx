@@ -177,16 +177,16 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
   const handleSubmit = async () => {
     if (
       !carrierId ||
-      !sender.fullname ||
-      !sender.address1 ||
-      !sender.phone ||
-      !recipient.fullname ||
-      !recipient.address1 ||
-      !recipient.phone ||
-      !recipient.country ||
-      !content ||
-      !declaredWeight ||
-      !quantity
+      // !sender.fullname ||
+      // !sender.address1 ||
+      // !sender.phone ||
+      // !recipient.fullname ||
+      // !recipient.address1 ||
+      // !recipient.phone ||
+      !recipient.country
+      // !content ||
+      // !declaredWeight ||
+      // !quantity
     ) {
       showNotification("Vui lòng nhập đầy đủ thông tin!", "warning");
       return;
