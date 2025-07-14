@@ -1,4 +1,4 @@
-import { EPaymentTerms, ERECORD_STATUS, IBaseRecord } from "./typeGlobals";
+import { EPaymentTerms, IBaseRecord } from "./typeGlobals";
 
 export interface IRepresentative {
   name?: string;
@@ -31,5 +31,4 @@ export interface ICompany extends IBaseRecord {
   contact?: ICompanyContact;
   contract?: ICompanyContract;
   type?: ECOMPANY_TYPE | null;
-  status?: ERECORD_STATUS;
 }
