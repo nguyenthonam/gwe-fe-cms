@@ -187,7 +187,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
   const handleSubmit = async () => {
     if (
       !order?._id ||
-      !carrierId ||
+      // !carrierId ||
       // !sender.fullname ||
       // !sender.address1 ||
       // !sender.phone ||

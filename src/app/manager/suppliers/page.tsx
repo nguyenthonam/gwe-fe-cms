@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Box, Typography, Paper, Tabs, Tab, Container } from "@mui/material";
-import CompanySupplierManagerView from "@/components/Suppliers/CompanySupplierManagerView";
 import SupplierManagerView from "@/components/Suppliers/SupplierManagerView";
 import { lightBlue } from "@mui/material/colors";
 
@@ -39,19 +38,15 @@ export default function SuppliersPage() {
         }}
       >
         <Typography variant="h5" mb={2} fontWeight="bold" sx={{ color: lightBlue[500] }}>
-          QUẢN LÝ NHÀ CUNG CẤP
+          SUPPLIER MANAGER
         </Typography>
 
         <Tabs value={tabIndex} onChange={handleTabChange}>
-          <Tab label="Công ty nhà cung cấp" />
-          <Tab label="Nhà cung cấp" />
+          <Tab label="SUPPLIER" />
         </Tabs>
 
         <Box mt={2} className="w-full ">
-          <Paper>
-            {tabIndex === 0 && <CompanySupplierManagerView />}
-            {tabIndex === 1 && <SupplierManagerView />}
-          </Paper>
+          <Paper>{tabIndex === 0 && <SupplierManagerView />}</Paper>
         </Box>
       </Box>
     </Container>

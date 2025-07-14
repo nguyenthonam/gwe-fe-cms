@@ -1,8 +1,11 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack, TextField, Select, MenuItem } from "@mui/material";
-import { useEffect, useState } from "react";
+"use client";
+
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, MenuItem, Stack, Grid } from "@mui/material";
+import { useState } from "react";
+import { ISupplier } from "@/types/typeSupplier";
+import { EPaymentTerms } from "@/types/typeGlobals";
+import { createSupplierApi } from "@/utils/apis/apiSupplier";
 import { useNotification } from "@/contexts/NotificationProvider";
-import { getCompanySuppliersApi, createSupplierApi } from "@/utils/apis/apiSupplier";
-import { ICompany } from "@/types/typeCompany";
 
 interface Props {
   open: boolean;
@@ -10,70 +13,98 @@ interface Props {
   onCreated: () => void;
 }
 
-export default function CreateSupplierDialog({ open, onClose, onCreated }: Props) {
-  const [companyId, setCompanyId] = useState("");
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
-  const [companies, setCompanies] = useState<ICompany[]>([]);
+const paymentOptions = Object.entries(EPaymentTerms);
 
+export default function CreateSupplierDialog({ open, onClose, onCreated }: Props) {
+  const [form, setForm] = useState<ISupplier>({});
+  const [loading, setLoading] = useState(false);
   const { showNotification } = useNotification();
 
-  useEffect(() => {
-    if (open) {
-      // Lấy danh sách CompanySupplier từ API (chỉ các Company có type = Supplier)
-      fetchCompanies();
-      setCompanyId("");
-      setCode("");
-      setName("");
-    }
-  }, [open]);
+  const handleChange = (field: string, value: any) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
 
-  const fetchCompanies = async () => {
-    try {
-      const res = await getCompanySuppliersApi();
-      setCompanies(res?.data?.data?.data || []);
-    } catch (err) {
-      console.error(err);
-    }
+  type NestedGroup = "representative" | "contact" | "contract";
+  const handleNestedChange = (group: NestedGroup, field: string, value: any) => {
+    setForm((prev) => ({
+      ...prev,
+      [group]: {
+        ...(prev[group] || {}),
+        [field]: value,
+      },
+    }));
   };
 
   const handleSubmit = async () => {
-    if (!code || !name || !companyId) {
-      showNotification("Vui lòng điền đầy đủ thông tin", "warning");
-      return;
-    }
-
     try {
-      const payload = { companyId, code, name };
-      const res = await createSupplierApi(payload);
-      showNotification(res?.data?.message || "Tạo supplier thành công", "success");
+      setLoading(true);
+      await createSupplierApi(form);
+      showNotification("Supplier created successfully!", "success");
+      setForm({});
+      onClose();
       onCreated();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi tạo supplier", "error");
+      showNotification(err.message || "Failed to create supplier!", "error");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleClose = () => {
+    setForm({});
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Tạo mới Supplier</DialogTitle>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Create New Supplier</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
-          <Select value={companyId} onChange={(e) => setCompanyId(e.target.value)} displayEmpty fullWidth>
-            <MenuItem value="">Chọn Company Supplier</MenuItem>
-            {companies.map((company) => (
-              <MenuItem key={company._id} value={company._id}>
-                {company.name}
-              </MenuItem>
-            ))}
-          </Select>
-          <TextField label="Mã Supplier" fullWidth value={code} onChange={(e) => setCode(e.target.value)} />
-          <TextField label="Tên Supplier" fullWidth value={name} onChange={(e) => setName(e.target.value)} />
+          <Grid container spacing={2}>
+            <Grid size={12}>
+              <TextField label="Supplier Code" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
+            </Grid>
+            <Grid size={12}>
+              <TextField label="Supplier Name" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
+            </Grid>
+            <Grid size={12}>
+              <TextField label="Address" value={form.address || ""} onChange={(e) => handleChange("address", e.target.value)} fullWidth size="small" />
+            </Grid>
+            <Grid size={6}>
+              <TextField label="Representative Name" value={form.representative?.name || ""} onChange={(e) => handleNestedChange("representative", "name", e.target.value)} fullWidth size="small" />
+            </Grid>
+            <Grid size={6}>
+              <TextField label="Representative Phone" value={form.representative?.phone || ""} onChange={(e) => handleNestedChange("representative", "phone", e.target.value)} fullWidth size="small" />
+            </Grid>
+            <Grid size={6}>
+              <TextField label="Hotline" value={form.contact?.hotline || ""} onChange={(e) => handleNestedChange("contact", "hotline", e.target.value)} fullWidth size="small" />
+            </Grid>
+            <Grid size={6}>
+              <TextField label="Tax Code" value={form.taxCode || ""} onChange={(e) => handleChange("taxCode", e.target.value)} fullWidth size="small" />
+            </Grid>
+            <Grid size={6}>
+              <TextField label="Contact Email" value={form.contact?.email || ""} onChange={(e) => handleNestedChange("contact", "email", e.target.value)} fullWidth size="small" />
+            </Grid>
+            <Grid size={6}>
+              <TextField label="Website" value={form.contact?.website || ""} onChange={(e) => handleNestedChange("contact", "website", e.target.value)} fullWidth size="small" />
+            </Grid>
+            <Grid size={12}>
+              <TextField label="Payment Terms" select value={form.contract?.paymentTerms || ""} onChange={(e) => handleNestedChange("contract", "paymentTerms", e.target.value)} fullWidth size="small">
+                <MenuItem value="">Select payment terms</MenuItem>
+                {paymentOptions.map(([k, v]) => (
+                  <MenuItem key={k} value={v}>
+                    {k}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+          </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
-        <Button variant="contained" onClick={handleSubmit}>
-          Tạo mới
+        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={handleSubmit} variant="contained" disabled={loading}>
+          Create
         </Button>
       </DialogActions>
     </Dialog>
