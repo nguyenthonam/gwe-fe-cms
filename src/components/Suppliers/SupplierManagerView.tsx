@@ -34,7 +34,14 @@ export default function SupplierManagerView() {
   const [selectedSupplier, setSelectedSupplier] = useState<ISupplier | null>(null);
 
   const { showNotification } = useNotification();
-  const debouncedSearch = useMemo(() => debounce((v) => setKeyword(v), 500), []);
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((v) => {
+        setPage(0);
+        setKeyword(v);
+      }, 500),
+    []
+  );
 
   const fetchSuppliers = async () => {
     try {
@@ -56,46 +63,54 @@ export default function SupplierManagerView() {
 
   useEffect(() => {
     fetchSuppliers();
+    // eslint-disable-next-line
   }, [keyword, page, pageSize, statusFilter]);
 
   const handleLockToggle = async (item: ISupplier) => {
     try {
       if (!item._id) return;
-      const confirm = window.confirm(item.status === ERECORD_STATUS.Active ? "Khoá nhà cung ứng này?" : "Mở khoá nhà cung ứng này?");
+      const confirm = window.confirm(item.status === ERECORD_STATUS.Active ? "Lock this supplier?" : "Unlock this supplier?");
       if (!confirm) return;
 
       const res = item.status === ERECORD_STATUS.Active ? await lockSupplierApi(item._id) : await unlockSupplierApi(item._id);
 
-      showNotification(res?.data?.message || "Cập nhật trạng thái thành công", "success");
+      showNotification(res?.data?.message || "Status updated successfully!", "success");
       fetchSuppliers();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật trạng thái", "error");
+      showNotification(err.message || "Failed to update status!", "error");
     }
   };
 
   const handleDelete = async (item: ISupplier) => {
     if (!item._id) return;
-    if (!window.confirm("Bạn có chắc muốn xoá nhà cung ứng này?")) return;
+    if (!window.confirm("Are you sure you want to delete this supplier?")) return;
     try {
       await deleteSupplierApi(item._id);
-      showNotification("Đã xoá thành công", "success");
+      showNotification("Deleted successfully!", "success");
       fetchSuppliers();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi xoá", "error");
+      showNotification(err.message || "Failed to delete!", "error");
     }
   };
 
   const handleExportExcel = () => {
     const data = suppliers.map((s) => ({
-      "MÃ NHÀ CUNG ỨNG": s.code,
-      TÊN: s.name,
-      "CÔNG TY": typeof s.companyId === "object" ? s.companyId?.name || "" : String(s.companyId),
-      "TRẠNG THÁI": recordStatusLabel[s.status as keyof typeof recordStatusLabel] || s.status,
+      "Supplier Code": s.code || "",
+      "Supplier Name": s.name || "",
+      "Tax Code": s.taxCode || "",
+      "Representative Name": s.representative?.name || "",
+      "Representative Phone": s.representative?.phone || "",
+      Email: s.contact?.email || "",
+      Hotline: s.contact?.hotline || "",
+      Website: s.contact?.website || "",
+      Address: s.address || "",
+      "Payment Terms": s.contract?.paymentTerms || "",
+      Status: recordStatusLabel[s.status as keyof typeof recordStatusLabel] || s.status,
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
 
-    // Style cho từng cell
+    // Cell style
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -124,8 +139,8 @@ export default function SupplierManagerView() {
     }
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "SUPPLIER");
-    XLSX.writeFile(wb, "NHA_CUNG_UNG.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "SUPPLIERS");
+    XLSX.writeFile(wb, "SUPPLIERS.xlsx");
   };
 
   const handleCreated = () => {
@@ -142,7 +157,7 @@ export default function SupplierManagerView() {
   const columns: GridColDef[] = [
     {
       field: "code",
-      headerName: "MÃ",
+      headerName: "Supplier Code",
       flex: 1.2,
       renderCell: ({ row }: { row: ISupplier }) => (
         <Box display="flex" alignItems="center" height="100%">
@@ -159,17 +174,36 @@ export default function SupplierManagerView() {
         </Box>
       ),
     },
-    { field: "name", headerName: "TÊN NHÀ CUNG ỨNG", flex: 1.5 },
+    { field: "name", headerName: "Supplier Name", flex: 1.5 },
     {
-      field: "companyId",
-      headerName: "CÔNG TY",
+      field: "representative",
+      headerName: "Representative Name",
+      flex: 1.2,
+      renderCell: ({ row }) => (
+        <Typography height={"100%"} alignContent={"center"} justifyContent={"center"}>
+          {row.representative?.name}
+        </Typography>
+      ),
+    },
+    { field: "taxCode", headerName: "Tax Code", flex: 1 },
+    {
+      field: "contactEmail",
+      headerName: "Email",
       flex: 1.5,
-      renderCell: ({ row }) => (typeof row.companyId === "object" ? row.companyId?.name : row.companyId),
+      width: 200,
+      renderCell: ({ row }) => row.contact?.email,
+    },
+    {
+      field: "contactHotline",
+      headerName: "Hotline",
+      flex: 1,
+      renderCell: ({ row }) => row.contact?.hotline,
     },
     {
       field: "status",
-      headerName: "TRẠNG THÁI",
+      headerName: "Status",
       flex: 1,
+      width: 130,
       renderCell: ({ value }) => <EnumChip type="recordStatus" value={value} />,
     },
     {
@@ -193,21 +227,21 @@ export default function SupplierManagerView() {
   return (
     <Box className="space-y-4">
       <Box mb={2} display="flex" gap={2} alignItems="center" justifyContent="space-between">
-        <TextField placeholder="Tìm nhà cung ứng..." size="small" onChange={(e) => debouncedSearch(e.target.value)} className="max-w-[250px] w-full" />
+        <TextField placeholder="Search suppliers..." size="small" onChange={(e) => debouncedSearch(e.target.value)} className="max-w-[250px] w-full" />
         <Select size="small" displayEmpty value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 150 }}>
-          <MenuItem value="">Mặc định</MenuItem>
-          <MenuItem value="all">Tất cả</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Locked}>Đã khoá</MenuItem>
-          <MenuItem value={ERECORD_STATUS.NoActive}>Không hoạt động</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Deleted}>Đã xoá</MenuItem>
+          <MenuItem value="">Default</MenuItem>
+          <MenuItem value="all">All</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Active}>Active</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Locked}>Locked</MenuItem>
+          <MenuItem value={ERECORD_STATUS.NoActive}>Inactive</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Deleted}>Deleted</MenuItem>
         </Select>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
-            Xuất Excel
+            Export Excel
           </Button>
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
-            Tạo mới
+            Create New
           </Button>
         </Stack>
       </Box>
