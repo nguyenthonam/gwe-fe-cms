@@ -1,18 +1,18 @@
 "use client";
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid, Box, Chip } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Grid, Box, Chip, Divider } from "@mui/material";
 import { IExtraFee } from "@/types/typeExtraFee";
-import { EnumChip } from "@/components/Globals/EnumChip"; // tạo file này hoặc nhét vào utils
-import { EFEE_TYPE } from "@/types/typeGlobals";
-import { Percent as PercentIcon, Payments as PaymentsIcon } from "@mui/icons-material";
+import { EnumChip } from "@/components/Globals/EnumChip";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
-import { green, orange, red } from "@mui/material/colors";
+import { green, orange } from "@mui/material/colors";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   extraFee: IExtraFee | null;
 }
+
+const formatDate = (date?: string | Date | null) => (date ? new Date(date).toLocaleDateString("en-GB") : "-");
 
 export default function ExtraFeeDetailDialog({ open, onClose, extraFee }: Props) {
   if (!extraFee) return null;
@@ -24,25 +24,16 @@ export default function ExtraFeeDetailDialog({ open, onClose, extraFee }: Props)
       </DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={2}>
-          <Grid size={6}>
-            <InfoRow label="Mã phụ phí" value={extraFee.code} />
-          </Grid>
-          <Grid size={6}>
-            <InfoRow label="Tên phụ phí" value={extraFee.name} />
-          </Grid>
-          <Grid size={6}>
-            <InfoRow label="Hãng vận chuyển" value={typeof extraFee.carrierId === "object" ? extraFee.carrierId?.name : String(extraFee.carrierId)} />
-          </Grid>
-          <Grid size={6}>
-            <InfoRow label="Dịch vụ" value={typeof extraFee.serviceId === "object" ? extraFee.serviceId?.code : String(extraFee.serviceId)} />
-          </Grid>
-          <Grid size={6}>
-            <InfoRow label="Loại phí" value={extraFee.type === EFEE_TYPE.PERCENT ? <PercentIcon sx={{ color: red[500] }} /> : <PaymentsIcon sx={{ color: orange[500] }} />} />
-          </Grid>
-          <Grid size={6}>
-            <InfoRow
-              label="Tiền tệ"
-              value={
+          <InfoRow label="Mã phụ phí" value={extraFee.code} />
+          <InfoRow label="Tên phụ phí" value={extraFee.name} />
+          <InfoRow label="Hãng vận chuyển" value={typeof extraFee.carrierId === "object" ? extraFee.carrierId?.name : String(extraFee.carrierId)} />
+          <InfoRow label="Dịch vụ" value={typeof extraFee.serviceId === "object" ? extraFee.serviceId?.code : String(extraFee.serviceId)} />
+
+          <InfoRow
+            label="Giá trị"
+            value={
+              <Typography sx={{ fontWeight: "bold", color: orange[500] }}>
+                {formatCurrency(extraFee.value, extraFee.currency)}{" "}
                 <Chip
                   label={extraFee.currency}
                   size="small"
@@ -52,16 +43,23 @@ export default function ExtraFeeDetailDialog({ open, onClose, extraFee }: Props)
                     fontWeight: 500,
                   }}
                 />
-              }
-            />
-          </Grid>
-          <Grid size={12}>
-            <InfoRow label="Giá trị" value={<Typography sx={{ fontWeight: "bold", color: orange[500] }}>{formatCurrency(extraFee.value, extraFee.currency)}</Typography>} />
-          </Grid>
-          <Grid size={12}>
-            <InfoRow label="Trạng thái" value={<EnumChip type="recordStatus" value={extraFee.status} />} />
-          </Grid>
+              </Typography>
+            }
+          />
+          {/* Thêm ngày hiệu lực nếu có */}
+          <InfoRow label="Hiệu lực từ" value={formatDate((extraFee as any).startDate)} />
+          <InfoRow label="Hiệu lực đến" value={formatDate((extraFee as any).endDate)} />
+          <InfoRow label="Trạng thái" value={<EnumChip type="recordStatus" value={extraFee.status} />} />
         </Grid>
+        {(extraFee.createdAt || extraFee.updatedAt) && (
+          <>
+            <Divider sx={{ my: 1 }} />
+            <Grid container spacing={2}>
+              {extraFee.createdAt && <InfoRow label="Ngày tạo" value={formatDate(extraFee.createdAt)} />}
+              {extraFee.updatedAt && <InfoRow label="Cập nhật gần nhất" value={formatDate(extraFee.updatedAt)} />}
+            </Grid>
+          </>
+        )}
       </DialogContent>
       <DialogActions>
         <Box flex={1} />
@@ -71,11 +69,14 @@ export default function ExtraFeeDetailDialog({ open, onClose, extraFee }: Props)
   );
 }
 
+// InfoRow sử dụng Grid đúng chuẩn, tránh lồng <p> vào <p>
 const InfoRow = ({ label, value }: { label: string; value?: React.ReactNode }) => (
   <>
-    <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
-      {label}
-    </Typography>
-    <Typography sx={{ mb: 1 }}>{value ?? "-"}</Typography>
+    <Grid size={5}>
+      <Typography variant="body2" fontWeight={600}>
+        {label}
+      </Typography>
+    </Grid>
+    <Grid size={7}>{typeof value === "string" || typeof value === "number" || value == null ? <Typography sx={{ mb: 1 }}>{value ?? "-"}</Typography> : <Box sx={{ mb: 1 }}>{value}</Box>}</Grid>
   </>
 );

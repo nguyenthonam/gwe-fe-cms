@@ -28,7 +28,6 @@ export default function UpdateExtraFeeDialog({ open, onClose, onUpdated, extraFe
   const [form, setForm] = useState<Partial<IExtraFeeForm>>({});
   const [carriers, setCarriers] = useState<ICarrier[]>([]);
   const [services, setServices] = useState<IService[]>([]);
-
   const { showNotification } = useNotification();
 
   useEffect(() => {
@@ -55,15 +54,21 @@ export default function UpdateExtraFeeDialog({ open, onClose, onUpdated, extraFe
         } catch {
           showNotification("Không thể tải dữ liệu hãng bay hoặc dịch vụ", "error");
         }
+      } else if (!open) {
+        setForm({});
+        setCarriers([]);
+        setServices([]);
       }
     };
 
     init();
+    // eslint-disable-next-line
   }, [open, extraFee]);
 
   useEffect(() => {
     const carrierId = typeof form.carrierId === "object" ? form.carrierId?._id : form.carrierId;
     if (carrierId) fetchServices(carrierId);
+    // eslint-disable-next-line
   }, [form.carrierId]);
 
   const fetchServices = async (carrierId: string) => {
@@ -85,6 +90,12 @@ export default function UpdateExtraFeeDialog({ open, onClose, onUpdated, extraFe
 
   const handleSubmit = async () => {
     if (!extraFee?._id) return;
+
+    // Chặn không cho cập nhật mã thành "FSC"
+    if ((form.code ?? "").trim().toUpperCase() === "FSC") {
+      showNotification("Mã phụ phí không được là 'FSC'. Vui lòng chọn mã khác!", "warning");
+      return;
+    }
 
     const changedFields: Partial<IExtraFee> = {};
     const keys: (keyof IExtraFee)[] = ["code", "name", "carrierId", "serviceId", "type", "value", "currency"];
@@ -121,19 +132,22 @@ export default function UpdateExtraFeeDialog({ open, onClose, onUpdated, extraFe
     }
   };
 
+  // Nếu code gốc là FSC thì disable trường code
+  const isFSC = String(extraFee?.code).trim().toUpperCase() === "FSC";
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Cập nhật phụ phí</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
-            <Grid size={6}>
-              <TextField label="Mã phụ phí" fullWidth size="small" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} />
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField label="Mã phụ phí" fullWidth size="small" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} disabled={isFSC} />
             </Grid>
-            <Grid size={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <TextField label="Tên phụ phí" fullWidth size="small" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} />
             </Grid>
-            <Grid size={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Hãng vận chuyển</InputLabel>
                 <Select label="Hãng vận chuyển" value={typeof form.carrierId === "object" ? form.carrierId?._id : form.carrierId || ""} onChange={(e) => handleChange("carrierId", e.target.value)}>
@@ -145,7 +159,7 @@ export default function UpdateExtraFeeDialog({ open, onClose, onUpdated, extraFe
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Dịch vụ</InputLabel>
                 <Select label="Dịch vụ" value={typeof form.serviceId === "object" ? form.serviceId?._id : form.serviceId || ""} onChange={(e) => handleChange("serviceId", e.target.value)}>
@@ -157,7 +171,7 @@ export default function UpdateExtraFeeDialog({ open, onClose, onUpdated, extraFe
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Loại phí</InputLabel>
                 <Select label="Loại phí" value={form.type || EFEE_TYPE.FIXED} onChange={(e) => handleChange("type", e.target.value)}>
@@ -169,7 +183,7 @@ export default function UpdateExtraFeeDialog({ open, onClose, onUpdated, extraFe
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Tiền tệ</InputLabel>
                 <Select label="Tiền tệ" value={form.currency || ECURRENCY.VND} onChange={(e) => handleChange("currency", e.target.value)}>
