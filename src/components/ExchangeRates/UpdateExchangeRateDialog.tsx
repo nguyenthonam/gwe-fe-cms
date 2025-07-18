@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack, MenuItem, Select, Grid } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack, MenuItem, Select, Grid, TextField, FormHelperText } from "@mui/material";
 import { useEffect, useState } from "react";
 import { IExchangeRate } from "@/types/typeExchangeRate";
 import { ECURRENCY } from "@/types/typeGlobals";
@@ -15,46 +15,72 @@ interface Props {
   exchangeRate: IExchangeRate | null;
 }
 
+type ExchangeRateForm = Omit<IExchangeRate, "rate"> & { rate?: string };
+
 export default function UpdateExchangeRateDialog({ open, onClose, onUpdated, exchangeRate }: Props) {
-  const [form, setForm] = useState<Partial<IExchangeRate>>({});
+  const [form, setForm] = useState<Partial<ExchangeRateForm>>({});
   const [loading, setLoading] = useState(false);
   const { showNotification } = useNotification();
 
   useEffect(() => {
     if (open && exchangeRate?._id) {
-      setForm(exchangeRate);
+      setForm({
+        ...exchangeRate,
+        startDate: exchangeRate.startDate ? exchangeRate.startDate.slice(0, 10) : "",
+        endDate: exchangeRate.endDate ? exchangeRate.endDate.slice(0, 10) : "",
+        rate: exchangeRate.rate !== undefined ? String(exchangeRate.rate) : "",
+      });
+    } else if (!open) {
+      setForm({});
     }
   }, [open, exchangeRate]);
 
-  const handleChange = (field: keyof IExchangeRate, value: any) => {
-    setForm({ ...form, [field]: value });
+  const handleChange = (field: keyof ExchangeRateForm, value: any) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Validate date logic
+  const isDateInvalid = !!form.startDate && !!form.endDate && new Date(form.startDate) > new Date(form.endDate);
+
+  const canSubmit = form.currencyFrom && form.currencyTo && form.rate && form.startDate && form.endDate && form.currencyFrom !== form.currencyTo && !isDateInvalid;
+
   const handleSubmit = async () => {
-    if (!exchangeRate?._id) return;
+    if (!exchangeRate?._id || !canSubmit) {
+      showNotification("Please fill in all required fields correctly!", "warning");
+      return;
+    }
 
-    // Kiểm tra thay đổi
+    // Build changedFields only with actual changes, correct types for API
     const changedFields: Partial<IExchangeRate> = {};
-    const keys: (keyof IExchangeRate)[] = ["currencyFrom", "currencyTo", "rate"];
 
-    keys.forEach((key) => {
-      if (form[key] !== exchangeRate[key]) {
-        changedFields[key] = form[key] as any;
-      }
-    });
+    if (form.currencyFrom && form.currencyFrom !== exchangeRate.currencyFrom) {
+      changedFields.currencyFrom = form.currencyFrom;
+    }
+    if (form.currencyTo && form.currencyTo !== exchangeRate.currencyTo) {
+      changedFields.currencyTo = form.currencyTo;
+    }
+    if (typeof form.rate === "string" && form.rate !== "" && Number(form.rate) !== exchangeRate.rate) {
+      changedFields.rate = Number(form.rate);
+    }
+    if (typeof form.startDate === "string" && form.startDate !== "" && form.startDate !== exchangeRate.startDate?.slice(0, 10)) {
+      changedFields.startDate = form.startDate;
+    }
+    if (typeof form.endDate === "string" && form.endDate !== "" && form.endDate !== exchangeRate.endDate?.slice(0, 10)) {
+      changedFields.endDate = form.endDate;
+    }
 
     if (Object.keys(changedFields).length === 0) {
-      showNotification("Không có thay đổi để cập nhật", "info");
+      showNotification("No changes to update.", "info");
       return;
     }
 
     try {
       setLoading(true);
       await updateExchangeRateApi(exchangeRate._id, changedFields);
-      showNotification("Cập nhật thành công!", "success");
+      showNotification("Update successful!", "success");
       onUpdated();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật!", "error");
+      showNotification(err.message || "Failed to update exchange rate!", "error");
     } finally {
       setLoading(false);
     }
@@ -64,13 +90,13 @@ export default function UpdateExchangeRateDialog({ open, onClose, onUpdated, exc
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Cập nhật Tỉ Giá</DialogTitle>
+      <DialogTitle>Update Exchange Rate</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={6}>
               <Select value={form.currencyFrom || ""} onChange={(e) => handleChange("currencyFrom", e.target.value)} fullWidth size="small">
-                <MenuItem value="">Từ tiền tệ</MenuItem>
+                <MenuItem value="">From currency</MenuItem>
                 {currencyOptions.map((c) => (
                   <MenuItem key={c} value={c}>
                     {c}
@@ -80,7 +106,7 @@ export default function UpdateExchangeRateDialog({ open, onClose, onUpdated, exc
             </Grid>
             <Grid size={6}>
               <Select value={form.currencyTo || ""} onChange={(e) => handleChange("currencyTo", e.target.value)} fullWidth size="small">
-                <MenuItem value="">Sang tiền tệ</MenuItem>
+                <MenuItem value="">To currency</MenuItem>
                 {currencyOptions.map((c) => (
                   <MenuItem key={c} value={c}>
                     {c}
@@ -88,17 +114,45 @@ export default function UpdateExchangeRateDialog({ open, onClose, onUpdated, exc
                 ))}
               </Select>
             </Grid>
+            <Grid size={6}>
+              <TextField
+                type="date"
+                label="Start Date"
+                value={form.startDate || ""}
+                onChange={(e) => handleChange("startDate", e.target.value)}
+                fullWidth
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                error={isDateInvalid}
+              />
+            </Grid>
+            <Grid size={6}>
+              <TextField
+                type="date"
+                label="End Date"
+                value={form.endDate || ""}
+                onChange={(e) => handleChange("endDate", e.target.value)}
+                fullWidth
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                error={isDateInvalid}
+              />
+            </Grid>
+            {isDateInvalid && (
+              <Grid size={12}>
+                <FormHelperText error>{`"Start Date" must be less than or equal to "End Date"`}</FormHelperText>
+              </Grid>
+            )}
             <Grid size={12}>
-              {/* <TextField label="Tỉ giá" type="number" fullWidth size="small" value={form.rate ?? ""} onChange={(e) => handleChange("rate", Number(e.target.value))} /> */}
-              <NumericInput label="Tỉ giá" fullWidth size="small" value={String(form.rate ?? "")} onChange={(val) => handleChange("rate", Number(val))} />
+              <NumericInput label="Exchange Rate" fullWidth size="small" value={form.rate ?? ""} onChange={(val) => handleChange("rate", val)} />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          Cập nhật
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading || !canSubmit}>
+          Update
         </Button>
       </DialogActions>
     </Dialog>

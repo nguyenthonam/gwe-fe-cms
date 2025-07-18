@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack, MenuItem, Select, Grid } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack, MenuItem, Select, Grid, TextField, FormHelperText } from "@mui/material";
 import { useState } from "react";
 import { ECURRENCY } from "@/types/typeGlobals";
 import { useNotification } from "@/contexts/NotificationProvider";
@@ -16,24 +16,41 @@ interface Props {
 export default function CreateExchangeRateDialog({ open, onClose, onCreated }: Props) {
   const [currencyFrom, setCurrencyFrom] = useState<ECURRENCY | "">("");
   const [currencyTo, setCurrencyTo] = useState<ECURRENCY | "">("");
-  const [rate, setRate] = useState<number | "">("");
+  const [rate, setRate] = useState<string>("");
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   const { showNotification } = useNotification();
 
+  // Realtime validate date
+  const isDateInvalid = !!startDate && !!endDate && new Date(startDate) > new Date(endDate);
+
+  const canSubmit = currencyFrom && currencyTo && rate && startDate && endDate && currencyFrom !== currencyTo && !isDateInvalid;
+
   const handleSubmit = async () => {
-    if (!currencyFrom || !currencyTo || !rate || currencyFrom === currencyTo) {
-      showNotification("Vui lòng nhập đầy đủ thông tin hợp lệ!", "warning");
+    if (!canSubmit) {
+      showNotification("Please fill in all required fields correctly!", "warning");
       return;
     }
-
     try {
       setLoading(true);
-      await createExchangeRateApi({ currencyFrom, currencyTo, rate: Number(rate) });
-      showNotification("Tạo tỉ giá thành công!", "success");
+      await createExchangeRateApi({
+        currencyFrom,
+        currencyTo,
+        rate: Number(rate),
+        startDate,
+        endDate,
+      });
+      showNotification("Exchange rate created successfully!", "success");
       onCreated();
+      setCurrencyFrom("");
+      setCurrencyTo("");
+      setRate("");
+      setStartDate("");
+      setEndDate("");
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi tạo tỉ giá!", "error");
+      showNotification(err.message || "Failed to create exchange rate!", "error");
     } finally {
       setLoading(false);
     }
@@ -43,13 +60,13 @@ export default function CreateExchangeRateDialog({ open, onClose, onCreated }: P
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Tạo Tỉ Giá Mới</DialogTitle>
+      <DialogTitle>Create Exchange Rate</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={6}>
               <Select value={currencyFrom} onChange={(e) => setCurrencyFrom(e.target.value as ECURRENCY)} fullWidth displayEmpty size="small">
-                <MenuItem value="">Từ tiền tệ</MenuItem>
+                <MenuItem value="">From currency</MenuItem>
                 {currencyOptions.map((c) => (
                   <MenuItem key={c} value={c}>
                     {c}
@@ -59,7 +76,7 @@ export default function CreateExchangeRateDialog({ open, onClose, onCreated }: P
             </Grid>
             <Grid size={6}>
               <Select value={currencyTo} onChange={(e) => setCurrencyTo(e.target.value as ECURRENCY)} fullWidth displayEmpty size="small">
-                <MenuItem value="">Sang tiền tệ</MenuItem>
+                <MenuItem value="">To currency</MenuItem>
                 {currencyOptions.map((c) => (
                   <MenuItem key={c} value={c}>
                     {c}
@@ -67,17 +84,36 @@ export default function CreateExchangeRateDialog({ open, onClose, onCreated }: P
                 ))}
               </Select>
             </Grid>
+            <Grid size={6}>
+              <TextField
+                type="date"
+                label="Start Date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                fullWidth
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                error={isDateInvalid}
+              />
+            </Grid>
+            <Grid size={6}>
+              <TextField type="date" label="End Date" value={endDate} onChange={(e) => setEndDate(e.target.value)} fullWidth size="small" InputLabelProps={{ shrink: true }} error={isDateInvalid} />
+            </Grid>
+            {isDateInvalid && (
+              <Grid size={12}>
+                <FormHelperText error>{`"Start Date" must be less than or equal to "End Date"`}</FormHelperText>
+              </Grid>
+            )}
             <Grid size={12}>
-              {/* <TextField label="Tỉ giá" fullWidth size="small" type="number" value={rate} onChange={(e) => setRate(Number(e.target.value))} /> */}
-              <NumericInput label="Tỉ giá" fullWidth size="small" value={String(rate)} onChange={(val) => setRate(Number(val))} />
+              <NumericInput label="Exchange Rate" fullWidth size="small" value={rate} onChange={(val) => setRate(val)} />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
-        <Button onClick={handleSubmit} disabled={loading} variant="contained">
-          Tạo mới
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSubmit} disabled={loading || !canSubmit} variant="contained">
+          Create
         </Button>
       </DialogActions>
     </Dialog>
