@@ -3,14 +3,14 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Select, Stack, Grid, InputLabel, FormControl } from "@mui/material";
 import { useEffect, useState } from "react";
 import { ICarrier } from "@/types/typeCarrier";
-import { EFEE_TYPE, ECURRENCY } from "@/types/typeGlobals";
+import { ECURRENCY, EFEE_TYPE } from "@/types/typeGlobals";
 import { IService } from "@/types/typeService";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { createExtraFeeApi } from "@/utils/apis/apiExtraFee";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getServicesByCarrierApi } from "@/utils/apis/apiService";
-import { feeTypeLabel } from "@/utils/constants/enumLabel";
 import NumericInput from "../Globals/NumericInput";
+import dayjs from "dayjs";
 
 interface Props {
   open: boolean;
@@ -21,24 +21,27 @@ interface Props {
 export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props) {
   const [carriers, setCarriers] = useState<ICarrier[]>([]);
   const [services, setServices] = useState<IService[]>([]);
-
   const [carrierId, setCarrierId] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
-  const [type, setType] = useState<EFEE_TYPE>(EFEE_TYPE.FIXED);
   const [value, setValue] = useState<number | string>("");
   const [currency, setCurrency] = useState<ECURRENCY>(ECURRENCY.VND);
+  const [startDate, setStartDate] = useState<string>(dayjs().format("YYYY-MM-DD"));
+  const [endDate, setEndDate] = useState<string>(dayjs().add(30, "day").format("YYYY-MM-DD"));
   const [loading, setLoading] = useState(false);
 
   const { showNotification } = useNotification();
+
+  // Only type = FIXED (Tiền mặt)
+  const type = EFEE_TYPE.FIXED;
 
   const fetchCarriers = async () => {
     try {
       const res = await getCarriersApi();
       setCarriers(res?.data?.data?.data || []);
+      // eslint-disable-next-line
     } catch (err: any) {
-      console.log(err.message);
       showNotification("Không thể tải danh sách hãng vận chuyển", "error");
     }
   };
@@ -46,14 +49,12 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
   const fetchServices = async (carrierId: string) => {
     const selected = carriers.find((c) => c._id === carrierId);
     const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
-
     if (!companyId) return;
-
     try {
       const res = await getServicesByCarrierApi(companyId);
       setServices(res?.data?.data?.data || []);
+      // eslint-disable-next-line
     } catch (err: any) {
-      console.log(err.massage);
       showNotification("Không thể tải dịch vụ!", "error");
     }
   };
@@ -64,24 +65,36 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
       setServiceId("");
       setCode("");
       setName("");
-      setType(EFEE_TYPE.FIXED);
       setValue("");
       setCurrency(ECURRENCY.VND);
       setServices([]);
+      setStartDate(dayjs().format("YYYY-MM-DD"));
+      setEndDate(dayjs().add(30, "day").format("YYYY-MM-DD"));
       fetchCarriers();
     }
+    // eslint-disable-next-line
   }, [open]);
 
   useEffect(() => {
     if (carrierId) fetchServices(carrierId);
+    else setServices([]);
+    // eslint-disable-next-line
   }, [carrierId]);
 
   const handleSubmit = async () => {
-    if (!carrierId || !serviceId || !code || !name || value === "") {
+    if (!carrierId || !serviceId || !code || !name || value === "" || !startDate || !endDate) {
       showNotification("Vui lòng nhập đầy đủ thông tin!", "warning");
       return;
     }
-
+    // Validate không cho phép mã là FSC
+    if (code.trim().toUpperCase() === "FSC") {
+      showNotification("Mã phụ phí không được là 'FSC'. Vui lòng chọn mã khác!", "warning");
+      return;
+    }
+    if (new Date(startDate) > new Date(endDate)) {
+      showNotification("Ngày bắt đầu không được lớn hơn ngày kết thúc!", "warning");
+      return;
+    }
     try {
       setLoading(true);
       await createExtraFeeApi({
@@ -92,7 +105,8 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
         type,
         value: Number(value),
         currency,
-        applyToFeeIds: [],
+        startDate,
+        endDate,
       });
       showNotification("Tạo phụ phí thành công!", "success");
       onCreated();
@@ -139,17 +153,9 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
                 </Select>
               </FormControl>
             </Grid>
+            {/* Type chỉ là FIXED (Tiền mặt), không cho chọn */}
             <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Loại phí</InputLabel>
-                <Select label="Loại phí" value={type} onChange={(e) => setType(e.target.value as EFEE_TYPE)}>
-                  {Object.values(EFEE_TYPE).map((val) => (
-                    <MenuItem key={val} value={val}>
-                      {feeTypeLabel[val]}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <TextField label="Loại phí" value="Tiền mặt" fullWidth size="small" disabled />
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
@@ -165,6 +171,14 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
             </Grid>
             <Grid size={12}>
               <NumericInput label="Giá trị" fullWidth size="small" value={String(value)} onChange={(val) => setValue(val)} />
+            </Grid>
+            <Grid size={12} container spacing={1}>
+              <Grid size={6}>
+                <TextField label="Từ ngày" type="date" fullWidth size="small" value={startDate} onChange={(e) => setStartDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+              </Grid>
+              <Grid size={6}>
+                <TextField label="Đến ngày" type="date" fullWidth size="small" value={endDate} onChange={(e) => setEndDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+              </Grid>
             </Grid>
           </Grid>
         </Stack>

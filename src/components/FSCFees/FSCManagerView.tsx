@@ -8,19 +8,19 @@ import debounce from "lodash/debounce";
 import * as XLSX from "sheetjs-style";
 import { IExtraFee } from "@/types/typeExtraFee";
 import { ICarrier } from "@/types/typeCarrier";
-import { ERECORD_STATUS } from "@/types/typeGlobals";
+import { ERECORD_STATUS, ECURRENCY } from "@/types/typeGlobals";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { searchExtraFeesApi, deleteExtraFeeApi, lockExtraFeeApi, unlockExtraFeeApi } from "@/utils/apis/apiExtraFee";
 import { EnumChip } from "../Globals/EnumChip";
 import { ActionMenu } from "../Globals/ActionMenu";
-import CreateExtraFeeDialog from "./CreateExtraFeeDialog";
-import UpdateExtraFeeDialog from "./UpdateExtraFeeDialog";
-import ExtraFeeDetailDialog from "./ExtraFeeDetailDialog";
+import CreateFSCDialog from "./CreateFSCDialog";
+import UpdateFSCDialog from "./UpdateFSCDialog";
+import FSCDetailDialog from "./FSCDetailDialog";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { orange } from "@mui/material/colors";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
 
-export default function ExtraFeeManagerView() {
+export default function FSCManagerView() {
   const [fees, setFees] = useState<IExtraFee[]>([]);
   const [carriers, setCarriers] = useState<ICarrier[]>([]);
   const [carrierIdFilter, setCarrierIdFilter] = useState<string>("");
@@ -31,7 +31,7 @@ export default function ExtraFeeManagerView() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // NEW: Date filter
+  // Date filter
   const today = new Date();
   const [filterStartDate, setFilterStartDate] = useState<string>(new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10));
   const [filterEndDate, setFilterEndDate] = useState<string>(new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10));
@@ -67,12 +67,13 @@ export default function ExtraFeeManagerView() {
         status: statusFilter,
         startDate: filterStartDate,
         endDate: filterEndDate,
+        code: "FSC", // Lọc chỉ code = FSC
       });
       setFees(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
       // eslint-disable-next-line
     } catch (err: any) {
-      showNotification("Cannot load extra fees list", "error");
+      showNotification("Cannot load FSC fees list", "error");
     } finally {
       setLoading(false);
     }
@@ -89,10 +90,12 @@ export default function ExtraFeeManagerView() {
     // eslint-disable-next-line
   }, [keyword, page, pageSize, carrierIdFilter, statusFilter, filterStartDate, filterEndDate]);
 
+  // Handler functions như ExtraFee
+
   const handleLockToggle = async (fee: IExtraFee) => {
     try {
       if (!fee?._id) return;
-      const confirm = window.confirm(fee.status === ERECORD_STATUS.Active ? "Lock this extra fee?" : "Unlock this extra fee?");
+      const confirm = window.confirm(fee.status === ERECORD_STATUS.Active ? "Lock this FSC fee?" : "Unlock this FSC fee?");
       if (!confirm) return;
       const res = fee.status === ERECORD_STATUS.Active ? await lockExtraFeeApi(fee._id) : await unlockExtraFeeApi(fee._id);
       showNotification(res?.data?.message || "Status updated", "success");
@@ -104,7 +107,7 @@ export default function ExtraFeeManagerView() {
 
   const handleDelete = async (item: IExtraFee) => {
     if (!item._id) return;
-    if (!window.confirm("Are you sure you want to delete this extra fee?")) return;
+    if (!window.confirm("Are you sure you want to delete this FSC fee?")) return;
     try {
       await deleteExtraFeeApi(item._id);
       showNotification("Deleted successfully", "success");
@@ -116,11 +119,10 @@ export default function ExtraFeeManagerView() {
 
   const handleExportExcel = () => {
     const data = fees.map((f) => ({
-      CODE: f.code,
-      NAME: f.name,
       CARRIER: typeof f.carrierId === "object" ? f.carrierId?.name : f.carrierId,
       SERVICE: typeof f.serviceId === "object" ? f.serviceId?.code : f.serviceId,
-      VALUE: formatCurrency(f.value, f.currency) + " " + f.currency,
+      NAME: f.name,
+      VALUE: formatCurrency(f.value, ECURRENCY.USD) + "%",
       "START DATE": f.startDate ? new Date(f.startDate).toLocaleDateString() : "",
       "END DATE": f.endDate ? new Date(f.endDate).toLocaleDateString() : "",
       // STATUS: f.status,
@@ -128,8 +130,7 @@ export default function ExtraFeeManagerView() {
 
     const ws = XLSX.utils.json_to_sheet(data);
     ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
-
-    // Style cells - align center all
+    // Align center all
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -150,8 +151,8 @@ export default function ExtraFeeManagerView() {
     }
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "EXTRA_FEES");
-    XLSX.writeFile(wb, "EXTRA_FEES.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "FSC_FEES");
+    XLSX.writeFile(wb, "FSC_FEES.xlsx");
   };
 
   const handleCreated = () => {
@@ -167,12 +168,12 @@ export default function ExtraFeeManagerView() {
   // Columns
   const columns: GridColDef[] = [
     {
-      field: "code",
-      headerName: "CODE",
+      field: "_id",
+      headerName: "#ID",
       align: "center",
       headerAlign: "center",
       flex: 1,
-      minWidth: 100,
+      minWidth: 120,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%">
           <Typography
@@ -183,12 +184,11 @@ export default function ExtraFeeManagerView() {
               setOpenDetailDialog(true);
             }}
           >
-            {row.code}
+            #{String(row._id).slice(0, 6)}
           </Typography>
         </Box>
       ),
     },
-    { field: "name", headerName: "NAME", minWidth: 160, headerAlign: "center", align: "center", flex: 1.5 },
     {
       field: "carrierId",
       headerName: "CARRIER",
@@ -207,6 +207,7 @@ export default function ExtraFeeManagerView() {
       minWidth: 130,
       renderCell: ({ row }) => (typeof row.serviceId === "object" ? row.serviceId?.code : row.serviceId),
     },
+    { field: "name", headerName: "NAME", minWidth: 160, headerAlign: "center", align: "center", flex: 1.5 },
     {
       field: "value",
       headerName: "VALUE",
@@ -214,23 +215,22 @@ export default function ExtraFeeManagerView() {
       headerAlign: "center",
       flex: 1,
       minWidth: 150,
-      renderCell: ({ row, value }) => (
-        <>
-          <Chip
-            label={formatCurrency(value, row.currency) + " " + row.currency}
-            size="small"
-            sx={{
-              width: "100%",
-              fontSize: "14px",
-              padding: "4px 8px",
-              backgroundColor: orange[100],
-              color: orange[700],
-              "& .MuiChip-label": { fontWeight: "bold" },
-            }}
-          />
-        </>
+      renderCell: ({ value }) => (
+        <Chip
+          label={formatCurrency(value, ECURRENCY.USD) + "%"}
+          size="small"
+          sx={{
+            width: "100%",
+            fontSize: "14px",
+            padding: "4px 8px",
+            backgroundColor: orange[100],
+            color: orange[700],
+            "& .MuiChip-label": { fontWeight: "bold" },
+          }}
+        />
       ),
     },
+
     {
       field: "startDate",
       headerName: "START DATE",
@@ -294,7 +294,7 @@ export default function ExtraFeeManagerView() {
       >
         <Stack direction="row" justifyContent="space-between" spacing={1} flexGrow={1}>
           <TextField
-            placeholder="Search extra fee..."
+            placeholder="Search FSC fee..."
             size="small"
             onChange={(e) => debouncedSearch(e.target.value)}
             className="max-w-[280px] w-full"
@@ -372,9 +372,9 @@ export default function ExtraFeeManagerView() {
         />
       )}
 
-      <CreateExtraFeeDialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} onCreated={handleCreated} />
-      <UpdateExtraFeeDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={handleUpdated} extraFee={selected} />
-      <ExtraFeeDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} extraFee={selected} />
+      <CreateFSCDialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} onCreated={handleCreated} />
+      <UpdateFSCDialog open={openUpdateDialog} onClose={() => setOpenUpdateDialog(false)} onUpdated={handleUpdated} extraFee={selected} />
+      <FSCDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} extraFee={selected} />
     </Box>
   );
 }
