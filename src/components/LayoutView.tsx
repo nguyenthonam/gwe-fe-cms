@@ -212,11 +212,6 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
       }
     };
 
-    // Helper: mở drawer nếu đang thu nhỏ và click vào icon
-    const handleOpenDrawerFromIcon = () => {
-      if (!showDrawer) setShowDrawer(true);
-    };
-
     return (
       <>
         <CssBaseline />
@@ -289,11 +284,9 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                               key={item.title}
                               component={Link}
                               href={item.href}
-                              // Khi đang thu nhỏ, chỉ click vào icon mới mở rộng
                               onClick={(e) => {
-                                if (!showDrawer) {
-                                  e.preventDefault();
-                                }
+                                // Ở chế độ thu nhỏ: chỉ click icon mới mở rộng, click chữ sẽ không đi đâu
+                                if (!showDrawer) e.preventDefault();
                               }}
                             >
                               <ListItemIcon
@@ -301,7 +294,12 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                                 onClick={(e) => {
                                   if (!showDrawer) {
                                     e.stopPropagation();
-                                    handleOpenDrawerFromIcon();
+                                    // Thu nhỏ → mở rộng + đi tới trang luôn (user sẽ click lại lần nữa)
+                                    setShowDrawer(true);
+                                    // Đợi transition xong mới đi tới trang, UX tốt hơn
+                                    setTimeout(() => {
+                                      window.location.href = item.href;
+                                    }, 220);
                                   }
                                 }}
                               >
@@ -319,23 +317,23 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                         {group.section && (
                           <>
                             <ListItemButton
-                              // Click vùng icon mới mở rộng ở trạng thái thu nhỏ
+                              // Chỉ phần chữ (not icon) mới expand/collapse group
                               onClick={() => {
-                                if (!showDrawer) {
-                                  // Nếu click icon
-                                  handleOpenDrawerFromIcon();
-                                } else {
+                                if (showDrawer) {
                                   setOpenGroup(openGroup === group.section ? null : group.section);
                                 }
                               }}
+                              sx={{ cursor: "pointer" }}
                             >
                               <ListItemIcon
                                 sx={{ color: "white", minWidth: 40, cursor: "pointer" }}
                                 onClick={(e) => {
+                                  e.stopPropagation();
                                   if (!showDrawer) {
-                                    e.stopPropagation();
-                                    handleOpenDrawerFromIcon();
+                                    setShowDrawer(true);
+                                    setOpenGroup(group.section);
                                   }
+                                  // Đang mở rộng: click icon KHÔNG collapse/open
                                 }}
                               >
                                 {group.icon}
@@ -364,7 +362,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                       </React.Fragment>
                     ))}
                   </List>
-                  {/* Khoảng trống cuối để thấy được item cuối khi kéo xuống */}
+                  {/* Khoảng trống cuối để thấy được item cuối */}
                   <Box sx={{ height: 68 }} />
                 </Box>
               </Drawer>
