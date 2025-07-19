@@ -1,6 +1,5 @@
 "use client";
-
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, MenuItem, Select, Stack, Grid, InputLabel, FormControl } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, MenuItem, Select, Stack, Grid, InputLabel, FormControl, TextField } from "@mui/material";
 import { useState, useEffect } from "react";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { updateVATRateApi } from "@/utils/apis/apiVATRate";
@@ -22,61 +21,107 @@ export default function UpdateVATRateDialog({ open, onClose, onUpdated, vatRate 
   const [carriers, setCarriers] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
+
   const [carrierId, setCarrierId] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [supplierId, setSupplierId] = useState("");
-  const [value, setValue] = useState("10");
+  const [value, setValue] = useState<number | string>("10");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [status, setStatus] = useState(ERECORD_STATUS.Active);
   const [loading, setLoading] = useState(false);
 
-  const { showNotification } = useNotification();
+  // Thêm state validate ngày
+  const [dateError, setDateError] = useState<string>("");
 
-  // Fetch and preload dropdowns before fill
-  const fetchCarriers = async () => {
-    const res = await getCarriersApi();
-    setCarriers(res?.data?.data?.data || []);
-  };
-  const fetchSuppliers = async () => {
-    const res = await getSuppliersApi();
-    setSuppliers(res?.data?.data?.data || []);
-  };
-  const fetchServices = async (carrierId: string) => {
-    const selected = carriers.find((c) => c._id === carrierId);
-    const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
-    if (!companyId) return;
-    const res = await getServicesByCarrierApi(companyId);
-    setServices(res?.data?.data?.data || []);
-  };
+  const { showNotification } = useNotification();
 
   useEffect(() => {
     if (open && vatRate) {
-      const init = async () => {
-        await fetchCarriers();
-        await fetchSuppliers();
+      const fetchAll = async () => {
+        try {
+          const resC = await getCarriersApi();
+          const carriersList = resC?.data?.data?.data || [];
+          setCarriers(carriersList);
 
-        const carrierIdVal = typeof vatRate.carrierId === "object" ? vatRate.carrierId?._id || "" : vatRate.carrierId || "";
-        await fetchServices(carrierIdVal);
+          const resS = await getSuppliersApi();
+          setSuppliers(resS?.data?.data?.data || []);
 
-        setCarrierId(carrierIdVal);
-        setServiceId(typeof vatRate.serviceId === "object" ? vatRate.serviceId?._id || "" : vatRate.serviceId || "");
-        setSupplierId(typeof vatRate.supplierId === "object" ? vatRate.supplierId?._id || "" : vatRate.supplierId || "");
-        setValue(vatRate.value?.toString() || "10");
-        setStatus(vatRate.status || ERECORD_STATUS.Active);
+          // Set values
+          const cId = typeof vatRate.carrierId === "object" ? vatRate.carrierId?._id || "" : vatRate.carrierId || "";
+          const sId = typeof vatRate.serviceId === "object" ? vatRate.serviceId?._id || "" : vatRate.serviceId || "";
+          const supplierIdVal = typeof vatRate.supplierId === "object" ? vatRate.supplierId?._id || "" : vatRate.supplierId || "";
+
+          setCarrierId(cId);
+          setServiceId(sId);
+          setSupplierId(supplierIdVal);
+          setValue(vatRate.value?.toString() || "10");
+          setStartDate(vatRate.startDate ? vatRate.startDate.slice(0, 10) : "");
+          setEndDate(vatRate.endDate ? vatRate.endDate.slice(0, 10) : "");
+          setStatus(vatRate.status || ERECORD_STATUS.Active);
+
+          // Load services if carrierId
+          if (cId) {
+            const selected = carriersList.find((c: any) => c._id === cId);
+            const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
+            if (companyId) {
+              const resSrv = await getServicesByCarrierApi(companyId);
+              setServices(resSrv?.data?.data?.data || []);
+            }
+          } else {
+            setServices([]);
+          }
+          // eslint-disable-next-line
+        } catch (err: any) {
+          showNotification("Cannot load dropdown data!", "error");
+        }
       };
-      init();
+      fetchAll();
+      setDateError("");
     }
-  }, [open, vatRate]);
+  }, [open, vatRate, showNotification]);
 
   useEffect(() => {
-    if (carrierId) fetchServices(carrierId);
-    else setServices([]);
+    if (carrierId) {
+      const selected = carriers.find((c: any) => c._id === carrierId);
+      const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
+      if (companyId) {
+        getServicesByCarrierApi(companyId).then((res) => setServices(res?.data?.data?.data || []));
+      }
+    } else {
+      setServices([]);
+    }
+    setServiceId("");
     // eslint-disable-next-line
   }, [carrierId]);
 
+  // Validate khi đổi ngày
+  useEffect(() => {
+    if (startDate && endDate) {
+      if (new Date(startDate) > new Date(endDate)) {
+        setDateError("Start date must be before or equal to end date!");
+      } else {
+        setDateError("");
+      }
+    }
+  }, [startDate, endDate]);
+
   const handleSubmit = async () => {
     if (!vatRate?._id) return;
-    if (!carrierId || !serviceId || !supplierId || !value) {
-      showNotification("Vui lòng nhập đầy đủ thông tin!", "warning");
+    if (!carrierId || !serviceId || !supplierId || value === "" || !startDate || !endDate) {
+      showNotification("Please enter all required fields!", "warning");
+      return;
+    }
+    if (Number(value) < 0) {
+      showNotification("VAT (%) must be greater than or equal to 0!", "warning");
+      return;
+    }
+    if (new Date(startDate) > new Date(endDate)) {
+      showNotification("Start date must be before or equal to end date!", "warning");
+      return;
+    }
+    if (dateError) {
+      showNotification(dateError, "warning");
       return;
     }
     try {
@@ -86,12 +131,15 @@ export default function UpdateVATRateDialog({ open, onClose, onUpdated, vatRate 
         serviceId,
         supplierId,
         value: Number(value),
+        startDate,
+        endDate,
         status,
       });
-      showNotification("Cập nhật Thuế VAT thành công", "success");
+      showNotification("VAT Rate updated successfully!", "success");
       onUpdated();
+      onClose();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật VAT Rate", "error");
+      showNotification(err.message || "Failed to update VAT Rate", "error");
     } finally {
       setLoading(false);
     }
@@ -99,14 +147,14 @@ export default function UpdateVATRateDialog({ open, onClose, onUpdated, vatRate 
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Cập nhật Thuế VAT</DialogTitle>
+      <DialogTitle>Update VAT Rate</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Hãng</InputLabel>
-                <Select label="Hãng" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
+                <InputLabel>Carrier</InputLabel>
+                <Select label="Carrier" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
                   {carriers.map((c) => (
                     <MenuItem key={c._id} value={c._id}>
                       {c.name}
@@ -117,8 +165,8 @@ export default function UpdateVATRateDialog({ open, onClose, onUpdated, vatRate 
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Dịch vụ</InputLabel>
-                <Select label="Dịch vụ" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+                <InputLabel>Service</InputLabel>
+                <Select label="Service" value={serviceId} onChange={(e) => setServiceId(e.target.value)} disabled={!carrierId}>
                   {services.map((s) => (
                     <MenuItem key={s._id} value={s._id}>
                       {s.code}
@@ -140,15 +188,40 @@ export default function UpdateVATRateDialog({ open, onClose, onUpdated, vatRate 
               </FormControl>
             </Grid>
             <Grid size={6}>
-              <NumericInput label="VAT (%)" fullWidth size="small" value={value} onChange={setValue} />
+              <NumericInput label="VAT (%)" fullWidth size="small" value={String(value)} onChange={setValue} />
+            </Grid>
+            <Grid size={6}>
+              <TextField
+                label="Start date"
+                type="date"
+                fullWidth
+                size="small"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                error={!!dateError}
+              />
+            </Grid>
+            <Grid size={6}>
+              <TextField
+                label="End date"
+                type="date"
+                fullWidth
+                size="small"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                InputLabelProps={{ shrink: true }}
+                error={!!dateError}
+                helperText={dateError}
+              />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-          Cập nhật
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading || !!dateError}>
+          Update
         </Button>
       </DialogActions>
     </Dialog>

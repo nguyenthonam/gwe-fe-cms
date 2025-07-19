@@ -31,33 +31,13 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
   const [endDate, setEndDate] = useState<string>(dayjs().add(30, "day").format("YYYY-MM-DD"));
   const [loading, setLoading] = useState(false);
 
+  // Date error state
+  const [dateError, setDateError] = useState<string>("");
+
   const { showNotification } = useNotification();
 
-  // Only type = FIXED (Tiền mặt)
+  // Only type = FIXED (Cash)
   const type = EFEE_TYPE.FIXED;
-
-  const fetchCarriers = async () => {
-    try {
-      const res = await getCarriersApi();
-      setCarriers(res?.data?.data?.data || []);
-      // eslint-disable-next-line
-    } catch (err: any) {
-      showNotification("Không thể tải danh sách hãng vận chuyển", "error");
-    }
-  };
-
-  const fetchServices = async (carrierId: string) => {
-    const selected = carriers.find((c) => c._id === carrierId);
-    const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
-    if (!companyId) return;
-    try {
-      const res = await getServicesByCarrierApi(companyId);
-      setServices(res?.data?.data?.data || []);
-      // eslint-disable-next-line
-    } catch (err: any) {
-      showNotification("Không thể tải dịch vụ!", "error");
-    }
-  };
 
   useEffect(() => {
     if (open) {
@@ -70,29 +50,64 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
       setServices([]);
       setStartDate(dayjs().format("YYYY-MM-DD"));
       setEndDate(dayjs().add(30, "day").format("YYYY-MM-DD"));
+      setDateError("");
       fetchCarriers();
     }
     // eslint-disable-next-line
   }, [open]);
 
+  const fetchCarriers = async () => {
+    try {
+      const res = await getCarriersApi();
+      setCarriers(res?.data?.data?.data || []);
+      // eslint-disable-next-line
+    } catch (err: any) {
+      showNotification("Cannot load carriers list", "error");
+    }
+  };
+
+  const fetchServices = async (carrierId: string) => {
+    const selected = carriers.find((c) => c._id === carrierId);
+    const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
+    if (!companyId) return;
+    try {
+      const res = await getServicesByCarrierApi(companyId);
+      setServices(res?.data?.data?.data || []);
+      // eslint-disable-next-line
+    } catch (err: any) {
+      showNotification("Cannot load services!", "error");
+    }
+  };
+
   useEffect(() => {
     if (carrierId) fetchServices(carrierId);
     else setServices([]);
+    setServiceId("");
     // eslint-disable-next-line
   }, [carrierId]);
 
+  // Validate date on change
+  useEffect(() => {
+    if (startDate && endDate) {
+      if (new Date(startDate) > new Date(endDate)) {
+        setDateError("Start date must be before or equal to end date!");
+      } else {
+        setDateError("");
+      }
+    }
+  }, [startDate, endDate]);
+
   const handleSubmit = async () => {
     if (!carrierId || !serviceId || !code || !name || value === "" || !startDate || !endDate) {
-      showNotification("Vui lòng nhập đầy đủ thông tin!", "warning");
+      showNotification("Please enter all required information!", "warning");
       return;
     }
-    // Validate không cho phép mã là FSC
     if (code.trim().toUpperCase() === "FSC") {
-      showNotification("Mã phụ phí không được là 'FSC'. Vui lòng chọn mã khác!", "warning");
+      showNotification("Fee code cannot be 'FSC'. Please use another code!", "warning");
       return;
     }
-    if (new Date(startDate) > new Date(endDate)) {
-      showNotification("Ngày bắt đầu không được lớn hơn ngày kết thúc!", "warning");
+    if (dateError) {
+      showNotification(dateError, "warning");
       return;
     }
     try {
@@ -108,10 +123,11 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
         startDate,
         endDate,
       });
-      showNotification("Tạo phụ phí thành công!", "success");
+      showNotification("Extra fee created successfully!", "success");
       onCreated();
+      onClose();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi tạo phụ phí", "error");
+      showNotification(err.message || "Failed to create extra fee", "error");
     } finally {
       setLoading(false);
     }
@@ -119,20 +135,20 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Tạo phụ phí mới</DialogTitle>
+      <DialogTitle>Create New Extra Fee</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={6}>
-              <TextField label="Mã phụ phí" fullWidth size="small" value={code} onChange={(e) => setCode(e.target.value)} />
+              <TextField label="Fee Code" fullWidth size="small" value={code} onChange={(e) => setCode(e.target.value)} />
             </Grid>
             <Grid size={6}>
-              <TextField label="Tên phụ phí" fullWidth size="small" value={name} onChange={(e) => setName(e.target.value)} />
+              <TextField label="Fee Name" fullWidth size="small" value={name} onChange={(e) => setName(e.target.value)} />
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Hãng vận chuyển</InputLabel>
-                <Select label="Hãng vận chuyển" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
+                <InputLabel>Carrier</InputLabel>
+                <Select label="Carrier" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
                   {carriers?.map((c) => (
                     <MenuItem key={c._id} value={c._id}>
                       {c.name}
@@ -143,8 +159,8 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Dịch vụ</InputLabel>
-                <Select label="Dịch vụ" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+                <InputLabel>Service</InputLabel>
+                <Select label="Service" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
                   {services.map((s) => (
                     <MenuItem key={s._id} value={s._id}>
                       {s.code}
@@ -153,14 +169,13 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
                 </Select>
               </FormControl>
             </Grid>
-            {/* Type chỉ là FIXED (Tiền mặt), không cho chọn */}
             <Grid size={6}>
-              <TextField label="Loại phí" value="Tiền mặt" fullWidth size="small" disabled />
+              <NumericInput label="Value" fullWidth size="small" value={String(value)} onChange={setValue} />
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Tiền tệ</InputLabel>
-                <Select label="Tiền tệ" value={currency} onChange={(e) => setCurrency(e.target.value as ECURRENCY)}>
+                <InputLabel>Currency</InputLabel>
+                <Select label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value as ECURRENCY)}>
                   {Object.values(ECURRENCY).map((cur) => (
                     <MenuItem key={cur} value={cur}>
                       {cur}
@@ -169,24 +184,40 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={12}>
-              <NumericInput label="Giá trị" fullWidth size="small" value={String(value)} onChange={(val) => setValue(val)} />
-            </Grid>
             <Grid size={12} container spacing={1}>
               <Grid size={6}>
-                <TextField label="Từ ngày" type="date" fullWidth size="small" value={startDate} onChange={(e) => setStartDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+                <TextField
+                  label="Start date"
+                  type="date"
+                  fullWidth
+                  size="small"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  error={!!dateError}
+                />
               </Grid>
               <Grid size={6}>
-                <TextField label="Đến ngày" type="date" fullWidth size="small" value={endDate} onChange={(e) => setEndDate(e.target.value)} InputLabelProps={{ shrink: true }} />
+                <TextField
+                  label="End date"
+                  type="date"
+                  fullWidth
+                  size="small"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  error={!!dateError}
+                  helperText={dateError}
+                />
               </Grid>
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
-        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          Tạo mới
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading || !!dateError}>
+          Create
         </Button>
       </DialogActions>
     </Dialog>

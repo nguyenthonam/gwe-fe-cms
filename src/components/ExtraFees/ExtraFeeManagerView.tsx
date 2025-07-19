@@ -19,6 +19,7 @@ import ExtraFeeDetailDialog from "./ExtraFeeDetailDialog";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { orange } from "@mui/material/colors";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
+import dayjs from "dayjs";
 
 export default function ExtraFeeManagerView() {
   const [fees, setFees] = useState<IExtraFee[]>([]);
@@ -238,7 +239,7 @@ export default function ExtraFeeManagerView() {
       headerAlign: "center",
       flex: 1,
       minWidth: 130,
-      renderCell: ({ value }) => (value ? new Date(value).toLocaleDateString() : ""),
+      renderCell: ({ value }) => (value ? dayjs(value).format("DD/MM/YYYY") : "-"),
     },
     {
       field: "endDate",
@@ -247,7 +248,7 @@ export default function ExtraFeeManagerView() {
       headerAlign: "center",
       flex: 1,
       minWidth: 130,
-      renderCell: ({ value }) => (value ? new Date(value).toLocaleDateString() : ""),
+      renderCell: ({ value }) => (value ? dayjs(value).format("DD/MM/YYYY") : "-"),
     },
     {
       field: "status",

@@ -19,6 +19,7 @@ import { ActionMenu } from "../Globals/ActionMenu";
 import { EnumChip } from "../Globals/EnumChip";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
 import { getMonthRange } from "@/utils/hooks/hookDate";
+import dayjs from "dayjs";
 
 export default function ExchangeRateManagerView() {
   const [rates, setRates] = useState<IExchangeRate[]>([]);
@@ -196,7 +197,7 @@ export default function ExchangeRateManagerView() {
       align: "center",
       headerAlign: "center",
       flex: 1,
-      renderCell: ({ value }) => (value ? new Date(value).toLocaleDateString() : ""),
+      renderCell: ({ value }) => (value ? dayjs(value).format("DD/MM/YYYY") : "-"),
     },
     {
       field: "endDate",
@@ -204,7 +205,7 @@ export default function ExchangeRateManagerView() {
       align: "center",
       headerAlign: "center",
       flex: 1,
-      renderCell: ({ value }) => (value ? new Date(value).toLocaleDateString() : ""),
+      renderCell: ({ value }) => (value ? dayjs(value).format("DD/MM/YYYY") : "-"),
     },
     {
       field: "rate",
