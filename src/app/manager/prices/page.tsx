@@ -49,7 +49,7 @@ export default function PricesPage() {
           QUẢN LÝ GIÁ
         </Typography>
 
-        <Tabs value={tabIndex} onChange={handleTabChange}>
+        <Tabs value={tabIndex} onChange={handleTabChange} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile>
           <Tab label="Giá mua" />
           <Tab label="Giá bán" />
           <Tab label="Khu vực" />

@@ -28,6 +28,7 @@ export default function UpdateFSCDialog({ open, onClose, onUpdated, extraFee }: 
   const [currency, setCurrency] = useState<ECURRENCY>(ECURRENCY.VND);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [dateError, setDateError] = useState<string>("");
 
   const { showNotification } = useNotification();
 
@@ -43,10 +44,24 @@ export default function UpdateFSCDialog({ open, onClose, onUpdated, extraFee }: 
       setCurrency(extraFee.currency || ECURRENCY.VND);
       setStartDate(extraFee.startDate ? extraFee.startDate.slice(0, 10) : "");
       setEndDate(extraFee.endDate ? extraFee.endDate.slice(0, 10) : "");
+      setDateError("");
       fetchCarriers();
     }
     // eslint-disable-next-line
   }, [open, extraFee]);
+
+  // Validate startDate/endDate realtime
+  useEffect(() => {
+    if (startDate && endDate) {
+      if (new Date(startDate) > new Date(endDate)) {
+        setDateError("Start date must be before or equal to end date!");
+      } else {
+        setDateError("");
+      }
+    } else {
+      setDateError("");
+    }
+  }, [startDate, endDate]);
 
   // Load services when carrierId changes
   useEffect(() => {
@@ -87,6 +102,10 @@ export default function UpdateFSCDialog({ open, onClose, onUpdated, extraFee }: 
       showNotification("Please enter all required info!", "warning");
       return;
     }
+    if (dateError) {
+      showNotification(dateError, "warning");
+      return;
+    }
 
     // Build changed fields object
     const changedFields: any = {};
@@ -119,10 +138,10 @@ export default function UpdateFSCDialog({ open, onClose, onUpdated, extraFee }: 
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
-            <Grid size={12}>
+            <Grid size={6}>
               <TextField label="Code" value="FSC" size="small" fullWidth disabled />
             </Grid>
-            <Grid size={12}>
+            <Grid size={6}>
               <TextField label="Name" fullWidth size="small" value={name} onChange={(e) => setName(e.target.value)} />
             </Grid>
             <Grid size={6}>
@@ -153,17 +172,36 @@ export default function UpdateFSCDialog({ open, onClose, onUpdated, extraFee }: 
               <NumericInput label="Value (%)" fullWidth size="small" value={String(value)} onChange={setValue} />
             </Grid>
             <Grid size={6}>
-              <TextField type="date" label="Start date" value={startDate} onChange={(e) => setStartDate(e.target.value)} size="small" InputLabelProps={{ shrink: true }} fullWidth />
+              <TextField
+                type="date"
+                label="Start date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                error={!!dateError}
+              />
             </Grid>
             <Grid size={6}>
-              <TextField type="date" label="End date" value={endDate} onChange={(e) => setEndDate(e.target.value)} size="small" InputLabelProps={{ shrink: true }} fullWidth />
+              <TextField
+                type="date"
+                label="End date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                error={!!dateError}
+                helperText={dateError}
+              />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSubmit}>
+        <Button variant="contained" onClick={handleSubmit} disabled={!!dateError}>
           Update
         </Button>
       </DialogActions>
