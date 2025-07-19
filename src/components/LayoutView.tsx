@@ -320,7 +320,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                           <>
                             <ListItemButton
                               // Click vùng icon mới mở rộng ở trạng thái thu nhỏ
-                              onClick={(e) => {
+                              onClick={() => {
                                 if (!showDrawer) {
                                   // Nếu click icon
                                   handleOpenDrawerFromIcon();
