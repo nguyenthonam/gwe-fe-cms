@@ -48,8 +48,9 @@ import {
   Person as PersonIcon,
   QrCode as CAWBCodeIcon,
   Logout as LogoutIcon,
-  // Percent as PercentIcon,
+  Percent as PercentIcon,
   Layers as ZoneIcon,
+  LocalGasStation as LocalGasStationIcon,
 } from "@mui/icons-material";
 import ReduxProvider from "@/components/ReduxProvider";
 import { NotificationProvider, useNotification } from "@/contexts/NotificationProvider";
@@ -60,7 +61,7 @@ import { useRouter } from "next/navigation";
 import { AppState } from "@/store";
 import { ThunkDispatch } from "@reduxjs/toolkit";
 import { AnyAction } from "redux";
-import ClientOnly from "@/components/ClientOnly"; // <-- THÊM DÒNG NÀY
+import ClientOnly from "@/components/ClientOnly";
 
 interface LayoutViewProps {
   children: React.ReactNode;
@@ -157,11 +158,12 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
       items: [
         { title: "Giá mua", href: "/manager/prices?tab=0", icon: <PurchasePriceIcon /> },
         { title: "Giá bán", href: "/manager/prices?tab=1", icon: <SalePriceIcon /> },
-        { title: "Phụ phí", href: "/manager/prices?tab=2", icon: <ExtraFeeIcon /> },
-        { title: "Khu vực", href: "/manager/prices?tab=3", icon: <ZoneIcon /> },
-        { title: "Mã chuyến bay", href: "/manager/prices?tab=4", icon: <CAWBCodeIcon /> },
-        // { title: "VAT", href: "/manager/prices?tab=5", icon: <PercentIcon /> },
-        { title: "Tỉ giá", href: "/manager/prices?tab=5", icon: <PriceIcon /> },
+        { title: "Khu vực", href: "/manager/prices?tab=2", icon: <ZoneIcon /> },
+        { title: "Thuế", href: "/manager/prices?tab=3", icon: <PercentIcon /> },
+        { title: "Phụ phí", href: "/manager/prices?tab=4", icon: <ExtraFeeIcon /> },
+        { title: "Phụ phí xăng dầu", href: "/manager/prices?tab=5", icon: <LocalGasStationIcon /> },
+        { title: "Mã chuyến bay", href: "/manager/prices?tab=6", icon: <CAWBCodeIcon /> },
+        { title: "Tỉ giá", href: "/manager/prices?tab=7", icon: <PriceIcon /> },
       ],
     },
     {
@@ -172,7 +174,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
   ];
 
   const View: React.FC<LayoutViewProps> = ({ children }) => {
-    const [showDrawer, setShowDrawer] = React.useState<boolean>(false);
+    const [showDrawer, setShowDrawer] = React.useState<boolean>(true);
     const [openGroup, setOpenGroup] = React.useState<string | null>(null);
     const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
     const showMenu: boolean = Boolean(anchorEl);
@@ -210,20 +212,18 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
       }
     };
 
+    // Helper: mở drawer nếu đang thu nhỏ và click vào icon
+    const handleOpenDrawerFromIcon = () => {
+      if (!showDrawer) setShowDrawer(true);
+    };
+
     return (
       <>
         <CssBaseline />
         <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
           <AppBar position="fixed" open={showDrawer} sx={{ backgroundColor: "white" }}>
             <Toolbar>
-              <IconButton
-                edge="start"
-                color="primary"
-                onClick={() => {
-                  setShowDrawer(!showDrawer);
-                }}
-                sx={{ mr: 2 }}
-              >
+              <IconButton edge="start" color="primary" onClick={() => setShowDrawer((prev) => !prev)} sx={{ mr: 2 }}>
                 <MenuIcon />
               </IconButton>
               <Link href="/" style={{ display: "flex", alignItems: "center" }}>
@@ -279,52 +279,94 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
               <Drawer variant="permanent" open={showDrawer} sx={{ "& .MuiDrawer-paper": { bgcolor: lightBlue[900], color: "white" } }}>
                 <DrawerHeader />
                 <Divider />
-                <List>
-                  {SIDEBAR_LINKS.map((group, gIdx) => (
-                    <React.Fragment key={gIdx}>
-                      {!group.section &&
-                        group.items.map((item) => (
-                          <ListItemButton key={item.title} component={Link} href={item.href} onClick={() => setShowDrawer(false)}>
-                            <ListItemIcon sx={{ color: "white" }}>{item.icon}</ListItemIcon>
-                            <ListItemText primary={item.title} />
-                          </ListItemButton>
-                        ))}
-                      {group.section && (
-                        <>
-                          <ListItemButton
-                            onClick={() => {
-                              setOpenGroup(openGroup === group.section ? null : group.section);
-                              setShowDrawer(true);
-                            }}
-                          >
-                            <ListItemIcon sx={{ color: "white" }}>{group.icon}</ListItemIcon>
-                            <ListItemText primary={group.section} />
-                            {openGroup === group.section ? <ExpandLessIcon htmlColor="white" /> : <ExpandMoreIcon htmlColor="white" />}
-                          </ListItemButton>
-                          <Collapse in={openGroup === group.section} timeout="auto" unmountOnExit>
-                            <List component="div" disablePadding>
-                              {group.items.map((item) => (
-                                <ListItemButton
-                                  key={item.title}
-                                  sx={{ pl: 4 }}
-                                  component={Link}
-                                  href={item.href}
-                                  onClick={() => {
-                                    setShowDrawer(false);
-                                    setOpenGroup(null);
-                                  }}
-                                >
-                                  <ListItemIcon sx={{ color: "white" }}>{item.icon}</ListItemIcon>
-                                  <ListItemText primary={item.title} />
-                                </ListItemButton>
-                              ))}
-                            </List>
-                          </Collapse>
-                        </>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </List>
+                <Box sx={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+                  <List>
+                    {SIDEBAR_LINKS.map((group, gIdx) => (
+                      <React.Fragment key={gIdx}>
+                        {!group.section &&
+                          group.items.map((item) => (
+                            <ListItemButton
+                              key={item.title}
+                              component={Link}
+                              href={item.href}
+                              // Khi đang thu nhỏ, chỉ click vào icon mới mở rộng
+                              onClick={(e) => {
+                                if (!showDrawer) {
+                                  e.preventDefault();
+                                }
+                              }}
+                            >
+                              <ListItemIcon
+                                sx={{ color: "white", minWidth: 40, cursor: "pointer" }}
+                                onClick={(e) => {
+                                  if (!showDrawer) {
+                                    e.stopPropagation();
+                                    handleOpenDrawerFromIcon();
+                                  }
+                                }}
+                              >
+                                {item.icon}
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={item.title}
+                                sx={{
+                                  opacity: showDrawer ? 1 : 0,
+                                  transition: "opacity .2s",
+                                }}
+                              />
+                            </ListItemButton>
+                          ))}
+                        {group.section && (
+                          <>
+                            <ListItemButton
+                              // Click vùng icon mới mở rộng ở trạng thái thu nhỏ
+                              onClick={(e) => {
+                                if (!showDrawer) {
+                                  // Nếu click icon
+                                  handleOpenDrawerFromIcon();
+                                } else {
+                                  setOpenGroup(openGroup === group.section ? null : group.section);
+                                }
+                              }}
+                            >
+                              <ListItemIcon
+                                sx={{ color: "white", minWidth: 40, cursor: "pointer" }}
+                                onClick={(e) => {
+                                  if (!showDrawer) {
+                                    e.stopPropagation();
+                                    handleOpenDrawerFromIcon();
+                                  }
+                                }}
+                              >
+                                {group.icon}
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={group.section}
+                                sx={{
+                                  opacity: showDrawer ? 1 : 0,
+                                  transition: "opacity .2s",
+                                }}
+                              />
+                              {showDrawer && (openGroup === group.section ? <ExpandLessIcon htmlColor="white" /> : <ExpandMoreIcon htmlColor="white" />)}
+                            </ListItemButton>
+                            <Collapse in={showDrawer && openGroup === group.section} timeout="auto" unmountOnExit>
+                              <List component="div" disablePadding>
+                                {group.items.map((item) => (
+                                  <ListItemButton key={item.title} sx={{ pl: 4 }} component={Link} href={item.href}>
+                                    <ListItemIcon sx={{ color: "white" }}>{item.icon}</ListItemIcon>
+                                    <ListItemText primary={item.title} />
+                                  </ListItemButton>
+                                ))}
+                              </List>
+                            </Collapse>
+                          </>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </List>
+                  {/* Khoảng trống cuối để thấy được item cuối khi kéo xuống */}
+                  <Box sx={{ height: 68 }} />
+                </Box>
               </Drawer>
             )}
 
