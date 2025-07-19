@@ -5,11 +5,12 @@ import { Box, Typography, Paper, Tabs, Tab, Container } from "@mui/material";
 import { lightBlue } from "@mui/material/colors";
 import ExchangeRateManagerView from "@/components/ExchangeRates/ExchangeRateManagerView";
 import ExtraFeeManagerView from "@/components/ExtraFees/ExtraFeeManagerView";
+import FSCManagerView from "@/components/FSCFees/FSCManagerView";
 import PurchasePriceManagerView from "@/components/PurchasePrices/PurchasePriceManagerView";
 import SalePriceManagerView from "@/components/SalePrices/SalePriceManagerView";
 import ZoneManagerView from "@/components/Zones/ZoneManagerView";
 import CAWBCodeManagerView from "@/components/CAWBCodes/CAWBCodeManagerView";
-// import VATRateManagerView from "@/components/VATRates/VATRateManagerView";
+import VATRateManagerView from "@/components/VATRates/VATRateManagerView";
 
 export default function PricesPage() {
   const searchParams = useSearchParams();
@@ -48,13 +49,14 @@ export default function PricesPage() {
           QUẢN LÝ GIÁ
         </Typography>
 
-        <Tabs value={tabIndex} onChange={handleTabChange}>
+        <Tabs value={tabIndex} onChange={handleTabChange} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile>
           <Tab label="Giá mua" />
           <Tab label="Giá bán" />
-          <Tab label="Phụ phí" />
           <Tab label="Khu vực" />
+          <Tab label="Thuế" />
+          <Tab label="Phụ phí" />
+          <Tab label="Phụ phí xăng dầu" />
           <Tab label="Mã chuyến bay" />
-          {/* <Tab label="Thuế" /> */}
           <Tab label="Tỉ giá" />
         </Tabs>
 
@@ -62,11 +64,12 @@ export default function PricesPage() {
           <Paper>
             {tabIndex === 0 && <PurchasePriceManagerView />}
             {tabIndex === 1 && <SalePriceManagerView />}
-            {tabIndex === 2 && <ExtraFeeManagerView />}
-            {tabIndex === 3 && <ZoneManagerView />}
-            {tabIndex === 4 && <CAWBCodeManagerView />}
-            {/* {tabIndex === 5 && <VATRateManagerView />} */}
-            {tabIndex === 5 && <ExchangeRateManagerView />}
+            {tabIndex === 2 && <ZoneManagerView />}
+            {tabIndex === 3 && <VATRateManagerView />}
+            {tabIndex === 4 && <ExtraFeeManagerView />}
+            {tabIndex === 5 && <FSCManagerView />}
+            {tabIndex === 6 && <ExchangeRateManagerView />}
+            {tabIndex === 7 && <CAWBCodeManagerView />}
           </Paper>
         </Box>
       </Box>

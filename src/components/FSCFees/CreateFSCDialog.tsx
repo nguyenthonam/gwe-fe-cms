@@ -1,16 +1,16 @@
 "use client";
-
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Select, Stack, Grid, InputLabel, FormControl } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { ICarrier } from "@/types/typeCarrier";
-import { ECURRENCY, EFEE_TYPE } from "@/types/typeGlobals";
+import { ECURRENCY } from "@/types/typeGlobals";
 import { IService } from "@/types/typeService";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { createExtraFeeApi } from "@/utils/apis/apiExtraFee";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getServicesByCarrierApi } from "@/utils/apis/apiService";
 import NumericInput from "../Globals/NumericInput";
-import dayjs from "dayjs";
+import { EFEE_TYPE } from "@/types/typeGlobals";
+import { getMonthRange } from "@/utils/hooks/hookDate";
 
 interface Props {
   open: boolean;
@@ -18,51 +18,58 @@ interface Props {
   onCreated: () => void;
 }
 
-export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props) {
+export default function CreateFSCDIalog({ open, onClose, onCreated }: Props) {
   const [carriers, setCarriers] = useState<ICarrier[]>([]);
   const [services, setServices] = useState<IService[]>([]);
   const [carrierId, setCarrierId] = useState("");
   const [serviceId, setServiceId] = useState("");
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
   const [value, setValue] = useState<number | string>("");
   const [currency, setCurrency] = useState<ECURRENCY>(ECURRENCY.VND);
-  const [startDate, setStartDate] = useState<string>(dayjs().format("YYYY-MM-DD"));
-  const [endDate, setEndDate] = useState<string>(dayjs().add(30, "day").format("YYYY-MM-DD"));
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [loading, setLoading] = useState(false);
-
-  // Date error state
   const [dateError, setDateError] = useState<string>("");
 
   const { showNotification } = useNotification();
-
-  // Only type = FIXED (Cash)
-  const type = EFEE_TYPE.FIXED;
+  const { start, end } = getMonthRange();
 
   useEffect(() => {
     if (open) {
       setCarrierId("");
       setServiceId("");
-      setCode("");
-      setName("");
       setValue("");
       setCurrency(ECURRENCY.VND);
+      setStartDate(start);
+      setEndDate(end);
       setServices([]);
-      setStartDate(dayjs().format("YYYY-MM-DD"));
-      setEndDate(dayjs().add(30, "day").format("YYYY-MM-DD"));
       setDateError("");
       fetchCarriers();
     }
-    // eslint-disable-next-line
   }, [open]);
+
+  useEffect(() => {
+    if (carrierId) fetchServices(carrierId);
+  }, [carrierId]);
+
+  useEffect(() => {
+    // Validate date
+    if (startDate && endDate) {
+      if (new Date(startDate) > new Date(endDate)) {
+        setDateError("Start date must be before or equal to end date!");
+      } else {
+        setDateError("");
+      }
+    } else {
+      setDateError("");
+    }
+  }, [startDate, endDate]);
 
   const fetchCarriers = async () => {
     try {
       const res = await getCarriersApi();
       setCarriers(res?.data?.data?.data || []);
-      // eslint-disable-next-line
-    } catch (err: any) {
-      showNotification("Cannot load carriers list", "error");
+    } catch {
+      showNotification("Cannot load carriers", "error");
     }
   };
 
@@ -73,37 +80,26 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
     try {
       const res = await getServicesByCarrierApi(companyId);
       setServices(res?.data?.data?.data || []);
-      // eslint-disable-next-line
-    } catch (err: any) {
-      showNotification("Cannot load services!", "error");
+    } catch {
+      showNotification("Cannot load services", "error");
     }
   };
 
-  useEffect(() => {
-    if (carrierId) fetchServices(carrierId);
-    else setServices([]);
-    setServiceId("");
-    // eslint-disable-next-line
-  }, [carrierId]);
-
-  // Validate date on change
-  useEffect(() => {
-    if (startDate && endDate) {
-      if (new Date(startDate) > new Date(endDate)) {
-        setDateError("Start date must be before or equal to end date!");
-      } else {
-        setDateError("");
-      }
-    }
-  }, [startDate, endDate]);
+  // Tự động generate Name
+  // Tự động generate Name
+  const name = useMemo(() => {
+    if (!carrierId) return "PPXD";
+    const carrier = carriers.find((c) => c._id === carrierId);
+    if (!carrier) return "PPXD";
+    if (!serviceId) return `PPXD-${carrier.code || carrier.name}`;
+    const service = services.find((s) => s._id === serviceId);
+    if (!service) return `PPXD-${carrier.code || carrier.name}`;
+    return `PPXD-${carrier.code || carrier.name}-${service.code}`;
+  }, [carrierId, serviceId, carriers, services]);
 
   const handleSubmit = async () => {
-    if (!carrierId || !serviceId || !code || !name || value === "" || !startDate || !endDate) {
-      showNotification("Please enter all required information!", "warning");
-      return;
-    }
-    if (code.trim().toUpperCase() === "FSC") {
-      showNotification("Fee code cannot be 'FSC'. Please use another code!", "warning");
+    if (!carrierId || !serviceId || !name || value === "" || !startDate || !endDate) {
+      showNotification("Please enter all required info!", "warning");
       return;
     }
     if (dateError) {
@@ -115,19 +111,18 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
       await createExtraFeeApi({
         carrierId,
         serviceId,
-        code,
+        code: "FSC",
         name,
-        type,
+        type: EFEE_TYPE.PERCENT,
         value: Number(value),
         currency,
         startDate,
         endDate,
       });
-      showNotification("Extra fee created successfully!", "success");
+      showNotification("Created FSC successfully!", "success");
       onCreated();
-      onClose();
     } catch (err: any) {
-      showNotification(err.message || "Failed to create extra fee", "error");
+      showNotification(err.message || "Failed to create FSC", "error");
     } finally {
       setLoading(false);
     }
@@ -135,15 +130,15 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Create New Extra Fee</DialogTitle>
+      <DialogTitle>Create FSC Fee</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
-            <Grid size={6}>
-              <TextField label="Fee Code" fullWidth size="small" value={code} onChange={(e) => setCode(e.target.value)} />
+            <Grid size={12}>
+              <TextField label="Code" value="FSC" size="small" fullWidth disabled />
             </Grid>
-            <Grid size={6}>
-              <TextField label="Fee Name" fullWidth size="small" value={name} onChange={(e) => setName(e.target.value)} />
+            <Grid size={12}>
+              <TextField label="Name" fullWidth size="small" value={name} disabled />
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
@@ -169,47 +164,33 @@ export default function CreateExtraFeeDialog({ open, onClose, onCreated }: Props
                 </Select>
               </FormControl>
             </Grid>
-            <Grid size={6}>
-              <NumericInput label="Value" fullWidth size="small" value={String(value)} onChange={setValue} />
+            <Grid size={12}>
+              <NumericInput label="Value (%)" fullWidth size="small" value={String(value)} onChange={setValue} />
             </Grid>
             <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Currency</InputLabel>
-                <Select label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value as ECURRENCY)}>
-                  {Object.values(ECURRENCY).map((cur) => (
-                    <MenuItem key={cur} value={cur}>
-                      {cur}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <TextField
+                type="date"
+                label="Start date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                error={!!dateError}
+              />
             </Grid>
-            <Grid size={12} container spacing={1}>
-              <Grid size={6}>
-                <TextField
-                  label="Start date"
-                  type="date"
-                  fullWidth
-                  size="small"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  error={!!dateError}
-                />
-              </Grid>
-              <Grid size={6}>
-                <TextField
-                  label="End date"
-                  type="date"
-                  fullWidth
-                  size="small"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  error={!!dateError}
-                  helperText={dateError}
-                />
-              </Grid>
+            <Grid size={6}>
+              <TextField
+                type="date"
+                label="End date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+                error={!!dateError}
+                helperText={dateError}
+              />
             </Grid>
           </Grid>
         </Stack>

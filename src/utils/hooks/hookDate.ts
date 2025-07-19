@@ -1,3 +1,16 @@
+export const getMonthRange = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const pad = (n: number) => n.toString().padStart(2, "0");
+
+  const firstDay = `${year}-${pad(month + 1)}-01`;
+  const last = new Date(year, month + 1, 0);
+  const lastDay = `${year}-${pad(month + 1)}-${pad(last.getDate())}`;
+
+  return { start: firstDay, end: lastDay };
+};
+
 export const getCurrentDate = () => {
   const now = new Date();
   const day = String(now.getDate()).padStart(2, "0"); // Thêm 0 nếu cần
