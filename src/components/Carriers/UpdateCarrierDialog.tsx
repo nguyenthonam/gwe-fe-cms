@@ -57,13 +57,6 @@ export default function UpdateCarrierDialog({ open, onClose, onUpdated, carrier 
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
-            <Grid size={6}>
-              <TextField label="Mã" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
-            </Grid>
-            <Grid size={6}>
-              <TextField label="Tên" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
-            </Grid>
-
             <Grid size={12}>
               <TextField label="Hãng bay" select value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
                 {companyOptions.map((c) => (
@@ -73,6 +66,13 @@ export default function UpdateCarrierDialog({ open, onClose, onUpdated, carrier 
                 ))}
               </TextField>
             </Grid>
+            <Grid size={6}>
+              <TextField label="Mã" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
+            </Grid>
+            <Grid size={6}>
+              <TextField label="Tên" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
+            </Grid>
+
             <Grid size={12}>
               <TextField label="Cách tính cân nặng" select value={form.chargeableWeightType} onChange={(e) => handleChange("chargeableWeightType", +e.target.value)} fullWidth size="small">
                 <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.DETAIL}>Tính theo kiện</MenuItem>

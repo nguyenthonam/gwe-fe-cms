@@ -248,7 +248,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
           {/* Billing Info */}
           <Box className="mb-2">
             <Paper>
-              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1 }}>
+              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Billing Information
               </Typography>
               <OrderBillingInfoSection
@@ -271,7 +271,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
           {/* Sender */}
           <Box className="mb-2 ">
             <Paper>
-              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1 }}>
+              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Sender Information
               </Typography>
               <OrderAddressSection label="Sender" data={sender} setData={setSender} showCountry={false} />
@@ -281,7 +281,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
           {/* Recipient */}
           <Box className="mb-2 ">
             <Paper>
-              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1 }}>
+              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Recipient Information
               </Typography>
               <OrderAddressSection label="Recipient" data={recipient} setData={setRecipient} showCountry={true} />
@@ -291,7 +291,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
           {/* Product Info */}
           <Box className="mb-2">
             <Paper>
-              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1 }}>
+              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Product Information
               </Typography>
               <OrderProductSection
@@ -315,7 +315,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
           {/* Note */}
           <Box className="mb-2 ">
             <Paper>
-              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1 }}>
+              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Note
               </Typography>
               <Box sx={{ p: 2 }}>

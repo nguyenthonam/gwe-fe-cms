@@ -15,25 +15,6 @@ interface Props {
 }
 
 export default function OrderDimensionSection({ volWeightRate, dimensions, setDimensions, disabled, className, title = "Dimension" }: Props) {
-  // Hàm cập nhật field (dùng array mới, KHÔNG dùng state local)
-  // const handleInputChange = (no: number, field: keyof IDimension, value: number) => {
-  //   setDimensions(
-  //     dimensions.map((row, idx) =>
-  //       idx === no - 1
-  //         ? {
-  //             ...row,
-  //             [field]: value,
-  //             volumeWeight:
-  //               field === "length" || field === "width" || field === "height"
-  //                 ? volWeightRate
-  //                   ? calculateVolumeWeight(field === "length" ? value : row.length, field === "width" ? value : row.width, field === "height" ? value : row.height, volWeightRate)
-  //                   : 0
-  //                 : row.volumeWeight,
-  //           }
-  //         : row
-  //     )
-  //   );
-  // };
   const handleInputChange = (no: number, field: keyof IDimension, value: string) => {
     setDimensions(
       dimensions.map((row, idx) =>
@@ -84,7 +65,17 @@ export default function OrderDimensionSection({ volWeightRate, dimensions, setDi
   return (
     <Box className={className}>
       <Paper>
-        <Typography variant="h6" sx={{ mb: 2, background: "#2196f3", color: "#fff", px: 2, py: 1 }}>
+        <Typography
+          variant="h6"
+          sx={{
+            mb: 2,
+            background: "#2196f3",
+            color: "#fff",
+            px: 2,
+            py: 1,
+            textTransform: "uppercase",
+          }}
+        >
           {title}
         </Typography>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2, px: 2 }}>
