@@ -1,4 +1,4 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack, TextField, Select, MenuItem } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack, TextField, MenuItem } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { updateServiceApi } from "@/utils/apis/apiService";
@@ -66,14 +66,14 @@ export default function UpdateServiceDialog({ open, onClose, onUpdated, service 
       <DialogTitle>Cập nhật dịch vụ</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
-          <Select value={companyId} onChange={(e) => setCompanyId(e.target.value)} displayEmpty fullWidth>
+          <TextField label="Hãng bay" select value={companyId} onChange={(e) => setCompanyId(e.target.value)} fullWidth size="small">
             <MenuItem value="">Chọn hãng bay</MenuItem>
             {companies.map((c) => (
               <MenuItem key={c._id} value={c._id}>
                 {c.name}
               </MenuItem>
             ))}
-          </Select>
+          </TextField>
 
           <TextField label="Mã dịch vụ" fullWidth value={code} onChange={(e) => setCode(e.target.value)} />
 
