@@ -11,11 +11,11 @@ import { ERECORD_STATUS, EUSER_ROLES } from "@/types/typeGlobals";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { EnumChip } from "@/components/Globals/EnumChip";
 import { ActionMenu } from "@/components/Globals/ActionMenu";
-import { getCompaniesApi } from "@/utils/apis/apiCompany";
 import { searchUsersApi, deleteUserApi, lockUserApi, unlockUserApi, resetPasswordUserApi } from "@/utils/apis/apiUser";
 import CreateUserDialog from "./CreateUserDialog";
 import UpdateUserDialog from "./UpdateUserDialog";
 import UserDetailDialog from "./UserDetailDialog";
+import { getPartnersApi } from "@/utils/apis/apiPartner";
 
 export default function UserManagerView() {
   const [users, setUsers] = useState<IUser[]>([]);
@@ -40,7 +40,7 @@ export default function UserManagerView() {
 
   const fetchCompanies = async () => {
     try {
-      const res = await getCompaniesApi();
+      const res = await getPartnersApi();
       setCompanies(res?.data?.data?.data || []);
     } catch (err) {
       console.error(err);

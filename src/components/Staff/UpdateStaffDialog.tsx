@@ -3,9 +3,10 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Stack, Grid, MenuItem, FormControl, InputLabel, Select } from "@mui/material";
 import { useEffect, useState } from "react";
 import { updateUserApi } from "@/utils/apis/apiUser";
-import { EGENDER } from "@/types/typeGlobals";
-import { IUpdateUserRequest } from "@/types/typeUser";
-import { IUser } from "@/types/typeUser";
+import { getPartnersApi } from "@/utils/apis/apiPartner";
+import { EGENDER, EUSER_ROLES } from "@/types/typeGlobals";
+import { IUpdateUserRequest, IUser } from "@/types/typeUser";
+import { ICompany } from "@/types/typeCompany";
 import { useNotification } from "@/contexts/NotificationProvider";
 
 interface Props {
@@ -16,51 +17,92 @@ interface Props {
 }
 
 export default function UpdateStaffDialog({ open, onClose, onUpdated, user }: Props) {
-  const [form, setForm] = useState<IUpdateUserRequest>({});
+  const [form, setForm] = useState<IUpdateUserRequest>({
+    email: "",
+    companyId: "",
+    contact: { fullname: "", phone: "" },
+    gender: EGENDER.MALE,
+    birthday: null,
+    identity_key: { id: "", createdAt: "", address: "" },
+    role: EUSER_ROLES.Partner,
+  });
   const [loading, setLoading] = useState(false);
+  const [partners, setPartners] = useState<ICompany[]>([]);
   const { showNotification } = useNotification();
 
   useEffect(() => {
-    if (user) {
-      if (!user._id) {
-        showNotification("Thiếu ID!");
-        return;
+    const fetchPartners = async () => {
+      try {
+        const res = await getPartnersApi();
+        setPartners(res?.data?.data?.data || []);
+      } catch (err) {
+        console.error("Failed to load partners", err);
       }
+    };
+    fetchPartners();
+  }, []);
+
+  useEffect(() => {
+    if (user && open) {
       setForm({
-        email: user.email,
-        contact: user.contact,
-        gender: user.gender,
-        birthday: user.birthday,
-        identity_key: user.identity_key,
-        status: user.status,
+        email: user.email || "",
+        companyId: typeof user.companyId === "object" ? user.companyId?._id : user.companyId,
+        contact: {
+          fullname: user.contact?.fullname || "",
+          phone: user.contact?.phone || "",
+        },
+        gender: user.gender || EGENDER.MALE,
+        birthday: user.birthday || null,
+        identity_key: {
+          id: user.identity_key?.id || "",
+          address: user.identity_key?.address || "",
+          createdAt: user.identity_key?.createdAt || "",
+        },
+        role: user.role || EUSER_ROLES.Partner,
       });
     }
-  }, [user]);
+    if (!open) {
+      setForm({
+        email: "",
+        companyId: "",
+        contact: { fullname: "", phone: "" },
+        gender: EGENDER.MALE,
+        birthday: null,
+        identity_key: { id: "", createdAt: "", address: "" },
+        role: EUSER_ROLES.Partner,
+      });
+    }
+  }, [user, open]);
 
   const handleChange = (field: keyof IUpdateUserRequest, value: any) => {
-    if (!form) return;
-    setForm({ ...form, [field]: value });
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const handleNestedChange = (group: "contact" | "identity_key", key: string, value: any) => {
-    setForm((prev: any) => ({
+    setForm((prev) => ({
       ...prev,
       [group]: { ...(prev[group] || {}), [key]: value },
     }));
   };
 
+  // Only send changed fields compared to the original user data
   const handleSubmit = async () => {
     if (!user?._id) return;
-
     try {
       setLoading(true);
 
       const payload: IUpdateUserRequest = {};
 
       if (form.email !== user.email) payload.email = form.email;
+      if (form.companyId && (typeof user.companyId === "object" ? form.companyId !== user.companyId?._id : form.companyId !== user.companyId)) {
+        payload.companyId = form.companyId;
+      }
       if (form.gender !== user.gender) payload.gender = form.gender;
       if (form.birthday !== user.birthday) payload.birthday = form.birthday;
-      if (form.status !== user.status) payload.status = form.status;
+      if (form.role && form.role !== user.role) payload.role = form.role;
 
       if (form.contact?.fullname !== user.contact?.fullname || form.contact?.phone !== user.contact?.phone) {
         payload.contact = {
@@ -77,11 +119,16 @@ export default function UpdateStaffDialog({ open, onClose, onUpdated, user }: Pr
         };
       }
 
+      if (Object.keys(payload).length === 0) {
+        showNotification("No changes detected!", "info");
+        return;
+      }
+
       await updateUserApi(user._id, payload);
-      showNotification("Cập nhật thành công!", "success");
+      showNotification("Update successful!", "success");
       onUpdated();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi cập nhật!", "error");
+      showNotification(err.message || "Update failed!", "error");
     } finally {
       setLoading(false);
     }
@@ -89,55 +136,66 @@ export default function UpdateStaffDialog({ open, onClose, onUpdated, user }: Pr
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Cập nhật thông tin nhân viên</DialogTitle>
+      <DialogTitle>Update Staff Information</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
-            <Grid size={6}>
-              <TextField label="User ID" value={user?.userId || ""} disabled fullWidth size="small" />
+            {/* User ID */}
+            <Grid size={12}>
+              <TextField label="User ID" value={user?.userId || ""} fullWidth size="small" disabled />
+            </Grid>
+            {/* Partner/Company */}
+            <Grid size={12}>
+              <TextField select label="Partner" value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
+                {partners.map((p) => (
+                  <MenuItem key={p._id} value={p._id}>
+                    {p.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+            <Grid size={12}>
+              <TextField label="Email" value={form.email} onChange={(e) => handleChange("email", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Email" value={form?.email || ""} onChange={(e) => handleChange("email", e.target.value)} fullWidth size="small" />
+              <TextField label="Full Name" value={form.contact?.fullname || ""} onChange={(e) => handleNestedChange("contact", "fullname", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Họ tên" value={form?.contact?.fullname || ""} onChange={(e) => handleNestedChange("contact", "name", e.target.value)} fullWidth size="small" />
-            </Grid>
-            <Grid size={6}>
-              <TextField label="SĐT" value={form?.contact?.phone || ""} onChange={(e) => handleNestedChange("contact", "phone", e.target.value)} fullWidth size="small" />
+              <TextField label="Phone Number" value={form.contact?.phone || ""} onChange={(e) => handleNestedChange("contact", "phone", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Giới tính</InputLabel>
-                <Select label="Giới tính" value={form.gender} onChange={(e) => handleChange("gender", e.target.value)}>
-                  <MenuItem value={EGENDER.MALE}>Nam</MenuItem>
-                  <MenuItem value={EGENDER.FEMALE}>Nữ</MenuItem>
+                <InputLabel>Gender</InputLabel>
+                <Select label="Gender" value={form.gender} onChange={(e) => handleChange("gender", e.target.value)}>
+                  <MenuItem value={EGENDER.MALE}>Male</MenuItem>
+                  <MenuItem value={EGENDER.FEMALE}>Female</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid size={6}>
               <TextField
-                label="Ngày sinh"
+                label="Birthday"
                 type="date"
                 InputLabelProps={{ shrink: true }}
-                value={form?.birthday ? new Date(form?.birthday).toISOString().split("T")[0] : ""}
+                value={form.birthday ? new Date(form.birthday).toISOString().split("T")[0] : ""}
                 onChange={(e) => handleChange("birthday", e.target.value)}
                 fullWidth
                 size="small"
               />
             </Grid>
             <Grid size={6}>
-              <TextField label="CMND/CCCD" value={form?.identity_key?.id || ""} onChange={(e) => handleNestedChange("identity_key", "id", e.target.value)} fullWidth size="small" />
+              <TextField label="Identity Number" value={form.identity_key?.id || ""} onChange={(e) => handleNestedChange("identity_key", "id", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Nơi cấp" value={form?.identity_key?.address || ""} onChange={(e) => handleNestedChange("identity_key", "address", e.target.value)} fullWidth size="small" />
+              <TextField label="Issued Place" value={form.identity_key?.address || ""} onChange={(e) => handleNestedChange("identity_key", "address", e.target.value)} fullWidth size="small" />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          Cập nhật
+          Update
         </Button>
       </DialogActions>
     </Dialog>

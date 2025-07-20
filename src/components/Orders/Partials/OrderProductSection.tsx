@@ -24,7 +24,9 @@ export default function OrderProductSection(props: Props) {
       {/* Contents */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
-          <Typography variant="body2">Contents</Typography>
+          <Typography variant="body2" sx={{ textTransform: "uppercase" }}>
+            Contents
+          </Typography>
         </Grid>
         <Grid size={8}>
           <TextField disabled={disabled} value={content || ""} onChange={(e) => setContent(e.target.value)} fullWidth size="small" required />
@@ -33,7 +35,9 @@ export default function OrderProductSection(props: Props) {
       {/* Product Type */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
-          <Typography variant="body2">Product Type</Typography>
+          <Typography variant="body2" sx={{ textTransform: "uppercase" }}>
+            Product Type
+          </Typography>
         </Grid>
         <Grid size={8}>
           <FormControl fullWidth size="small">
@@ -47,7 +51,9 @@ export default function OrderProductSection(props: Props) {
       {/* PCEs */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
-          <Typography variant="body2">PCEs</Typography>
+          <Typography variant="body2" sx={{ textTransform: "uppercase" }}>
+            PCEs
+          </Typography>
         </Grid>
         <Grid size={8}>
           <TextField value={quantity || ""} size="small" fullWidth disabled InputProps={{ readOnly: true }} sx={{ bgcolor: "#f5f5f5" }} />
@@ -55,7 +61,9 @@ export default function OrderProductSection(props: Props) {
       </Grid>
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
-          <Typography variant="body2">Declared Weight (kg)</Typography>
+          <Typography variant="body2" sx={{ textTransform: "uppercase" }}>
+            Declared Weight (kg)
+          </Typography>
         </Grid>
         <Grid size={8}>
           <TextField value={declaredWeight || ""} size="small" fullWidth disabled InputProps={{ readOnly: true }} sx={{ bgcolor: "#f5f5f5" }} />
@@ -65,7 +73,9 @@ export default function OrderProductSection(props: Props) {
       {/* Declared Value */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
-          <Typography variant="body2">Declared Value</Typography>
+          <Typography variant="body2" sx={{ textTransform: "uppercase" }}>
+            Declared Value
+          </Typography>
         </Grid>
         <Grid size={8}>
           <NumericInput disabled={disabled} label="" value={declaredValue} onChange={setDeclaredValue} fullWidth size="small" />
@@ -74,7 +84,9 @@ export default function OrderProductSection(props: Props) {
       {/* Currency */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
-          <Typography variant="body2">Currency</Typography>
+          <Typography variant="body2" sx={{ textTransform: "uppercase" }}>
+            Currency
+          </Typography>
         </Grid>
         <Grid size={8}>
           <FormControl fullWidth size="small">
