@@ -51,7 +51,7 @@ export default function FSCManagerView() {
       const res = await getCarriersApi();
       setCarriers(res?.data?.data?.data || []);
     } catch (err: any) {
-      console.error("Failed to fetch carriers", err.massage);
+      console.error("Failed to fetch carriers", err.message);
     }
   };
 
@@ -67,7 +67,7 @@ export default function FSCManagerView() {
         status: statusFilter,
         startDate: filterStartDate,
         endDate: filterEndDate,
-        code: "FSC", // Lọc chỉ code = FSC
+        code: "FSC", // Only get FSC
       });
       setFees(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
@@ -89,8 +89,6 @@ export default function FSCManagerView() {
     fetchData();
     // eslint-disable-next-line
   }, [keyword, page, pageSize, carrierIdFilter, statusFilter, filterStartDate, filterEndDate]);
-
-  // Handler functions như ExtraFee
 
   const handleLockToggle = async (fee: IExtraFee) => {
     try {
@@ -119,18 +117,18 @@ export default function FSCManagerView() {
 
   const handleExportExcel = () => {
     const data = fees.map((f) => ({
-      CARRIER: typeof f.carrierId === "object" ? f.carrierId?.name : f.carrierId,
+      "SUB CARRIER": typeof f.carrierId === "object" ? f.carrierId?.name : f.carrierId,
       SERVICE: typeof f.serviceId === "object" ? f.serviceId?.code : f.serviceId,
       NAME: f.name,
       VALUE: formatCurrency(f.value, ECURRENCY.USD) + "%",
       "START DATE": f.startDate ? new Date(f.startDate).toLocaleDateString() : "",
       "END DATE": f.endDate ? new Date(f.endDate).toLocaleDateString() : "",
-      // STATUS: f.status,
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
     ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
-    // Align center all
+
+    // Style
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -191,7 +189,7 @@ export default function FSCManagerView() {
     },
     {
       field: "carrierId",
-      headerName: "CARRIER",
+      headerName: "SUB CARRIER",
       headerAlign: "center",
       align: "center",
       flex: 1,
@@ -230,7 +228,6 @@ export default function FSCManagerView() {
         />
       ),
     },
-
     {
       field: "startDate",
       headerName: "START DATE",
@@ -314,7 +311,7 @@ export default function FSCManagerView() {
 
         <Stack direction="row" spacing={1}>
           <Select size="small" displayEmpty value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} sx={{ minWidth: 180 }}>
-            <MenuItem value="">All carriers</MenuItem>
+            <MenuItem value="">All sub carriers</MenuItem>
             {carriers?.map((c) => (
               <MenuItem key={c._id} value={c._id}>
                 {c.name}

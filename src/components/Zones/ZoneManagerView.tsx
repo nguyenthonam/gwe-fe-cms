@@ -31,12 +31,10 @@ export default function ZoneManagerView() {
   const { showNotification } = useNotification();
   const debouncedSearch = useMemo(() => debounce((v) => setKeyword(v), 500), []);
 
-  // Lấy danh sách Carrier
   useEffect(() => {
     getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
   }, []);
 
-  // Lấy danh sách group zone (mỗi Carrier là 1 record)
   const fetchGroups = async () => {
     setLoading(true);
     try {
@@ -53,7 +51,6 @@ export default function ZoneManagerView() {
         const res = await getZoneGroupByCarrierApi(carrier._id);
         const zones: any[] = res?.data?.data || [];
         if (zones.length > 0) {
-          // Nhóm trạng thái: Nếu tất cả zone đều locked thì group là locked, ngược lại active
           const allLocked = zones.every((z) => z.status === ERECORD_STATUS.Locked);
           groupList.push({
             id: carrier._id,
@@ -68,25 +65,23 @@ export default function ZoneManagerView() {
       setTotal(groupList.length);
       // eslint-disable-next-line
     } catch (err) {
-      showNotification("Lỗi khi tải group zone!", "error");
+      showNotification("Failed to load zone groups!", "error");
     }
     setLoading(false);
   };
 
   useEffect(() => {
     if (carriers.length) fetchGroups();
-    // eslint-disable-next-line
   }, [carriers, carrierIdFilter, keyword]);
 
-  // ==== Action cho group ====
   const handleDeleteGroup = async (group: any) => {
-    if (!window.confirm("Bạn có chắc muốn xoá group Zone này?")) return;
+    if (!window.confirm("Are you sure you want to delete this zone group?")) return;
     try {
       await deleteZoneGroupByCarrierApi(group.carrier._id);
-      showNotification("Đã xoá group!");
+      showNotification("Zone group deleted successfully!");
       fetchGroups();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi xoá", "error");
+      showNotification(err.message || "Failed to delete zone group", "error");
     }
   };
 
@@ -94,23 +89,23 @@ export default function ZoneManagerView() {
     try {
       if (group.status === ERECORD_STATUS.Locked) {
         await unlockZoneGroupByCarrierApi(group.carrier._id);
-        showNotification("Đã mở khoá group Zone!", "success");
+        showNotification("Zone group unlocked!", "success");
       } else {
         await lockZoneGroupByCarrierApi(group.carrier._id);
-        showNotification("Đã khoá group Zone!", "success");
+        showNotification("Zone group locked!", "success");
       }
       fetchGroups();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi lock/unlock", "error");
+      showNotification(err.message || "Lock/Unlock failed", "error");
     }
   };
 
   const exportGroupToExcel = (group: any) => {
     if (!group || !group.zones) {
-      showNotification("Không có dữ liệu để xuất Excel!");
+      showNotification("No data to export!", "warning");
       return;
     }
-    // Build data chuẩn và map Country Name
+
     const data = group.zones.map((z: any) => {
       const countryObj = COUNTRIES.find((c) => c.code === z.countryCode);
       return {
@@ -120,15 +115,9 @@ export default function ZoneManagerView() {
       };
     });
 
-    // Tạo sheet & styling đẹp
     const ws = XLSX.utils.json_to_sheet(data);
-    ws["!cols"] = [
-      { wch: 26 }, // Country Name
-      { wch: 16 }, // Country Code
-      { wch: 10 }, // Zone
-    ];
+    ws["!cols"] = [{ wch: 26 }, { wch: 16 }, { wch: 10 }];
 
-    // Style cho từng cell (in đậm, căn giữa header, viền rõ)
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -157,14 +146,13 @@ export default function ZoneManagerView() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `ZONE_${group.carrier?.name || ""}`);
-    XLSX.writeFile(wb, `ZONE_GROUP_${group.carrier?.name || "CARRIER"}.xlsx`);
+    XLSX.writeFile(wb, `ZONE_GROUP_${group.carrier?.name || "SUB_CARRIER"}.xlsx`);
   };
 
-  // ==== Columns cho DataGrid ====
   const columns: GridColDef[] = [
     {
       field: "code",
-      headerName: "CODE",
+      headerName: "DETAIL",
       flex: 1.2,
       renderCell: ({ row }: { row: any }) => (
         <Box display="flex" alignItems="center" height="100%">
@@ -176,14 +164,14 @@ export default function ZoneManagerView() {
               setOpenDetailDialog(true);
             }}
           >
-            Chi tiết
+            View Detail
           </Typography>
         </Box>
       ),
     },
     {
       field: "carrier",
-      headerName: "Carrier",
+      headerName: "Sub Carrier",
       flex: 1.3,
       renderCell: ({ row }: { row: any }) => (
         <Box>
@@ -196,7 +184,7 @@ export default function ZoneManagerView() {
     },
     {
       field: "zoneCount",
-      headerName: "Số zone",
+      headerName: "Zones",
       flex: 0.5,
       align: "center",
       renderCell: ({ row }) => (
@@ -207,14 +195,13 @@ export default function ZoneManagerView() {
     },
     {
       field: "actions",
-      headerName: "Thao tác",
+      headerName: "Actions",
       flex: 1,
       renderCell: ({ row }) => (
-        <Stack direction="row" height={"100%"} spacing={1} alignItems={"center"} justifyItems={"center"}>
+        <Stack direction="row" height={"100%"} spacing={1} alignItems={"center"}>
           <Button size="small" startIcon={<Download />} onClick={() => exportGroupToExcel(row)}>
-            Xuất Excel
+            Export Excel
           </Button>
-
           <ActionMenu
             onEdit={() => {
               setSelectedGroup(row);
@@ -231,12 +218,11 @@ export default function ZoneManagerView() {
 
   return (
     <Box className="space-y-4 p-6">
-      {/* Toolbar */}
       <Box display="flex" flexWrap="wrap" gap={1} justifyContent="space-between" alignItems="center">
-        <TextField placeholder="Tìm Carrier..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 220 }} />
+        <TextField placeholder="Search zone..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 220 }} />
         <Stack direction="row" spacing={1}>
           <Select size="small" value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
-            <MenuItem value="">Tất cả Carrier</MenuItem>
+            <MenuItem value="">All Sub Carriers</MenuItem>
             {carriers.map((c) => (
               <MenuItem key={c._id} value={c._id}>
                 {c.name}
@@ -244,12 +230,11 @@ export default function ZoneManagerView() {
             ))}
           </Select>
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
-            Tạo Group Zone
+            Create Zone Group
           </Button>
         </Stack>
       </Box>
 
-      {/* DataGrid 1 bảng duy nhất */}
       {loading ? (
         <Box textAlign="center">
           <CircularProgress />
@@ -267,7 +252,6 @@ export default function ZoneManagerView() {
         />
       )}
 
-      {/* Dialogs */}
       <CreateZoneDialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} onCreated={fetchGroups} carriers={carriers} />
       {selectedGroup && (
         <>

@@ -54,7 +54,7 @@ export default function CompanyCarrierManagerView() {
       setTotal(res?.data?.data?.meta?.total || 0);
     } catch (error: any) {
       console.log(error.message);
-      showNotification("Không thể tải danh sách hãng bay", "error");
+      showNotification("Cannot load carrier list", "error");
     } finally {
       setLoading(false);
     }
@@ -67,43 +67,43 @@ export default function CompanyCarrierManagerView() {
   const handleLockToggle = async (company: ICompany) => {
     try {
       if (!company._id) return;
-      const confirm = window.confirm(company.status === ERECORD_STATUS.Active ? "Khoá hãng bay này?" : "Mở khoá hãng bay này?");
+      const confirm = window.confirm(company.status === ERECORD_STATUS.Active ? "Lock this carrier?" : "Unlock this carrier?");
       if (!confirm) return;
 
       const res = company.status === ERECORD_STATUS.Active ? await lockCompanyCarrierApi(company._id) : await unlockCompanyCarrierApi(company._id);
 
-      showNotification(res?.data?.message || "Cập nhật thành công!", "success");
+      showNotification(res?.data?.message || "Status updated!", "success");
       fetchData();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật trạng thái", "error");
+      showNotification(err.message || "Failed to update status", "error");
     }
   };
 
   const handleDelete = async (company: ICompany) => {
     try {
       if (!company._id) return;
-      if (!window.confirm("Bạn có chắc muốn xoá hãng bay này?")) return;
+      if (!window.confirm("Are you sure you want to delete this carrier?")) return;
       const res = await deleteCompanyCarrierApi(company._id);
-      showNotification(res?.data?.message || "Xoá thành công!", "success");
+      showNotification(res?.data?.message || "Deleted successfully!", "success");
       fetchData();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi xoá", "error");
+      showNotification(err.message || "Failed to delete", "error");
     }
   };
 
   const handleExportExcel = () => {
     const data = rows.map((c) => ({
-      "MÃ CÔNG TY": c.code,
-      TÊN: c.name,
-      MST: c.taxCode,
-      "ĐỊA CHỈ": c.address,
-      "TRẠNG THÁI": recordStatusLabel[c.status as keyof typeof recordStatusLabel] || c.status,
+      "CARRIER CODE": c.code,
+      "CARRIER NAME": c.name,
+      "TAX CODE": c.taxCode,
+      ADDRESS: c.address,
+      STATUS: recordStatusLabel[c.status as keyof typeof recordStatusLabel] || c.status,
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
     ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
 
-    // Style cho từng cell
+    // Style for each cell
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -132,14 +132,14 @@ export default function CompanyCarrierManagerView() {
     }
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "HANG_BAY");
-    XLSX.writeFile(wb, "DANH_SACH_HANG_BAY.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "CARRIERS");
+    XLSX.writeFile(wb, "CARRIER_LIST.xlsx");
   };
 
   const columns: GridColDef[] = [
     {
       field: "code",
-      headerName: "MÃ CÔNG TY",
+      headerName: "CARRIER CODE",
       flex: 1,
       minWidth: 140,
       renderCell: ({ row }) => (
@@ -157,12 +157,12 @@ export default function CompanyCarrierManagerView() {
         </Box>
       ),
     },
-    { field: "name", headerName: "TÊN", flex: 1.2, minWidth: 150 },
-    { field: "taxCode", headerName: "MST", flex: 1, minWidth: 120 },
-    { field: "address", headerName: "ĐỊA CHỈ", flex: 1.5, minWidth: 200 },
+    { field: "name", headerName: "CARRIER NAME", flex: 1.2, minWidth: 150 },
+    { field: "taxCode", headerName: "TAX CODE", flex: 1, minWidth: 120 },
+    { field: "address", headerName: "ADDRESS", flex: 1.5, minWidth: 200 },
     {
       field: "status",
-      headerName: "TRẠNG THÁI",
+      headerName: "STATUS",
       width: 130,
       renderCell: ({ value }) => <EnumChip type="recordStatus" value={value} />,
     },
@@ -187,21 +187,21 @@ export default function CompanyCarrierManagerView() {
   return (
     <Box className="space-y-4 p-6">
       <Box mb={2} display="flex" gap={2} justifyContent="space-between" alignItems="center">
-        <TextField placeholder="Tìm hãng bay..." size="small" className="max-w-[250px] w-full" onChange={(e) => debouncedSearch(e.target.value)} />
+        <TextField placeholder="Search carrier..." size="small" className="max-w-[250px] w-full" onChange={(e) => debouncedSearch(e.target.value)} />
         <Select size="small" displayEmpty value={status} onChange={(e) => setStatus(e.target.value)} sx={{ minWidth: 150 }}>
-          <MenuItem value="">Mặc định</MenuItem>
-          <MenuItem value="all">Tất cả</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Locked}>Đã khoá</MenuItem>
-          <MenuItem value={ERECORD_STATUS.NoActive}>Không hoạt động</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Deleted}>Đã xoá</MenuItem>
+          <MenuItem value="">Default</MenuItem>
+          <MenuItem value="all">All</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Active}>Active</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Locked}>Locked</MenuItem>
+          <MenuItem value={ERECORD_STATUS.NoActive}>Inactive</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Deleted}>Deleted</MenuItem>
         </Select>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
-            Xuất Excel
+            Export Excel
           </Button>
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreate(true)}>
-            Tạo mới
+            Add New
           </Button>
         </Stack>
       </Box>

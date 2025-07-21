@@ -27,13 +27,10 @@ export default function CreateVATRateDialog({ open, onClose, onCreated }: Props)
   const [startDate, setStartDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [endDate, setEndDate] = useState(dayjs().add(1, "month").format("YYYY-MM-DD"));
   const [loading, setLoading] = useState(false);
-
-  // Thêm state cho lỗi ngày
   const [dateError, setDateError] = useState<string>("");
 
   const { showNotification } = useNotification();
 
-  // Fetch dropdown lists
   useEffect(() => {
     if (open) {
       setCarrierId("");
@@ -62,7 +59,6 @@ export default function CreateVATRateDialog({ open, onClose, onCreated }: Props)
     setServiceId("");
   }, [carrierId, carriers]);
 
-  // Validate khi đổi ngày
   useEffect(() => {
     if (startDate && endDate) {
       if (new Date(startDate) > new Date(endDate)) {
@@ -75,7 +71,7 @@ export default function CreateVATRateDialog({ open, onClose, onCreated }: Props)
 
   const handleSubmit = async () => {
     if (!carrierId || !serviceId || !supplierId || value === "" || !startDate || !endDate) {
-      showNotification("Please enter all required info!", "warning");
+      showNotification("Please enter all required fields!", "warning");
       return;
     }
     if (Number(value) < 0) {
@@ -100,7 +96,7 @@ export default function CreateVATRateDialog({ open, onClose, onCreated }: Props)
         startDate,
         endDate,
       });
-      showNotification("Created VAT Rate successfully!", "success");
+      showNotification("VAT Rate created successfully!", "success");
       onCreated();
     } catch (err: any) {
       showNotification(err.message || "Failed to create VAT Rate", "error");
@@ -117,8 +113,8 @@ export default function CreateVATRateDialog({ open, onClose, onCreated }: Props)
           <Grid container spacing={2}>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Carrier</InputLabel>
-                <Select label="Carrier" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
+                <InputLabel>Sub Carrier</InputLabel>
+                <Select label="Sub Carrier" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
                   {carriers.map((c) => (
                     <MenuItem key={c._id} value={c._id}>
                       {c.name}
@@ -156,7 +152,7 @@ export default function CreateVATRateDialog({ open, onClose, onCreated }: Props)
             </Grid>
             <Grid size={6}>
               <TextField
-                label="Start date"
+                label="Start Date"
                 type="date"
                 fullWidth
                 size="small"
@@ -168,7 +164,7 @@ export default function CreateVATRateDialog({ open, onClose, onCreated }: Props)
             </Grid>
             <Grid size={6}>
               <TextField
-                label="End date"
+                label="End Date"
                 type="date"
                 fullWidth
                 size="small"

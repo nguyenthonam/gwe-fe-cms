@@ -20,7 +20,6 @@ export default function UpdateZoneDialog({ open, onClose, onUpdated, carriers, g
       setZones(
         groupZones.map((z) => ({
           ...z,
-          // Map code & name về đúng COUNTRIES
           countryCode: z.countryCode,
           name: COUNTRIES.find((c) => c.code === z.countryCode)?.name || z.name || "",
           zone: z.zone,
@@ -31,17 +30,14 @@ export default function UpdateZoneDialog({ open, onClose, onUpdated, carriers, g
     }
   }, [groupZones, open]);
 
-  // Thêm dòng mới
   const handleAddRow = () => {
     setZones([...zones, { countryCode: "", name: "", zone: "" }]);
   };
 
-  // Xóa dòng
   const handleRemoveRow = (idx: number) => {
     setZones(zones.filter((_, i) => i !== idx));
   };
 
-  // Edit dòng
   const handleEditZone = (idx: number, field: string, value: any) => {
     const newZones = [...zones];
     newZones[idx][field] = value;
@@ -52,13 +48,12 @@ export default function UpdateZoneDialog({ open, onClose, onUpdated, carriers, g
     setZones(newZones);
   };
 
-  // Save/update group
   const handleUpdate = async () => {
     if (!carrierId) {
-      showNotification("Thiếu Carrier!", "error");
+      showNotification("Sub Carrier is required!", "error");
       return;
     }
-    // Chỉ gửi các field cần thiết cho BE
+
     const validZones = zones
       .filter((z) => z.countryCode && z.zone)
       .map((z) => ({
@@ -67,27 +62,28 @@ export default function UpdateZoneDialog({ open, onClose, onUpdated, carriers, g
       }));
 
     if (validZones.length === 0) {
-      showNotification("Chưa có dòng hợp lệ!", "error");
+      showNotification("No valid row to update!", "error");
       return;
     }
+
     setLoading(true);
     try {
       await updateZoneGroupApi(carrierId, validZones);
-      showNotification("Đã cập nhật Group Zone thành công!", "success");
+      showNotification("Zone group updated successfully!", "success");
       onUpdated();
       onClose();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi cập nhật!", "error");
+      showNotification(err.message || "Failed to update zone group!", "error");
     }
     setLoading(false);
   };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Cập nhật Group Zone</DialogTitle>
+      <DialogTitle>Update Zone Group</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
-          <TextField label="Carrier" value={carrierId} select fullWidth disabled>
+          <TextField label="Sub Carrier" value={carrierId} select fullWidth disabled>
             {carriers.map((c) => (
               <MenuItem key={c._id} value={c._id}>
                 {c.name}
@@ -133,7 +129,7 @@ export default function UpdateZoneDialog({ open, onClose, onUpdated, carriers, g
                 <TableRow>
                   <TableCell colSpan={4}>
                     <Button size="small" startIcon={<Add />} onClick={handleAddRow}>
-                      Thêm dòng
+                      Add Row
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -143,9 +139,9 @@ export default function UpdateZoneDialog({ open, onClose, onUpdated, carriers, g
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleUpdate} disabled={loading}>
-          Lưu cập nhật
+          Save Changes
         </Button>
       </DialogActions>
     </Dialog>

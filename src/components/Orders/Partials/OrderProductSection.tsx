@@ -25,11 +25,11 @@ export default function OrderProductSection(props: Props) {
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
           <Typography variant="body2" sx={{ textTransform: "uppercase" }}>
-            Contents
+            Shipment Content
           </Typography>
         </Grid>
         <Grid size={8}>
-          <TextField disabled={disabled} value={content || ""} onChange={(e) => setContent(e.target.value)} fullWidth size="small" required />
+          <TextField disabled={disabled} value={content || ""} onChange={(e) => setContent(e.target.value)} fullWidth size="small" required placeholder="Describe goods/content" />
         </Grid>
       </Grid>
       {/* Product Type */}
@@ -42,8 +42,8 @@ export default function OrderProductSection(props: Props) {
         <Grid size={8}>
           <FormControl fullWidth size="small">
             <Select disabled={disabled} value={productType} onChange={(e) => setProductType(e.target.value as EPRODUCT_TYPE)}>
-              <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>DOCUMENT</MenuItem>
-              <MenuItem value={EPRODUCT_TYPE.PARCEL}>PARCEL</MenuItem>
+              <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>Document</MenuItem>
+              <MenuItem value={EPRODUCT_TYPE.PARCEL}>Parcel</MenuItem>
             </Select>
           </FormControl>
         </Grid>
@@ -59,6 +59,7 @@ export default function OrderProductSection(props: Props) {
           <TextField value={quantity || ""} size="small" fullWidth disabled InputProps={{ readOnly: true }} sx={{ bgcolor: "#f5f5f5" }} />
         </Grid>
       </Grid>
+      {/* Declared Weight */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
           <Typography variant="body2" sx={{ textTransform: "uppercase" }}>
@@ -69,7 +70,6 @@ export default function OrderProductSection(props: Props) {
           <TextField value={declaredWeight || ""} size="small" fullWidth disabled InputProps={{ readOnly: true }} sx={{ bgcolor: "#f5f5f5" }} />
         </Grid>
       </Grid>
-
       {/* Declared Value */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
@@ -78,7 +78,7 @@ export default function OrderProductSection(props: Props) {
           </Typography>
         </Grid>
         <Grid size={8}>
-          <NumericInput disabled={disabled} label="" value={declaredValue} onChange={setDeclaredValue} fullWidth size="small" />
+          <NumericInput disabled={disabled} label="" value={declaredValue} onChange={setDeclaredValue} fullWidth size="small" placeholder="Value for Customs" />
         </Grid>
       </Grid>
       {/* Currency */}

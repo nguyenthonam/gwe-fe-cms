@@ -44,6 +44,7 @@ interface WeightRange {
   max: number;
   label: string;
 }
+
 interface ParsedTable {
   weightRanges: WeightRange[];
   zones: number[];
@@ -61,7 +62,6 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
   const [currency, setCurrency] = useState(ECURRENCY.VND);
   const [isPricePerKG, setIsPricePerKG] = useState(false);
 
-  // Excel paste state
   const [excelInput, setExcelInput] = useState("");
   const [parsedTable, setParsedTable] = useState<ParsedTable | null>(null);
   const [loading, setLoading] = useState(false);
@@ -86,12 +86,10 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
     }
   }, [open]);
 
-  // Nếu user chọn "Giá theo KG" thì luôn set productType = PARCEL
   useEffect(() => {
     if (isPricePerKG && productType !== EPRODUCT_TYPE.PARCEL) {
       setProductType(EPRODUCT_TYPE.PARCEL);
     }
-    // eslint-disable-next-line
   }, [isPricePerKG]);
 
   const fetchCarriers = async () => {
@@ -99,17 +97,19 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
       const res = await getCarriersApi();
       setCarriers(res?.data?.data?.data || []);
     } catch {
-      showNotification("Không thể tải danh sách Hãng", "error");
+      showNotification("Failed to load carriers", "error");
     }
   };
+
   const fetchPartners = async () => {
     try {
       const res = await getPartnersApi();
       setPartners(res?.data?.data?.data || []);
     } catch {
-      showNotification("Không thể tải danh sách Partner", "error");
+      showNotification("Failed to load partners", "error");
     }
   };
+
   const fetchServices = async (carrierId: string) => {
     const selected = carriers.find((c) => c._id === carrierId);
     const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
@@ -118,15 +118,14 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
       const res = await getServicesByCarrierApi(companyId);
       setServices(res?.data?.data?.data || []);
     } catch {
-      showNotification("Không thể tải danh sách dịch vụ", "error");
+      showNotification("Failed to load services", "error");
     }
   };
+
   useEffect(() => {
     if (carrierId) fetchServices(carrierId);
-    // eslint-disable-next-line
   }, [carrierId]);
 
-  // --- Excel Paste & Parse ---
   const handlePasteExcel = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const pasted = e.clipboardData.getData("text");
     setExcelInput(pasted);
@@ -139,7 +138,6 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
     parseExcelTable(e.target.value);
   };
 
-  // Parse both: từng mức hoặc range min-max
   function parseExcelTable(text: string) {
     if (!text.trim()) {
       setParsedTable(null);
@@ -150,7 +148,6 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
     let weightRanges: WeightRange[] = [];
     const prices: number[][] = [];
 
-    // Kiểm tra tiêu đề có phải là zone không
     let isZoneHeader = false;
     if (lines.length && isNaN(Number(lines[0].trim().split(/\t| +/)[0].replace("-", "")))) {
       isZoneHeader = true;
@@ -163,27 +160,26 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
     const startLine = isZoneHeader ? 1 : 0;
 
     for (let i = startLine; i < lines.length; ++i) {
-      let arr = lines[i]
+      const arr = lines[i]
         .trim()
         .split(/\t| +/)
-        .filter((s) => s !== "");
-      arr = arr.map((x) => x.replace(/,/g, ""));
+        .filter((s) => s !== "")
+        .map((x) => x.replace(/,/g, ""));
       if (arr.length < 2) continue;
 
       let min = 0,
-        max = 0,
-        label = arr[0];
+        max = 0;
+      const label = arr[0];
       if (/^\d+(\.\d+)?-\d+(\.\d+)?$/.test(arr[0])) {
         [min, max] = arr[0].split("-").map(Number);
-        label = arr[0];
       } else {
         min = Number(arr[0]);
         max = min;
-        label = arr[0];
       }
       weightRanges.push({ min, max, label });
       prices.push(arr.slice(1).map(Number));
     }
+
     if (!zones.length && prices.length > 0) {
       zones = prices[0].map((_, idx) => idx + 1);
     }
@@ -210,10 +206,9 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
     setParsedTable({ weightRanges, zones, prices });
   }
 
-  // --- Submit ALL parsed data ---
   const handleSubmitAll = async () => {
     if (!carrierId || !serviceId || !partnerId || !parsedTable || !currency) {
-      showNotification("Điền đủ thông tin và dán bảng giá!", "warning");
+      showNotification("Please fill all fields and paste rate table!", "warning");
       return;
     }
     try {
@@ -237,12 +232,12 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
         }
       }
       await createSalePriceApi(data);
-      showNotification("Tạo giá bán hàng loạt thành công", "success");
+      showNotification("Batch sale price created successfully", "success");
       onCreated();
       setExcelInput("");
       setParsedTable(null);
     } catch (err: any) {
-      showNotification(err.message || "Lỗi tạo giá bán", "error");
+      showNotification(err.message || "Error creating sale price", "error");
     } finally {
       setLoading(false);
     }
@@ -250,21 +245,21 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>Tạo giá bán từ bảng Excel</DialogTitle>
+      <DialogTitle>Create Sale Price from Excel Table</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Loại hàng</InputLabel>
-                <Select label="Loại hàng" value={productType} onChange={(e) => setProductType(e.target.value as EPRODUCT_TYPE)} disabled={isPricePerKG}>
+                <InputLabel>Product Type</InputLabel>
+                <Select label="Product Type" value={productType} onChange={(e) => setProductType(e.target.value as EPRODUCT_TYPE)} disabled={isPricePerKG}>
                   <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>DOCUMENT</MenuItem>
                   <MenuItem value={EPRODUCT_TYPE.PARCEL}>PARCEL</MenuItem>
                 </Select>
               </FormControl>
               {isPricePerKG && (
                 <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, ml: 1 }}>
-                  {`Nếu chọn "Giá theo KG", loại hàng sẽ tự động là "Parcel" (bắt buộc)`}
+                  {`If "Price per KG" is selected, product type will be automatically set to "Parcel"`}
                 </Typography>
               )}
             </Grid>
@@ -282,8 +277,8 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Hãng</InputLabel>
-                <Select label="Hãng" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
+                <InputLabel>Sub Carrier</InputLabel>
+                <Select label="Sub Carrier" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
                   {carriers?.map((c) => (
                     <MenuItem key={c._id} value={c._id}>
                       {c.name}
@@ -294,8 +289,8 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Dịch vụ</InputLabel>
-                <Select label="Dịch vụ" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+                <InputLabel>Service</InputLabel>
+                <Select label="Service" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
                   {services?.map((s) => (
                     <MenuItem key={s._id} value={s._id}>
                       {s.code}
@@ -306,8 +301,8 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Tiền tệ</InputLabel>
-                <Select label="Tiền tệ" value={currency} onChange={(e) => setCurrency(e.target.value as ECURRENCY)}>
+                <InputLabel>Currency</InputLabel>
+                <Select label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value as ECURRENCY)}>
                   {Object.values(ECURRENCY).map((cur) => (
                     <MenuItem key={cur} value={cur}>
                       {cur}
@@ -317,11 +312,12 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
               </FormControl>
             </Grid>
             <Grid size={6}>
-              <FormControlLabel control={<Checkbox checked={isPricePerKG} onChange={(e) => setIsPricePerKG(e.target.checked)} />} label="Giá theo KG" />
+              <FormControlLabel control={<Checkbox checked={isPricePerKG} onChange={(e) => setIsPricePerKG(e.target.checked)} />} label="Price per KG" />
             </Grid>
           </Grid>
+
           <TextField
-            label="Paste bảng giá từ Excel (zone theo cột, weight hoặc weightMin-weightMax theo dòng)"
+            label="Paste rate table from Excel (zones as columns, weight or weightMin-weightMax as rows)"
             fullWidth
             multiline
             minRows={4}
@@ -333,13 +329,14 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
             size="small"
             sx={{ mt: 2 }}
           />
+
           {parsedTable && (
             <Paper sx={{ mt: 2, maxHeight: 350, overflow: "auto" }}>
               <Table size="small" stickyHeader>
                 <TableHead>
                   <TableRow>
                     <TableCell align="center" sx={{ fontWeight: 700, bgcolor: "#f5f5dc" }}>
-                      {parsedTable.weightRanges.some((w) => w.label.includes("-")) ? "Khoảng cân" : "Từ – Đến (kg)"}
+                      {parsedTable.weightRanges.some((w) => w.label.includes("-")) ? "Weight Range" : "From – To (kg)"}
                     </TableCell>
                     {parsedTable.zones.map((zone) => (
                       <TableCell align="center" key={zone} sx={{ fontWeight: 700, bgcolor: "#fffde7" }}>
@@ -368,9 +365,9 @@ export default function CreateSalePriceDialog({ open, onClose, onCreated }: Prop
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button onClick={handleSubmitAll} variant="contained" disabled={loading || !parsedTable}>
-          Tạo từ bảng
+          Create
         </Button>
       </DialogActions>
     </Dialog>

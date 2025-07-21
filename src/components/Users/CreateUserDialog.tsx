@@ -23,7 +23,6 @@ export default function CreateUserDialog({ open, onClose, onCreated, companies }
   const [status, setStatus] = useState<ERECORD_STATUS>(ERECORD_STATUS.Active);
   const [showPwd, setShowPwd] = useState(false);
 
-  // Thông tin cá nhân
   const [contactName, setContactName] = useState("");
   const [gender, setGender] = useState<EGENDER>(EGENDER.MALE);
   const [birthday, setBirthday] = useState("");
@@ -54,17 +53,18 @@ export default function CreateUserDialog({ open, onClose, onCreated, companies }
 
   const handleSubmit = async () => {
     if (!email || !pwd) {
-      showNotification("Vui lòng nhập đủ User ID, Email, Mật khẩu!", "warning");
+      showNotification("Please enter User ID, Email, and Password!", "warning");
       return;
     }
     if (role === EUSER_ROLES.Partner && !companyId) {
-      showNotification("Vui lòng chọn Công ty cho role Đối tác!", "warning");
+      showNotification("Please select a company for role 'Partner'!", "warning");
       return;
     }
     if (pwd.length < 6) {
-      showNotification("Mật khẩu tối thiểu 6 ký tự!", "warning");
+      showNotification("Password must be at least 6 characters!", "warning");
       return;
     }
+
     try {
       setLoading(true);
       await createUserApi({
@@ -83,10 +83,10 @@ export default function CreateUserDialog({ open, onClose, onCreated, companies }
           address: identityAddr,
         },
       });
-      showNotification("Tạo tài khoản thành công", "success");
+      showNotification("User created successfully", "success");
       onCreated();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi tạo tài khoản", "error");
+      showNotification(err.message || "Failed to create user", "error");
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ export default function CreateUserDialog({ open, onClose, onCreated, companies }
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Tạo tài khoản</DialogTitle>
+      <DialogTitle>Create New User</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
@@ -104,7 +104,7 @@ export default function CreateUserDialog({ open, onClose, onCreated, companies }
             <Grid size={6}>
               <TextField
                 fullWidth
-                label="Mật khẩu"
+                label="Password"
                 type={showPwd ? "text" : "password"}
                 value={pwd}
                 onChange={(e) => setPwd(e.target.value)}
@@ -113,7 +113,7 @@ export default function CreateUserDialog({ open, onClose, onCreated, companies }
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
-                      <IconButton aria-label="toggle password visibility" onClick={() => setShowPwd((show) => !show)} edge="end" size="small">
+                      <IconButton onClick={() => setShowPwd((show) => !show)} edge="end" size="small">
                         {showPwd ? <VisibilityOffIcon /> : <VisibilityIcon />}
                       </IconButton>
                     </InputAdornment>
@@ -127,7 +127,6 @@ export default function CreateUserDialog({ open, onClose, onCreated, companies }
                 <Select label="Role" value={role} onChange={(e) => setRole(e.target.value as EUSER_ROLES)}>
                   {Object.values(EUSER_ROLES).map((r) => (
                     <MenuItem key={r} value={r}>
-                      {/* {userRoleLabel[r]} */}
                       <EnumChip type="userRole" value={r} />
                     </MenuItem>
                   ))}
@@ -149,39 +148,39 @@ export default function CreateUserDialog({ open, onClose, onCreated, companies }
               </Grid>
             )}
             <Grid size={6}>
-              <TextField fullWidth label="Tên liên hệ" size="small" value={contactName} onChange={(e) => setContactName(e.target.value)} />
+              <TextField fullWidth label="Contact Name" size="small" value={contactName} onChange={(e) => setContactName(e.target.value)} />
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Giới tính</InputLabel>
-                <Select label="Giới tính" value={gender} onChange={(e) => setGender(e.target.value as EGENDER)}>
-                  <MenuItem value={EGENDER.MALE}>Nam</MenuItem>
-                  <MenuItem value={EGENDER.FEMALE}>Nữ</MenuItem>
+                <InputLabel>Gender</InputLabel>
+                <Select label="Gender" value={gender} onChange={(e) => setGender(e.target.value as EGENDER)}>
+                  <MenuItem value={EGENDER.MALE}>Male</MenuItem>
+                  <MenuItem value={EGENDER.FEMALE}>Female</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid size={6}>
-              <TextField fullWidth label="Ngày sinh" size="small" type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} InputLabelProps={{ shrink: true }} />
+              <TextField fullWidth label="Birthday" size="small" type="date" value={birthday} onChange={(e) => setBirthday(e.target.value)} InputLabelProps={{ shrink: true }} />
             </Grid>
             <Grid size={6}>
-              <TextField fullWidth label="Ảnh đại diện (URL)" size="small" value={avatar} onChange={(e) => setAvatar(e.target.value)} />
+              <TextField fullWidth label="Avatar URL" size="small" value={avatar} onChange={(e) => setAvatar(e.target.value)} />
             </Grid>
             <Grid size={6}>
-              <TextField fullWidth label="CMND/CCCD" size="small" value={identityId} onChange={(e) => setIdentityId(e.target.value)} />
+              <TextField fullWidth label="ID Number" size="small" value={identityId} onChange={(e) => setIdentityId(e.target.value)} />
             </Grid>
             <Grid size={6}>
-              <TextField fullWidth label="Ngày cấp" size="small" value={identityDate} onChange={(e) => setIdentityDate(e.target.value)} placeholder="DD/MM/YYYY" />
+              <TextField fullWidth label="Issue Date" size="small" value={identityDate} onChange={(e) => setIdentityDate(e.target.value)} placeholder="DD/MM/YYYY" />
             </Grid>
             <Grid size={12}>
-              <TextField fullWidth label="Nơi cấp" size="small" value={identityAddr} onChange={(e) => setIdentityAddr(e.target.value)} />
+              <TextField fullWidth label="Issued By" size="small" value={identityAddr} onChange={(e) => setIdentityAddr(e.target.value)} />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          Tạo mới
+          Create
         </Button>
       </DialogActions>
     </Dialog>

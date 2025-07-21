@@ -7,7 +7,7 @@ import { useNotification } from "@/contexts/NotificationProvider";
 import { ECHARGEABLE_WEIGHT_TYPE } from "@/types/typeGlobals";
 import { ICarrier } from "@/types/typeCarrier";
 import { ICompany } from "@/types/typeCompany";
-import NumericInput from "../Globals/NumericInput";
+import NumericInput from "../../Globals/NumericInput";
 
 interface Props {
   open: boolean;
@@ -33,11 +33,11 @@ export default function CreateCarrierDialog({ open, onClose, onCreated }: Props)
     try {
       setLoading(true);
       await createCarrierApi(form as ICarrier);
-      showNotification("Tạo thành công", "success");
+      showNotification("Created successfully", "success");
       onCreated();
-      setForm({ chargeableWeightType: ECHARGEABLE_WEIGHT_TYPE.DETAIL });
+      setForm({ chargeableWeightType: ECHARGEABLE_WEIGHT_TYPE.DETAIL, volWeightRate: 5000 });
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi tạo mới", "error");
+      showNotification(err.message || "Failed to create", "error");
     } finally {
       setLoading(false);
     }
@@ -45,12 +45,12 @@ export default function CreateCarrierDialog({ open, onClose, onCreated }: Props)
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Tạo Nhà Vận Chuyển</DialogTitle>
+      <DialogTitle>CREATE SUB CARRIER</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={12}>
-              <TextField label="Hãng bay" select value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
+              <TextField label="Carrier" select value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
                 {companyOptions.map((c) => (
                   <MenuItem key={c._id} value={c._id}>
                     {c.name}
@@ -59,28 +59,27 @@ export default function CreateCarrierDialog({ open, onClose, onCreated }: Props)
               </TextField>
             </Grid>
             <Grid size={12}>
-              <TextField label="Mã code" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
+              <TextField label="Sub Carrier Code" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={12}>
-              <TextField label="Tên nhà vận chuyển" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
+              <TextField label="Sub Carrier Name" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
             </Grid>
-
             <Grid size={12}>
-              <TextField label="Cách tính cân nặng" select value={form.chargeableWeightType || ""} onChange={(e) => handleChange("chargeableWeightType", e.target.value)} fullWidth size="small">
-                <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.DETAIL}>Tính theo kiện</MenuItem>
-                <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.TOTAL}>Tính toàn bộ</MenuItem>
+              <TextField label="Charge Weight Type" select value={form.chargeableWeightType || ""} onChange={(e) => handleChange("chargeableWeightType", e.target.value)} fullWidth size="small">
+                <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.DETAIL}>By Piece</MenuItem>
+                <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.TOTAL}>Total</MenuItem>
               </TextField>
             </Grid>
             <Grid size={12}>
-              <NumericInput label="Hệ số quy đổi thể tích" fullWidth size="small" value={String(form.volWeightRate || "")} onChange={(val) => handleChange("volWeightRate", Number(val))} />
+              <NumericInput label="Volume Conversion Rate" fullWidth size="small" value={String(form.volWeightRate || "")} onChange={(val) => handleChange("volWeightRate", Number(val))} />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          Tạo
+          Create
         </Button>
       </DialogActions>
     </Dialog>

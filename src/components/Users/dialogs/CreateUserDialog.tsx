@@ -12,16 +12,19 @@ export default function CreateUserDialog({ open, onClose, onSuccess }: { open: b
   const handleCreateUser = async () => {
     try {
       setLoading(true);
-      const response = await createUserApi({ email: user.email, contact: { fullname: user.fullname } });
+      const response = await createUserApi({
+        email: user.email,
+        contact: { fullname: user.fullname },
+      });
       if (!response?.data?.status) {
-        showNotification(response?.data?.message || "Thêm thất bại!", "error");
+        showNotification(response?.data?.message || "Failed to create user!", "error");
         return;
       }
       onSuccess();
-      showNotification("Thêm thành công!", "success");
+      showNotification("User created successfully!", "success");
     } catch (error) {
       console.error("Create user error:", error);
-      showNotification(error instanceof Error ? error.message : "Thêm thất bại!", "error");
+      showNotification(error instanceof Error ? error.message : "Failed to create user!", "error");
     } finally {
       setLoading(false);
       onClose();
@@ -31,7 +34,7 @@ export default function CreateUserDialog({ open, onClose, onSuccess }: { open: b
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle className="uppercase" sx={{ color: lightBlue[500] }}>
-        Thêm Tài Khoản
+        Create User
       </DialogTitle>
       <DialogContent>
         <TextField
@@ -39,8 +42,8 @@ export default function CreateUserDialog({ open, onClose, onSuccess }: { open: b
           margin="dense"
           size="small"
           type="text"
-          label="Họ và tên"
-          placeholder="Họ và tên"
+          label="Full Name"
+          placeholder="Enter full name"
           fullWidth
           variant="outlined"
           value={user.fullname}
@@ -52,7 +55,7 @@ export default function CreateUserDialog({ open, onClose, onSuccess }: { open: b
           size="small"
           type="text"
           label="Email"
-          placeholder="Email"
+          placeholder="Enter email"
           fullWidth
           variant="outlined"
           value={user.email}

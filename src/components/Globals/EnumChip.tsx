@@ -11,51 +11,48 @@ type EnumChipProps = {
 
 const CHIP_STYLES = {
   gender: {
-    [EGENDER.MALE]: { label: "Nam", bg: "#E3F2FD", color: "#1976D2" },
-    [EGENDER.FEMALE]: { label: "Nữ", bg: "#FCE4EC", color: "#C2185B" },
+    [EGENDER.MALE]: { label: "Male", bg: "#E3F2FD", color: "#1976D2" },
+    [EGENDER.FEMALE]: { label: "Female", bg: "#FCE4EC", color: "#C2185B" },
   },
   recordStatus: {
-    [ERECORD_STATUS.Active]: { label: "Hoạt động", bg: "#E6F4EA", color: "#2E7D32" },
-    [ERECORD_STATUS.NoActive]: { label: "Không hoạt động", bg: "#F0F0F0", color: "#616161" },
-    [ERECORD_STATUS.Locked]: { label: "Đã khoá", bg: "#FFF9E1", color: "#F9A825" },
-    [ERECORD_STATUS.Deleted]: { label: "Đã xoá", bg: "#FDECEA", color: "#D32F2F" },
+    [ERECORD_STATUS.Active]: { label: "Active", bg: "#E6F4EA", color: "#2E7D32" },
+    [ERECORD_STATUS.NoActive]: { label: "Inactive", bg: "#F0F0F0", color: "#616161" },
+    [ERECORD_STATUS.Locked]: { label: "Locked", bg: "#FFF9E1", color: "#F9A825" },
+    [ERECORD_STATUS.Deleted]: { label: "Deleted", bg: "#FDECEA", color: "#D32F2F" },
   },
   orderStatus: {
-    [EORDER_STATUS.Pending]: { label: "Chờ xử lý", bg: "#FFF3E0", color: "#F57C00" },
-    [EORDER_STATUS.Confirmed]: { label: "Đã xác nhận", bg: "#E3F2FD", color: "#1976D2" },
-    [EORDER_STATUS.InTransit]: { label: "Đang vận chuyển", bg: "#E8F5E9", color: "#388E3C" },
-    [EORDER_STATUS.Delivered]: { label: "Đã giao", bg: "#E0F7FA", color: "#00838F" },
-    [EORDER_STATUS.Cancelled]: { label: "Đã huỷ", bg: "#FDECEA", color: "#D32F2F" },
+    [EORDER_STATUS.Pending]: { label: "Pending", bg: "#FFF3E0", color: "#F57C00" },
+    [EORDER_STATUS.Confirmed]: { label: "Confirmed", bg: "#E3F2FD", color: "#1976D2" },
+    [EORDER_STATUS.InTransit]: { label: "In transit", bg: "#E8F5E9", color: "#388E3C" },
+    [EORDER_STATUS.Delivered]: { label: "Delivered", bg: "#E0F7FA", color: "#00838F" },
+    [EORDER_STATUS.Cancelled]: { label: "Cancelled", bg: "#FDECEA", color: "#D32F2F" },
   },
   payment: {
-    [EPaymentTerms.Prepaid]: { label: "Trả trước", bg: "#E1F5FE", color: "#0288D1" },
-    [EPaymentTerms.Postpaid]: { label: "Trả sau", bg: "#FFF8E1", color: "#FBC02D" },
+    [EPaymentTerms.Prepaid]: { label: "Prepaid", bg: "#E1F5FE", color: "#0288D1" },
+    [EPaymentTerms.Postpaid]: { label: "Postpaid", bg: "#FFF8E1", color: "#FBC02D" },
   },
   chargeWeightType: {
     [ECHARGEABLE_WEIGHT_TYPE.DETAIL]: {
-      label: "Tính theo kiện",
+      label: "By package",
       bg: "#E1F5FE",
       color: "#0288D1",
     },
     [ECHARGEABLE_WEIGHT_TYPE.TOTAL]: {
-      label: "Tính toàn bộ",
+      label: "Total weight",
       bg: "#FFF8E1",
       color: "#FBC02D",
     },
   },
   companyType: {
-    [ECOMPANY_TYPE.Carrier]: { label: "Hãng bay", bg: "#E8F5E9", color: "#388E3C" },
-    [ECOMPANY_TYPE.Partner]: { label: "Đối tác", bg: "#E3F2FD", color: "#1976D2" },
-    [ECOMPANY_TYPE.Customer]: { label: "Khách hàng", bg: "#F3E5F5", color: "#7B1FA2" },
-    [ECOMPANY_TYPE.Supplier]: { label: "Nhà cung cấp", bg: "#FFFDE7", color: "#FBC02D" },
+    [ECOMPANY_TYPE.Carrier]: { label: "Sub Carrier", bg: "#E8F5E9", color: "#388E3C" },
+    [ECOMPANY_TYPE.Customer]: { label: "Partner", bg: "#E3F2FD", color: "#1976D2" },
   },
   userRole: {
-    // [EUSER_ROLES.SupperAdmin]: { label: "Supper", bg: "#FFD700", color: "#C62828" },
     [EUSER_ROLES.Admin]: { label: "Admin", bg: "#E3F2FD", color: "#1565C0" },
-    [EUSER_ROLES.OfficeStaff]: { label: "Văn Phòng", bg: "#FFF9E1", color: "#F9A825" },
-    [EUSER_ROLES.WarehouseStaff]: { label: "Kho", bg: "#E0F2F1", color: "#00897B" },
-    [EUSER_ROLES.Partner]: { label: "Đối tác", bg: "#E8F5E9", color: "#388E3C" },
-    [EUSER_ROLES.Customer]: { label: "Khách hàng", bg: "#F3E5F5", color: "#7B1FA2" },
+    [EUSER_ROLES.OfficeStaff]: { label: "Office Staff", bg: "#FFF9E1", color: "#F9A825" },
+    [EUSER_ROLES.WarehouseStaff]: { label: "Warehouse Staff", bg: "#E0F2F1", color: "#00897B" },
+    [EUSER_ROLES.Partner]: { label: "Partner", bg: "#E8F5E9", color: "#388E3C" },
+    [EUSER_ROLES.Customer]: { label: "Customer", bg: "#F3E5F5", color: "#7B1FA2" },
   },
 } as const;
 

@@ -16,30 +16,30 @@ export default function CompanyCarrierDetailDialog({ open, onClose, company }: P
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle color="primary" sx={{ fontWeight: "bold" }}>
-        CHI TIẾT HÃNG BAY
+        CARRIER DETAIL
       </DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={2}>
           <Grid size={12}>
-            <InfoRow label="Mã Hãng Bay" value={company.code} />
+            <InfoRow label="Carrier Code" value={company.code} />
           </Grid>
           <Grid size={12}>
-            <InfoRow label="Tên Hãng Bay" value={company.name} />
+            <InfoRow label="Carrier Name" value={company.name} />
           </Grid>
           <Grid size={12}>
-            <InfoRow label="Mã số thuế" value={company.taxCode} />
+            <InfoRow label="Tax Code" value={company.taxCode} />
           </Grid>
           <Grid size={12}>
-            <InfoRow label="Địa chỉ" value={company.address} />
+            <InfoRow label="Address" value={company.address} />
           </Grid>
           <Grid size={12}>
-            <InfoRow label="Trạng thái" value={<EnumChip type="recordStatus" value={company.status} />} />
+            <InfoRow label="Status" value={<EnumChip type="recordStatus" value={company.status} />} />
           </Grid>
         </Grid>
       </DialogContent>
       <DialogActions>
         <Box flex={1} />
-        <Button onClick={onClose}>Đóng</Button>
+        <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );

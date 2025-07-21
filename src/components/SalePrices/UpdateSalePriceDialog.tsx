@@ -77,7 +77,6 @@ export default function UpdateSalePriceDialog({ open, group, onClose, onUpdated 
     setShowPerKg(false);
   }, [group, open]);
 
-  // ✅ FIX DELETE LOGIC CHUẨN:
   const handleDeleteRow = (type: "doc" | "parcel" | "perKg", weight: string) => {
     const updater = type === "doc" ? setDocRows : type === "parcel" ? setParcelRows : setPerKgRows;
     const rows = type === "doc" ? docRows : type === "parcel" ? parcelRows : perKgRows;
@@ -108,15 +107,16 @@ export default function UpdateSalePriceDialog({ open, group, onClose, onUpdated 
         datas,
       };
       await updateGroupSalePriceApi(payload);
-      showNotification("Cập nhật bảng giá thành công", "success");
+      showNotification("Sale price table updated successfully", "success");
       onUpdated();
       onClose();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật", "error");
+      showNotification(err.message || "Error updating sale price", "error");
     }
   };
 
   const getZones = (rows: ISalePriceGroupData[]) => [...new Set(rows.map((r) => r.zone))].sort((a, b) => a - b);
+
   const getWeightKeys = (rows: ISalePriceGroupData[], isPerKg = false) =>
     [...new Set(rows.map((r) => (isPerKg ? `${r.weightMin.toFixed(1)}–${r.weightMax.toFixed(1)}` : r.weightMax.toFixed(1))))].sort((a, b) => {
       if (!isPerKg) return Number(a) - Number(b);
@@ -141,7 +141,7 @@ export default function UpdateSalePriceDialog({ open, group, onClose, onUpdated 
                     Zone {z}
                   </TableCell>
                 ))}
-                <TableCell sx={{ bgcolor: "#f8d7da", width: 36 }}></TableCell>
+                <TableCell sx={{ bgcolor: "#f8d7da", width: 36 }} />
               </TableRow>
             </TableHead>
             <TableBody>
@@ -161,9 +161,7 @@ export default function UpdateSalePriceDialog({ open, group, onClose, onUpdated 
                             onChange={(e) => handleCellChange(type, idx, Number(e.target.value))}
                             inputProps={{ style: { textAlign: "center" }, min: 0 }}
                           />
-                        ) : (
-                          ""
-                        )}
+                        ) : null}
                       </TableCell>
                     );
                   })}
@@ -183,29 +181,29 @@ export default function UpdateSalePriceDialog({ open, group, onClose, onUpdated 
 
   return (
     <Dialog open={open} maxWidth="lg" fullWidth onClose={onClose}>
-      <DialogTitle sx={{ color: lightBlue[500], fontWeight: "bold" }}>CẬP NHẬT BẢNG GIÁ BÁN</DialogTitle>
+      <DialogTitle sx={{ color: lightBlue[500], fontWeight: "bold" }}>UPDATE SALE PRICE TABLE</DialogTitle>
       <DialogContent>
         <Stack spacing={2}>
           <Paper sx={{ p: 2, mb: 1 }} variant="outlined">
             <Grid container spacing={2}>
               <Grid size={6}>
                 <Typography>
-                  Hãng: <b>{typeof group.carrierId === "object" ? group.carrierId?.name : group.carrierId}</b>
+                  Sub Carrier: <b>{typeof group.carrierId === "object" ? group.carrierId?.name : group.carrierId}</b>
                 </Typography>
               </Grid>
               <Grid size={6}>
                 <Typography>
-                  Partner: <b>{typeof group.partnerId === "object" ? group.partnerId?.name : group.partnerId}</b>
+                  Customer: <b>{typeof group.partnerId === "object" ? group.partnerId?.name : group.partnerId}</b>
                 </Typography>
               </Grid>
               <Grid size={6}>
                 <Typography>
-                  Dịch vụ: <b>{typeof group.serviceId === "object" ? group.serviceId?.code : group.serviceId}</b>
+                  Service: <b>{typeof group.serviceId === "object" ? group.serviceId?.code : group.serviceId}</b>
                 </Typography>
               </Grid>
               <Grid size={6}>
                 <Typography>
-                  Tiền tệ: <b>{currency}</b>
+                  Currency: <b>{currency}</b>
                 </Typography>
               </Grid>
             </Grid>
@@ -225,7 +223,7 @@ export default function UpdateSalePriceDialog({ open, group, onClose, onUpdated 
                   }, 0);
                 }}
               >
-                Hiển thị bảng Non-Document Rates
+                Show Non-Document Rates
               </Button>
             )}
             {loadingParcel && (
@@ -249,7 +247,7 @@ export default function UpdateSalePriceDialog({ open, group, onClose, onUpdated 
                   }, 0);
                 }}
               >
-                Hiển thị bảng Per KG Rates
+                Show Per KG Rates
               </Button>
             )}
             {loadingPerKg && (
@@ -258,16 +256,16 @@ export default function UpdateSalePriceDialog({ open, group, onClose, onUpdated 
                 <CircularProgress size="18px" sx={{ color: lightBlue[800] }} />
               </Box>
             )}
-            {showPerKg && renderTable("Giá cước mỗi kg (Per KG)", perKgRows, "perKg", true)}
+            {showPerKg && renderTable("Per KG Rates", perKgRows, "perKg", true)}
           </Box>
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} variant="outlined">
-          Đóng
+          Close
         </Button>
         <Button onClick={handleSubmit} variant="contained">
-          Cập nhật
+          Update
         </Button>
       </DialogActions>
     </Dialog>

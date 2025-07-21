@@ -17,10 +17,10 @@ interface Props {
 export default function OrderAddressSection({ label, data, setData, showCountry = false, requiredFields = [], disabled, errors = {}, fieldPrefix = "" }: Props) {
   return (
     <Box sx={{ p: 2 }}>
-      {/* Name */}
+      {/* Full Name */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
-          <RequiredLabel required={requiredFields.includes("fullname")}>{label} NAME</RequiredLabel>
+          <RequiredLabel required={requiredFields.includes("fullname")}>{label} Name</RequiredLabel>
         </Grid>
         <Grid size={8}>
           <TextField
@@ -35,11 +35,11 @@ export default function OrderAddressSection({ label, data, setData, showCountry 
           />
         </Grid>
       </Grid>
-      {/* Attention (nếu có) */}
+      {/* Attention (if exists) */}
       {"attention" in data && (
         <Grid container alignItems="center" spacing={2} mb={1}>
           <Grid size={4}>
-            <RequiredLabel required={requiredFields.includes("attention")}>ATTENTION</RequiredLabel>
+            <RequiredLabel required={requiredFields.includes("attention")}>Attention</RequiredLabel>
           </Grid>
           <Grid size={8}>
             <TextField
@@ -55,10 +55,10 @@ export default function OrderAddressSection({ label, data, setData, showCountry 
           </Grid>
         </Grid>
       )}
-      {/* Phone */}
+      {/* Contact Number */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
-          <RequiredLabel required={requiredFields.includes("phone")}>CONTACT NUMBER</RequiredLabel>
+          <RequiredLabel required={requiredFields.includes("phone")}>Contact Number</RequiredLabel>
         </Grid>
         <Grid size={8}>
           <TextField
@@ -76,7 +76,7 @@ export default function OrderAddressSection({ label, data, setData, showCountry 
       {/* Address 1 */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
-          <RequiredLabel required={requiredFields.includes("address1")}>ADDRESS 1</RequiredLabel>
+          <RequiredLabel required={requiredFields.includes("address1")}>Address Line 1</RequiredLabel>
         </Grid>
         <Grid size={8}>
           <TextField
@@ -91,10 +91,10 @@ export default function OrderAddressSection({ label, data, setData, showCountry 
           />
         </Grid>
       </Grid>
-      {/* Address 2 (not required) */}
+      {/* Address 2 */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
-          <RequiredLabel required={requiredFields.includes("address2")}>ADDRESS 2</RequiredLabel>
+          <RequiredLabel required={requiredFields.includes("address2")}>Address Line 2</RequiredLabel>
         </Grid>
         <Grid size={8}>
           <TextField
@@ -109,10 +109,10 @@ export default function OrderAddressSection({ label, data, setData, showCountry 
           />
         </Grid>
       </Grid>
-      {/* Address 3 (not required) */}
+      {/* Address 3 */}
       <Grid container alignItems="center" spacing={2} mb={1}>
         <Grid size={4}>
-          <RequiredLabel>ADDRESS 3</RequiredLabel>
+          <RequiredLabel>Address Line 3</RequiredLabel>
         </Grid>
         <Grid size={8}>
           <TextField disabled={disabled} value={data.address3 || ""} onChange={(e) => setData((d: any) => ({ ...d, address3: e.target.value }))} size="small" fullWidth />
@@ -122,40 +122,40 @@ export default function OrderAddressSection({ label, data, setData, showCountry 
       {"city" in data && (
         <Grid container alignItems="center" spacing={2} mb={1}>
           <Grid size={4}>
-            <RequiredLabel>CITY</RequiredLabel>
+            <RequiredLabel>City</RequiredLabel>
           </Grid>
           <Grid size={8}>
             <TextField disabled={disabled} value={data.city || ""} onChange={(e) => setData((d: any) => ({ ...d, city: e.target.value }))} size="small" fullWidth />
           </Grid>
         </Grid>
       )}
-      {/* State */}
+      {/* State/Province */}
       {"state" in data && (
         <Grid container alignItems="center" spacing={2} mb={1}>
           <Grid size={4}>
-            <RequiredLabel>STATE</RequiredLabel>
+            <RequiredLabel>State/Province</RequiredLabel>
           </Grid>
           <Grid size={8}>
             <TextField disabled={disabled} value={data.state || ""} onChange={(e) => setData((d: any) => ({ ...d, state: e.target.value }))} size="small" fullWidth />
           </Grid>
         </Grid>
       )}
-      {/* Post Code */}
+      {/* Postal Code */}
       {"postCode" in data && (
         <Grid container alignItems="center" spacing={2} mb={1}>
           <Grid size={4}>
-            <RequiredLabel>POST CODE</RequiredLabel>
+            <RequiredLabel>Postal Code</RequiredLabel>
           </Grid>
           <Grid size={8}>
             <TextField disabled={disabled} value={data.postCode || ""} onChange={(e) => setData((d: any) => ({ ...d, postCode: e.target.value }))} size="small" fullWidth />
           </Grid>
         </Grid>
       )}
-      {/* Country (optional/required) */}
+      {/* Country */}
       {showCountry && (
         <Grid container alignItems="center" spacing={2} mb={1}>
           <Grid size={4}>
-            <RequiredLabel required={requiredFields.includes("country")}>COUNTRY</RequiredLabel>
+            <RequiredLabel required={requiredFields.includes("country")}>Country</RequiredLabel>
           </Grid>
           <Grid size={8}>
             <CountrySelect

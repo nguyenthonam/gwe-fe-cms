@@ -17,11 +17,11 @@ export default function PricesPage() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Lấy tab index từ URL query (nếu có)
+  // Get tab index from URL query
   const tabParam = Number(searchParams.get("tab"));
   const [tabIndex, setTabIndex] = useState(Number.isInteger(tabParam) && tabParam >= 0 ? tabParam : 0);
 
-  // Khi url ?tab= đổi, sync lại state tabIndex
+  // Sync tabIndex with URL param
   useEffect(() => {
     if (Number.isInteger(tabParam) && tabParam >= 0 && tabParam !== tabIndex) {
       setTabIndex(tabParam);
@@ -29,7 +29,7 @@ export default function PricesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabParam]);
 
-  // Khi đổi tab, cập nhật lại url
+  // Update URL when tab changes
   const handleTabChange = (_: any, newIndex: number) => {
     setTabIndex(newIndex);
     const params = new URLSearchParams(searchParams.toString());
@@ -46,21 +46,21 @@ export default function PricesPage() {
         }}
       >
         <Typography variant="h5" mb={2} fontWeight="bold" sx={{ color: lightBlue[500] }}>
-          QUẢN LÝ GIÁ
+          PRICE MANAGEMENT
         </Typography>
 
         <Tabs value={tabIndex} onChange={handleTabChange} variant="scrollable" scrollButtons="auto" allowScrollButtonsMobile>
-          <Tab label="Giá mua" />
-          <Tab label="Giá bán" />
-          <Tab label="Khu vực" />
-          <Tab label="Thuế" />
-          <Tab label="Phụ phí" />
-          <Tab label="Phụ phí xăng dầu" />
-          <Tab label="Mã chuyến bay" />
-          <Tab label="Tỉ giá" />
+          <Tab label="Purchase Price" />
+          <Tab label="Sale Price" />
+          <Tab label="Zones" />
+          <Tab label="VAT" />
+          <Tab label="Extra Fees" />
+          <Tab label="FSC" />
+          <Tab label="CAWB Codes" />
+          <Tab label="Exchange Rates" />
         </Tabs>
 
-        <Box mt={2} className="w-full ">
+        <Box mt={2} className="w-full">
           <Paper>
             {tabIndex === 0 && <PurchasePriceManagerView />}
             {tabIndex === 1 && <SalePriceManagerView />}
@@ -68,8 +68,8 @@ export default function PricesPage() {
             {tabIndex === 3 && <VATRateManagerView />}
             {tabIndex === 4 && <ExtraFeeManagerView />}
             {tabIndex === 5 && <FSCManagerView />}
-            {tabIndex === 6 && <ExchangeRateManagerView />}
-            {tabIndex === 7 && <CAWBCodeManagerView />}
+            {tabIndex === 6 && <CAWBCodeManagerView />}
+            {tabIndex === 7 && <ExchangeRateManagerView />}
           </Paper>
         </Box>
       </Box>

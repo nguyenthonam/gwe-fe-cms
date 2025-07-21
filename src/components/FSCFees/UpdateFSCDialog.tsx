@@ -1,7 +1,6 @@
 "use client";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Select, Stack, Grid, InputLabel, FormControl } from "@mui/material";
 import { useEffect, useState } from "react";
-import { ECURRENCY } from "@/types/typeGlobals";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { updateExtraFeeApi } from "@/utils/apis/apiExtraFee";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
@@ -25,7 +24,6 @@ export default function UpdateFSCDialog({ open, onClose, onUpdated, extraFee }: 
   const [serviceId, setServiceId] = useState<string>("");
   const [name, setName] = useState<string>("");
   const [value, setValue] = useState<number | string>("");
-  const [currency, setCurrency] = useState<ECURRENCY>(ECURRENCY.VND);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [dateError, setDateError] = useState<string>("");
@@ -41,16 +39,24 @@ export default function UpdateFSCDialog({ open, onClose, onUpdated, extraFee }: 
       setServiceId(_serviceId || "");
       setName(extraFee.name || "");
       setValue(extraFee.value ?? "");
-      setCurrency(extraFee.currency || ECURRENCY.VND);
       setStartDate(extraFee.startDate ? extraFee.startDate.slice(0, 10) : "");
       setEndDate(extraFee.endDate ? extraFee.endDate.slice(0, 10) : "");
       setDateError("");
       fetchCarriers();
+    } else if (!open) {
+      setCarrierId("");
+      setServiceId("");
+      setName("");
+      setValue("");
+      setStartDate("");
+      setEndDate("");
+      setDateError("");
+      setCarriers([]);
+      setServices([]);
     }
     // eslint-disable-next-line
   }, [open, extraFee]);
 
-  // Validate startDate/endDate realtime
   useEffect(() => {
     if (startDate && endDate) {
       if (new Date(startDate) > new Date(endDate)) {
@@ -63,7 +69,6 @@ export default function UpdateFSCDialog({ open, onClose, onUpdated, extraFee }: 
     }
   }, [startDate, endDate]);
 
-  // Load services when carrierId changes
   useEffect(() => {
     if (carrierId && carriers.length) fetchServices(carrierId);
     // eslint-disable-next-line
@@ -106,14 +111,12 @@ export default function UpdateFSCDialog({ open, onClose, onUpdated, extraFee }: 
       showNotification(dateError, "warning");
       return;
     }
-
     // Build changed fields object
     const changedFields: any = {};
     if (carrierId !== (typeof extraFee.carrierId === "object" ? extraFee.carrierId?._id : extraFee.carrierId)) changedFields.carrierId = carrierId;
     if (serviceId !== (typeof extraFee.serviceId === "object" ? extraFee.serviceId?._id : extraFee.serviceId)) changedFields.serviceId = serviceId;
     if (name !== extraFee.name) changedFields.name = name;
     if (Number(value) !== Number(extraFee.value)) changedFields.value = Number(value);
-    if (currency !== extraFee.currency) changedFields.currency = currency;
     if (startDate !== (extraFee.startDate?.slice(0, 10) || "")) changedFields.startDate = startDate;
     if (endDate !== (extraFee.endDate?.slice(0, 10) || "")) changedFields.endDate = endDate;
 
@@ -146,8 +149,8 @@ export default function UpdateFSCDialog({ open, onClose, onUpdated, extraFee }: 
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Carrier</InputLabel>
-                <Select label="Carrier" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
+                <InputLabel>Sub Carrier</InputLabel>
+                <Select label="Sub Carrier" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
                   {carriers?.map((c) => (
                     <MenuItem key={c._id} value={c._id}>
                       {c.name}

@@ -153,8 +153,8 @@ export default function UpdateVATRateDialog({ open, onClose, onUpdated, vatRate 
           <Grid container spacing={2}>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Carrier</InputLabel>
-                <Select label="Carrier" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
+                <InputLabel>Sub Carrier</InputLabel>
+                <Select label="Sub Carrier" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
                   {carriers.map((c) => (
                     <MenuItem key={c._id} value={c._id}>
                       {c.name}

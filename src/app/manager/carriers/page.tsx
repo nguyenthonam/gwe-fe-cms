@@ -4,7 +4,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Box, Typography, Paper, Tabs, Tab, Container } from "@mui/material";
 import { lightBlue } from "@mui/material/colors";
 import CompanyCarrierManagerView from "@/components/Carriers/CompanyCarrierManagerView";
-import CarrierManagerView from "@/components/Carriers/CarrierManagerView";
+import CarrierManagerView from "@/components/Carriers/SubCarriers/CarrierManagerView";
 import ServiceManagerView from "@/components/Services/ServiceManagerView";
 
 export default function CarriersPage() {
@@ -12,11 +12,11 @@ export default function CarriersPage() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Lấy tab từ query (nếu có), mặc định là 0
+  // Get tab from query (if any), default is 0
   const tabParam = Number(searchParams.get("tab"));
   const [tabIndex, setTabIndex] = useState(Number.isInteger(tabParam) && tabParam >= 0 ? tabParam : 0);
 
-  // Khi query tab trên url đổi, đồng bộ tabIndex (ví dụ khi user paste link mới)
+  // Sync tabIndex when tab query changes in URL (e.g. user pastes new link)
   useEffect(() => {
     if (Number.isInteger(tabParam) && tabParam >= 0 && tabParam !== tabIndex) {
       setTabIndex(tabParam);
@@ -24,7 +24,7 @@ export default function CarriersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabParam]);
 
-  // Khi đổi tab trên UI, update lại query trên url
+  // When user changes tab in UI, update the URL query
   const handleTabChange = (_: any, newIndex: number) => {
     setTabIndex(newIndex);
     const params = new URLSearchParams(searchParams.toString());
@@ -41,13 +41,13 @@ export default function CarriersPage() {
         }}
       >
         <Typography variant="h5" mb={2} fontWeight="bold" sx={{ color: lightBlue[500] }}>
-          QUẢN LÝ HÃNG BAY
+          CARRIER MANAGEMENT
         </Typography>
 
         <Tabs value={tabIndex} onChange={handleTabChange}>
-          <Tab label="Hãng Bay" />
-          <Tab label="Nhà Vận Chuyển" />
-          <Tab label="Dịch vụ" />
+          <Tab label="Carriers" />
+          <Tab label="Sub Carriers" />
+          <Tab label="Services" />
         </Tabs>
 
         <Box mt={2} className="w-full ">

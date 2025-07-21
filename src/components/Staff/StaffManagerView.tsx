@@ -52,7 +52,6 @@ export default function StaffManagerView() {
       });
       setStaffs(res?.data?.data?.data || []);
       setTotal(res?.data?.data?.meta?.total || 0);
-      console.log("Staff:", staffs);
     } catch (error) {
       console.error("Failed to fetch staffs", error);
     } finally {
@@ -67,44 +66,43 @@ export default function StaffManagerView() {
   const handleLockToggle = async (staff: IUser) => {
     try {
       if (!staff?._id) return;
-      const confirm = window.confirm(staff.status === ERECORD_STATUS.Active ? "Khoá nhân viên này?" : "Mở khoá nhân viên này?");
+      const confirm = window.confirm(staff.status === ERECORD_STATUS.Active ? "Lock this staff?" : "Unlock this staff?");
       if (!confirm) return;
 
       const res = staff.status === ERECORD_STATUS.Active ? await lockUserApi(staff._id) : await unlockUserApi(staff._id);
-      showNotification(res?.data?.message || "Cập nhật thành công", "success");
+      showNotification(res?.data?.message || "Status updated successfully", "success");
       fetchStaffs();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật trạng thái", "error");
+      showNotification(err.message || "Error updating status", "error");
     }
   };
 
   const handleDelete = async (staff: IUser) => {
     if (!staff._id) return;
-    if (!window.confirm("Bạn có chắc muốn xoá nhân viên này?")) return;
+    if (!window.confirm("Are you sure you want to delete this staff?")) return;
     try {
       await deleteUserApi(staff._id);
-      showNotification("Đã xoá thành công", "success");
+      showNotification("Deleted successfully", "success");
       fetchStaffs();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi xoá nhân viên", "error");
+      showNotification(err.message || "Error deleting staff", "error");
     }
   };
 
   const handleExportExcel = () => {
     const data = staffs.map((s) => ({
       ID: s.userId || "",
-      "HỌ TÊN": s.contact?.fullname || "",
-      EMAIL: s.email || "",
-      SĐT: s.contact?.phone || "",
-      "CÔNG TY": typeof s.companyId === "object" ? s.companyId?.name || "" : String(s.companyId || ""),
-      "GIỚI TÍNH": genderLabel[s.gender as keyof typeof genderLabel] || "Khác",
-      "TRẠNG THÁI": recordStatusLabel[s.status as keyof typeof recordStatusLabel] || s.status,
+      "Full Name": s.contact?.fullname || "",
+      Email: s.email || "",
+      "Contact Number": s.contact?.phone || "",
+      Company: typeof s.companyId === "object" ? s.companyId?.name || "" : String(s.companyId || ""),
+      Gender: genderLabel[s.gender as keyof typeof genderLabel] || "Other",
+      Status: recordStatusLabel[s.status as keyof typeof recordStatusLabel] || s.status,
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
     ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
 
-    // Style cho từng cell
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -113,15 +111,8 @@ export default function StaffManagerView() {
         const isHeader = R === 0;
 
         (ws[cell] as any).s = {
-          font: {
-            bold: isHeader,
-            sz: isHeader ? 12 : 11,
-          },
-          alignment: {
-            horizontal: isHeader ? "center" : "left",
-            vertical: "center",
-            wrapText: true,
-          },
+          font: { bold: isHeader, sz: isHeader ? 12 : 11 },
+          alignment: { horizontal: isHeader ? "center" : "left", vertical: "center", wrapText: true },
           border: {
             top: { style: "thin", color: { auto: 1 } },
             bottom: { style: "thin", color: { auto: 1 } },
@@ -133,8 +124,8 @@ export default function StaffManagerView() {
     }
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "BẢNG NHÂN VIÊN");
-    XLSX.writeFile(wb, "BANG_NHAN_VIEN.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "STAFF_TABLE");
+    XLSX.writeFile(wb, "STAFF_TABLE.xlsx");
   };
 
   const handleCreated = () => {
@@ -169,14 +160,14 @@ export default function StaffManagerView() {
         </Box>
       ),
     },
-    { field: "fullname", headerName: "HỌ TÊN", flex: 1, minWidth: 150, renderCell: ({ row }: { row: IUser }) => row.contact?.fullname || "" },
-    { field: "companyId", headerName: "CÔNG TY", flex: 1, minWidth: 100, renderCell: ({ row }) => (typeof row.companyId === "object" ? row.companyId?.name : row.companyId) },
-    { field: "email", headerName: "EMAIL", flex: 1, minWidth: 180 },
-    { field: "phone", headerName: "SĐT", flex: 1, minWidth: 120, renderCell: ({ row }: { row: IUser }) => row.contact?.phone || "" },
-    { field: "gender", headerName: "GIỚI TÍNH", flex: 1, renderCell: ({ row }: { row: IUser }) => <EnumChip type="gender" value={row.gender} /> },
+    { field: "fullname", headerName: "Full Name", flex: 1, minWidth: 150, renderCell: ({ row }: { row: IUser }) => row.contact?.fullname || "" },
+    { field: "companyId", headerName: "Company", flex: 1, minWidth: 100, renderCell: ({ row }) => (typeof row.companyId === "object" ? row.companyId?.name : row.companyId) },
+    { field: "email", headerName: "Email", flex: 1, minWidth: 180 },
+    { field: "phone", headerName: "Contact Number", flex: 1, minWidth: 120, renderCell: ({ row }: { row: IUser }) => row.contact?.phone || "" },
+    { field: "gender", headerName: "Gender", flex: 1, renderCell: ({ row }: { row: IUser }) => <EnumChip type="gender" value={row.gender} /> },
     {
       field: "status",
-      headerName: "TRẠNG THÁI",
+      headerName: "Status",
       flex: 1,
       minWidth: 140,
       renderCell: ({ value }) => <EnumChip type="recordStatus" value={value} />,
@@ -202,21 +193,21 @@ export default function StaffManagerView() {
   return (
     <Box className="space-y-4 p-6">
       <Box mb={2} display="flex" gap={2} alignItems="center" justifyContent="space-between">
-        <TextField placeholder="Tìm nhân viên..." size="small" className="max-w-[250px] w-full" onChange={(e) => debouncedSearch(e.target.value)} />
+        <TextField placeholder="Search staff..." size="small" className="max-w-[250px] w-full" onChange={(e) => debouncedSearch(e.target.value)} />
         <Select size="small" displayEmpty value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 150 }}>
-          <MenuItem value="">Mặc định</MenuItem>
-          <MenuItem value="all">Tất cả</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Locked}>Đã khoá</MenuItem>
-          <MenuItem value={ERECORD_STATUS.NoActive}>Không hoạt động</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Deleted}>Đã xoá</MenuItem>
+          <MenuItem value="">Default</MenuItem>
+          <MenuItem value="all">All</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Active}>Active</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Locked}>Locked</MenuItem>
+          <MenuItem value={ERECORD_STATUS.NoActive}>Inactive</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Deleted}>Deleted</MenuItem>
         </Select>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
-            Xuất Excel
+            Export Excel
           </Button>
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
-            Tạo mới
+            Create New
           </Button>
         </Stack>
       </Box>

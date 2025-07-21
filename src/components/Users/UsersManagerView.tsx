@@ -44,7 +44,7 @@ export default function UserManagerView() {
       setCompanies(res?.data?.data?.data || []);
     } catch (err) {
       console.error(err);
-      showNotification("Không thể tải danh sách công ty", "error");
+      showNotification("Failed to load companies", "error");
     }
   };
 
@@ -63,7 +63,7 @@ export default function UserManagerView() {
       setTotal(res?.data?.data?.meta?.total || 0);
     } catch (err) {
       console.error(err);
-      showNotification("Không thể tải danh sách User", "error");
+      showNotification("Failed to load users", "error");
     } finally {
       setLoading(false);
     }
@@ -81,38 +81,38 @@ export default function UserManagerView() {
   const handleLockToggle = async (item: IUser) => {
     try {
       if (!item._id) return;
-      const confirm = window.confirm(item.status === ERECORD_STATUS.Active ? "Khoá tài khoản này?" : "Mở khoá tài khoản này?");
+      const confirm = window.confirm(item.status === ERECORD_STATUS.Active ? "Lock this account?" : "Unlock this account?");
       if (!confirm) return;
       const res = item.status === ERECORD_STATUS.Active ? await lockUserApi(item._id) : await unlockUserApi(item._id);
-      showNotification(res?.data?.message || "Cập nhật thành công", "success");
+      showNotification(res?.data?.message || "Updated successfully", "success");
       fetchData();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật trạng thái", "error");
+      showNotification(err.message || "Failed to update status", "error");
     }
   };
 
   const handleResetPassword = async (item: IUser) => {
     if (!item._id) return;
-    if (!window.confirm("Bạn có chắc muốn lấy lại mật khẩu tài khoản này?")) return;
+    if (!window.confirm("Are you sure you want to reset this password?")) return;
     try {
       await resetPasswordUserApi(item._id);
-      showNotification("Đã gửi mật khẩu mới tới Email thành công!", "success");
+      showNotification("New password has been sent to email!", "success");
       fetchData();
     } catch (err: any) {
       console.error(err.message);
-      showNotification(err.message || "Lỗi khi lấy lại mật khẩu!", "error");
+      showNotification(err.message || "Failed to reset password", "error");
     }
   };
 
   const handleDelete = async (item: IUser) => {
     if (!item._id) return;
-    if (!window.confirm("Bạn có chắc muốn xoá tài khoản này?")) return;
+    if (!window.confirm("Are you sure you want to delete this account?")) return;
     try {
       await deleteUserApi(item._id);
-      showNotification("Đã xoá thành công", "success");
+      showNotification("Deleted successfully", "success");
       fetchData();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi xoá", "error");
+      showNotification(err.message || "Failed to delete", "error");
     }
   };
 
@@ -133,7 +133,7 @@ export default function UserManagerView() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "USER_LIST");
-    XLSX.writeFile(wb, "Danh_Sach_User.xlsx");
+    XLSX.writeFile(wb, "User_List.xlsx");
   };
 
   const columns: GridColDef[] = [
@@ -179,14 +179,14 @@ export default function UserManagerView() {
     },
     {
       field: "contact",
-      headerName: "LIÊN HỆ",
+      headerName: "CONTACT",
       minWidth: 160,
       flex: 1,
       renderCell: ({ row }) => row.contact?.name || "-",
     },
     {
       field: "status",
-      headerName: "TRẠNG THÁI",
+      headerName: "STATUS",
       minWidth: 120,
       flex: 0.7,
       renderCell: ({ value }) => <EnumChip type="recordStatus" value={value} />,
@@ -213,18 +213,18 @@ export default function UserManagerView() {
   return (
     <Box className="space-y-4 p-6">
       <Box display="flex" flexWrap="wrap" gap={1} justifyContent="space-between" alignItems="center">
-        <TextField placeholder="Tìm kiếm..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 250 }} />
+        <TextField placeholder="Search..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 250 }} />
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
-            Xuất Excel
+            Export Excel
           </Button>
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
-            Tạo mới
+            Create
           </Button>
         </Stack>
         <Stack direction="row" spacing={1} width={"100%"}>
           <Select size="small" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
-            <MenuItem value="">Tất cả Role</MenuItem>
+            <MenuItem value="">All Roles</MenuItem>
             {Object.values(EUSER_ROLES).map((r) => (
               <MenuItem key={r} value={r}>
                 <EnumChip type="userRole" value={r} />
@@ -232,7 +232,7 @@ export default function UserManagerView() {
             ))}
           </Select>
           <Select size="small" value={companyIdFilter} onChange={(e) => setCompanyIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
-            <MenuItem value="">Tất cả Company</MenuItem>
+            <MenuItem value="">All Companies</MenuItem>
             {companies.map((c) => (
               <MenuItem key={c._id} value={c._id}>
                 {c.name}
@@ -240,12 +240,12 @@ export default function UserManagerView() {
             ))}
           </Select>
           <Select size="small" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} displayEmpty sx={{ minWidth: 150 }}>
-            <MenuItem value="">Mặc định</MenuItem>
-            <MenuItem value="all">Tất cả</MenuItem>
-            <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
-            <MenuItem value={ERECORD_STATUS.Locked}>Đã khoá</MenuItem>
-            <MenuItem value={ERECORD_STATUS.NoActive}>Không hoạt động</MenuItem>
-            <MenuItem value={ERECORD_STATUS.Deleted}>Đã xoá</MenuItem>
+            <MenuItem value="">Default</MenuItem>
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value={ERECORD_STATUS.Active}>Active</MenuItem>
+            <MenuItem value={ERECORD_STATUS.Locked}>Locked</MenuItem>
+            <MenuItem value={ERECORD_STATUS.NoActive}>Inactive</MenuItem>
+            <MenuItem value={ERECORD_STATUS.Deleted}>Deleted</MenuItem>
           </Select>
         </Stack>
       </Box>

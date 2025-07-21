@@ -26,7 +26,7 @@ export default function UserDetailDialog({ open, onClose, user }: Props) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle className="uppercase" color="primary" sx={{ fontWeight: "bold" }}>
-        Chi tiết tài khoản
+        User Details
       </DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2} mt={1}>
@@ -45,37 +45,37 @@ export default function UserDetailDialog({ open, onClose, user }: Props) {
               <InfoRow label="Role" value={<EnumChip type="userRole" value={user.role} />} />
             </Grid>
             <Grid size={6}>
-              <InfoRow label="Trạng thái" value={<EnumChip type="recordStatus" value={user.status} />} />
+              <InfoRow label="Status" value={<EnumChip type="recordStatus" value={user.status} />} />
             </Grid>
             <Grid size={6}>
-              <InfoRow label="Công ty" value={typeof user.companyId === "object" ? user.companyId?.name : user.companyId} />
+              <InfoRow label="Company" value={typeof user.companyId === "object" ? user.companyId?.name : user.companyId} />
             </Grid>
             <Grid size={6}>
-              <InfoRow label="Tên liên hệ" value={user.contact?.fullname} />
+              <InfoRow label="Contact Name" value={user.contact?.fullname} />
             </Grid>
             <Grid size={6}>
-              <InfoRow label="SĐT" value={user.contact?.phone} />
+              <InfoRow label="Contact Number" value={user.contact?.phone} />
             </Grid>
             <Grid size={6}>
-              <InfoRow label="Giới tính" value={user.gender === EGENDER.MALE ? "Nam" : user.gender === EGENDER.FEMALE ? "Nữ" : "-"} />
+              <InfoRow label="Gender" value={user.gender === EGENDER.MALE ? "Male" : user.gender === EGENDER.FEMALE ? "Female" : "-"} />
             </Grid>
             <Grid size={6}>
-              <InfoRow label="Ngày sinh" value={user.birthday ? new Date(user.birthday).toLocaleDateString("vi-VN") : "-"} />
+              <InfoRow label="Birthday" value={user.birthday ? new Date(user.birthday).toLocaleDateString("en-GB") : "-"} />
             </Grid>
             <Grid size={6}>
-              <InfoRow label="CMND/CCCD" value={user.identity_key?.id} />
+              <InfoRow label="ID Number" value={user.identity_key?.id} />
             </Grid>
             <Grid size={6}>
-              <InfoRow label="Ngày cấp" value={user.identity_key?.createdAt} />
+              <InfoRow label="Issued Date" value={user.identity_key?.createdAt} />
             </Grid>
             <Grid size={12}>
-              <InfoRow label="Nơi cấp" value={user.identity_key?.address} />
+              <InfoRow label="Issued By" value={user.identity_key?.address} />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Đóng</Button>
+        <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );

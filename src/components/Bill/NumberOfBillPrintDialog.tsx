@@ -8,7 +8,7 @@ interface BillPopupProps {
 }
 
 export default function BillNumberInputPopup({ open, onClose, onConfirm }: BillPopupProps) {
-  const [billNumber, setBillNumber] = useState<string>("2"); // Chuyển thành string để kiểm soát input
+  const [billNumber, setBillNumber] = useState<string>("2");
 
   const handleConfirm = () => {
     const finalValue = billNumber === "" ? 0 : Number(billNumber);
@@ -18,32 +18,31 @@ export default function BillNumberInputPopup({ open, onClose, onConfirm }: BillP
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value;
-
     if (val.length > 1) {
-      val = val.replace(/^0+/, ""); // Loại bỏ số 0 đầu tiên nếu có nhiều chữ số
+      val = val.replace(/^0+/, "");
     }
-
     if (/^\d*$/.test(val)) {
-      // Chỉ cho phép nhập số
       setBillNumber(val);
     }
   };
+
   const handleBlur = () => {
-    setBillNumber((prev) => (prev === "" ? "0" : prev)); // Đặt lại 0 nếu input trống
+    setBillNumber((prev) => (prev === "" ? "0" : prev));
   };
 
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle className="mb-2 border-b-2 border-gray-300">
-        <p className="uppercase text-blue-600">Số Lượng Bill Cần In</p>
+        <p className="uppercase text-blue-600">NUMBER OF BILLS TO PRINT</p>
       </DialogTitle>
       <DialogContent>
         <TextField
           autoFocus
           margin="dense"
-          type="text" // Dùng text thay vì number để tránh lỗi
+          type="text"
           fullWidth
           variant="outlined"
+          label="Enter bill quantity"
           value={billNumber}
           onChange={handleChange}
           inputRef={(input) => {
@@ -57,10 +56,10 @@ export default function BillNumberInputPopup({ open, onClose, onConfirm }: BillP
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="secondary">
-          Hủy
+          Cancel
         </Button>
-        <Button onClick={handleConfirm} color="primary">
-          Xác nhận
+        <Button onClick={handleConfirm} color="primary" variant="contained">
+          Confirm
         </Button>
       </DialogActions>
     </Dialog>

@@ -182,8 +182,8 @@ export default function UpdateExtraFeeDialog({ open, onClose, onUpdated, extraFe
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth size="small">
-                <InputLabel>Carrier</InputLabel>
-                <Select label="Carrier" value={typeof form.carrierId === "object" ? form.carrierId?._id : form.carrierId || ""} onChange={(e) => handleChange("carrierId", e.target.value)}>
+                <InputLabel>Sub Carrier</InputLabel>
+                <Select label="Sub Carrier" value={typeof form.carrierId === "object" ? form.carrierId?._id : form.carrierId || ""} onChange={(e) => handleChange("carrierId", e.target.value)}>
                   {carriers.map((c) => (
                     <MenuItem key={c._id} value={c._id}>
                       {c.name}

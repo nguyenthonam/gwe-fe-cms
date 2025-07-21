@@ -67,7 +67,7 @@ interface LayoutViewProps {
   children: React.ReactNode;
 }
 
-const drawerWidth: number = 270;
+const drawerWidth: number = 320;
 
 const openedMixin = (theme: Theme): CSSObject => ({
   width: drawerWidth,
@@ -139,37 +139,37 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
       section: null,
       items: [
         { title: "Dashboard", href: "/dashboard", icon: <DashboardIcon /> },
-        { title: "Bill", href: "/bill", icon: <ReceiptIcon /> },
+        { title: "Bills", href: "/bill", icon: <ReceiptIcon /> },
       ],
     },
     {
-      section: "Quản lý đối tác",
+      section: "Company Management",
       icon: <BusinessIcon />,
       items: [
-        { title: "Đối tác", href: "/manager/partners", icon: <PartnerIcon /> },
-        { title: "Hãng bay", href: "/manager/carriers", icon: <CarrierIcon /> },
-        { title: "Dịch vụ", href: "/manager/carriers?tab=2", icon: <DatasetIcon /> },
-        { title: "Nhà cung cấp", href: "/manager/suppliers", icon: <SupplierIcon /> },
+        { title: "Customers", href: "/manager/partners", icon: <PartnerIcon /> },
+        { title: "Carriers", href: "/manager/carriers", icon: <CarrierIcon /> },
+        { title: "Services", href: "/manager/carriers?tab=2", icon: <DatasetIcon /> },
+        { title: "Suppliers", href: "/manager/suppliers", icon: <SupplierIcon /> },
       ],
     },
     {
-      section: "Quản lý giá",
+      section: "Price Management",
       icon: <PriceIcon />,
       items: [
-        { title: "Giá mua", href: "/manager/prices?tab=0", icon: <PurchasePriceIcon /> },
-        { title: "Giá bán", href: "/manager/prices?tab=1", icon: <SalePriceIcon /> },
-        { title: "Khu vực", href: "/manager/prices?tab=2", icon: <ZoneIcon /> },
-        { title: "Thuế", href: "/manager/prices?tab=3", icon: <PercentIcon /> },
-        { title: "Phụ phí", href: "/manager/prices?tab=4", icon: <ExtraFeeIcon /> },
-        { title: "Phụ phí xăng dầu", href: "/manager/prices?tab=5", icon: <LocalGasStationIcon /> },
-        { title: "Mã chuyến bay", href: "/manager/prices?tab=6", icon: <CAWBCodeIcon /> },
-        { title: "Tỉ giá", href: "/manager/prices?tab=7", icon: <PriceIcon /> },
+        { title: "Purchase Prices", href: "/manager/prices?tab=0", icon: <PurchasePriceIcon /> },
+        { title: "Sale Prices", href: "/manager/prices?tab=1", icon: <SalePriceIcon /> },
+        { title: "Zones", href: "/manager/prices?tab=2", icon: <ZoneIcon /> },
+        { title: "VAT", href: "/manager/prices?tab=3", icon: <PercentIcon /> },
+        { title: "Extra Fees", href: "/manager/prices?tab=4", icon: <ExtraFeeIcon /> },
+        { title: "Fuel Surcharges", href: "/manager/prices?tab=5", icon: <LocalGasStationIcon /> },
+        { title: "AWB Codes", href: "/manager/prices?tab=6", icon: <CAWBCodeIcon /> },
+        { title: "Exchange Rates", href: "/manager/prices?tab=7", icon: <PriceIcon /> },
       ],
     },
     {
-      section: "Quản lý hệ thống",
+      section: "System Management",
       icon: <SystemIcon />,
-      items: [{ title: "Tài khoản", href: "/manager/systems?tab=0", icon: <ManageAccountsIcon /> }],
+      items: [{ title: "Accounts", href: "/manager/systems?tab=0", icon: <ManageAccountsIcon /> }],
     },
   ];
 
@@ -205,10 +205,10 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
       if (isLoading) return;
       try {
         await dispatch(signOutUser());
-        showNotification("Đăng xuất thành công!", "success");
+        showNotification("Signed out successfully!", "success");
         router.push("/sign-in");
       } catch (error: unknown) {
-        showNotification((error as Error).message || "Đăng xuất thất bại, vui lòng thử lại!", "error");
+        showNotification((error as Error).message || "Sign out failed, please try again!", "error");
       }
     };
 
@@ -285,7 +285,6 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                               component={Link}
                               href={item.href}
                               onClick={(e) => {
-                                // Ở chế độ thu nhỏ: chỉ click icon mới mở rộng, click chữ sẽ không đi đâu
                                 if (!showDrawer) e.preventDefault();
                               }}
                             >
@@ -294,9 +293,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                                 onClick={(e) => {
                                   if (!showDrawer) {
                                     e.stopPropagation();
-                                    // Thu nhỏ → mở rộng + đi tới trang luôn (user sẽ click lại lần nữa)
                                     setShowDrawer(true);
-                                    // Đợi transition xong mới đi tới trang, UX tốt hơn
                                     setTimeout(() => {
                                       window.location.href = item.href;
                                     }, 220);
@@ -310,6 +307,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                                 sx={{
                                   opacity: showDrawer ? 1 : 0,
                                   transition: "opacity .2s",
+                                  textTransform: "uppercase",
                                 }}
                               />
                             </ListItemButton>
@@ -317,7 +315,6 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                         {group.section && (
                           <>
                             <ListItemButton
-                              // Chỉ phần chữ (not icon) mới expand/collapse group
                               onClick={() => {
                                 if (showDrawer) {
                                   setOpenGroup(openGroup === group.section ? null : group.section);
@@ -333,7 +330,6 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                                     setShowDrawer(true);
                                     setOpenGroup(group.section);
                                   }
-                                  // Đang mở rộng: click icon KHÔNG collapse/open
                                 }}
                               >
                                 {group.icon}
@@ -343,6 +339,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                                 sx={{
                                   opacity: showDrawer ? 1 : 0,
                                   transition: "opacity .2s",
+                                  textTransform: "uppercase",
                                 }}
                               />
                               {showDrawer && (openGroup === group.section ? <ExpandLessIcon htmlColor="white" /> : <ExpandMoreIcon htmlColor="white" />)}
@@ -352,7 +349,12 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                                 {group.items.map((item) => (
                                   <ListItemButton key={item.title} sx={{ pl: 4 }} component={Link} href={item.href}>
                                     <ListItemIcon sx={{ color: "white" }}>{item.icon}</ListItemIcon>
-                                    <ListItemText primary={item.title} />
+                                    <ListItemText
+                                      primary={item.title}
+                                      sx={{
+                                        textTransform: "uppercase",
+                                      }}
+                                    />
                                   </ListItemButton>
                                 ))}
                               </List>
@@ -362,7 +364,6 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
                       </React.Fragment>
                     ))}
                   </List>
-                  {/* Khoảng trống cuối để thấy được item cuối */}
                   <Box sx={{ height: 68 }} />
                 </Box>
               </Drawer>
