@@ -68,6 +68,7 @@ export interface IOrder extends IBaseRecord {
 }
 
 export interface ICreateOrderRequest {
+  carrierAirWaybillCode?: string | null;
   partner?: {
     partnerId: { _id?: string; name?: string; code?: string; type?: string } | string | null; // Lấy trong Companies với  Type: Partner. Dùng để tính giá SalePrice
     partnerName: string;

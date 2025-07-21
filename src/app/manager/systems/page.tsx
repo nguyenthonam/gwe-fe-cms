@@ -10,7 +10,7 @@ export default function SystemsPage() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Luôn đọc tab từ query, mặc định là 0 nếu không hợp lệ
+  // Always read tab index from query; default to 0 if invalid
   const tabParam = Number(searchParams.get("tab"));
   const [tabIndex, setTabIndex] = useState(Number.isInteger(tabParam) && tabParam >= 0 ? tabParam : 0);
 
@@ -20,7 +20,7 @@ export default function SystemsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabParam]);
 
-  // Khi đổi tab, cập nhật lại URL query (chuẩn hóa cho đồng bộ)
+  // Update URL query when tab changes (ensure sync)
   const handleTabChange = (_: any, newValue: number) => {
     setTabIndex(newValue);
     const params = new URLSearchParams(searchParams.toString());
@@ -37,14 +37,14 @@ export default function SystemsPage() {
         }}
       >
         <Typography variant="h5" mb={2} fontWeight="bold" sx={{ color: lightBlue[500] }}>
-          QUẢN LÝ TÀI KHOẢN
+          ACCOUNT MANAGEMENT
         </Typography>
 
         <Tabs value={tabIndex} onChange={handleTabChange}>
-          <Tab label="Tài khoản" />
+          <Tab label="Users" />
         </Tabs>
 
-        <Box mt={2} className="w-full ">
+        <Box mt={2} className="w-full">
           <Paper>{tabIndex === 0 && <UsersManagerView />}</Paper>
         </Box>
       </Box>

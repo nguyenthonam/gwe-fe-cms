@@ -1,5 +1,5 @@
 "use client";
-import { FormControl, InputLabel, MenuItem, Select, Grid } from "@mui/material";
+import { FormControl, InputLabel, MenuItem, Select, Grid, TextField } from "@mui/material";
 
 interface Props {
   partners: any[];
@@ -14,6 +14,8 @@ interface Props {
   setSupplierId: (v: string) => void;
   serviceId: string;
   setServiceId: (v: string) => void;
+  carrierAirWaybillCode: string;
+  setCarrierAirWaybillCode: (v: string) => void;
 }
 export default function OrderBillingInfoSection({
   partners,
@@ -28,13 +30,27 @@ export default function OrderBillingInfoSection({
   setSupplierId,
   serviceId,
   setServiceId,
+  carrierAirWaybillCode,
+  setCarrierAirWaybillCode,
 }: Props) {
   return (
     <Grid container spacing={2} sx={{ p: 2 }}>
+      <Grid size={{ xs: 12 }}>
+        <FormControl fullWidth size="small">
+          <TextField
+            label="Carrier Air Waybill Code"
+            value={carrierAirWaybillCode}
+            onChange={(e) => setCarrierAirWaybillCode(e.target.value)}
+            fullWidth
+            size="small"
+            placeholder="Enter CAWB code if available"
+          />
+        </FormControl>
+      </Grid>
       <Grid size={{ xs: 12, md: 6 }}>
         <FormControl fullWidth size="small">
-          <InputLabel>Partner</InputLabel>
-          <Select value={partnerId} label="Partner" onChange={(e) => setPartnerId(e.target.value)}>
+          <InputLabel>Customer</InputLabel>
+          <Select value={partnerId} label="Customer" onChange={(e) => setPartnerId(e.target.value)}>
             {partners.map((p) => (
               <MenuItem key={p._id} value={p._id}>
                 {p.name}
@@ -45,8 +61,8 @@ export default function OrderBillingInfoSection({
       </Grid>
       <Grid size={{ xs: 12, md: 6 }}>
         <FormControl fullWidth size="small">
-          <InputLabel>Hãng</InputLabel>
-          <Select value={carrierId} label="Hãng" onChange={(e) => setCarrierId(e.target.value)}>
+          <InputLabel>Sub Carrier</InputLabel>
+          <Select value={carrierId} label="Sub Carrier" onChange={(e) => setCarrierId(e.target.value)}>
             {carriers.map((c) => (
               <MenuItem key={c._id} value={c._id}>
                 {c.name}
@@ -69,8 +85,8 @@ export default function OrderBillingInfoSection({
       </Grid>
       <Grid size={{ xs: 12, md: 6 }}>
         <FormControl fullWidth size="small">
-          <InputLabel>Dịch vụ</InputLabel>
-          <Select value={serviceId} label="Dịch vụ" onChange={(e) => setServiceId(e.target.value)}>
+          <InputLabel>Service</InputLabel>
+          <Select value={serviceId} label="Service" onChange={(e) => setServiceId(e.target.value)}>
             {services.map((s) => (
               <MenuItem key={s._id} value={s._id}>
                 {s.code}

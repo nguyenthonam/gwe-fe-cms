@@ -11,6 +11,7 @@ interface IProps {
   data: IUser | null;
   onSuccess: () => void;
 }
+
 export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IProps) {
   const [user, setUser] = useState<IUpdateUserRequest>();
   const [isLoading, setLoading] = useState(false);
@@ -37,14 +38,14 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
       console.log("Payload:", user);
       const response = await updateUserApi(data._id, user);
       if (!response?.data?.status) {
-        showNotification(response?.data?.message || "Cập nhật thất bại!", "error");
+        showNotification(response?.data?.message || "Failed to update user!", "error");
         return;
       }
       onSuccess();
-      showNotification("Cập nhật thành công!", "success");
+      showNotification("User updated successfully!", "success");
     } catch (error) {
       console.error("Update user error:", error);
-      showNotification(error instanceof Error ? error.message : "Cập nhật thất bại!", "error");
+      showNotification(error instanceof Error ? error.message : "Failed to update user!", "error");
     } finally {
       setLoading(false);
       onClose();
@@ -54,7 +55,7 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle className="uppercase" sx={{ color: lightBlue[500] }}>
-        Cập Nhật Tài Khoản
+        Update User
       </DialogTitle>
       <DialogContent>
         <TextField
@@ -62,12 +63,21 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
           margin="dense"
           size="small"
           type="text"
-          label="Họ và tên"
-          placeholder="Họ và tên"
+          label="Full Name"
+          placeholder="Enter full name"
           fullWidth
           variant="outlined"
-          value={user?.contact?.fullname}
-          onChange={(e) => setUser((prev) => (prev ? { ...prev, fullname: e.target.value } : undefined))}
+          value={user?.contact?.fullname || ""}
+          onChange={(e) =>
+            setUser((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    contact: { ...prev.contact, fullname: e.target.value },
+                  }
+                : undefined
+            )
+          }
         />
         <TextField
           className="mb-2 w-full"
@@ -75,11 +85,20 @@ export default function UpdateUserDialog({ open, onClose, data, onSuccess }: IPr
           size="small"
           type="text"
           label="Email"
-          placeholder="Email"
+          placeholder="Enter email"
           fullWidth
           variant="outlined"
-          value={user?.email}
-          onChange={(e) => setUser((prev) => (prev ? { ...prev, email: e.target.value } : undefined))}
+          value={user?.email || ""}
+          onChange={(e) =>
+            setUser((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    email: e.target.value,
+                  }
+                : undefined
+            )
+          }
         />
       </DialogContent>
       <DialogActions>

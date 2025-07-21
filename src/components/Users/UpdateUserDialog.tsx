@@ -25,7 +25,7 @@ export default function UpdateUserDialog({ open, onClose, onUpdated, user, compa
   useEffect(() => {
     if (user) {
       if (!user._id) {
-        showNotification("Thiếu ID!");
+        showNotification("Missing user ID!", "error");
         return;
       }
       setUserId(user.userId || "");
@@ -46,7 +46,7 @@ export default function UpdateUserDialog({ open, onClose, onUpdated, user, compa
   const handleChange = (field: keyof IUpdateUserRequest, value: any) => {
     if (!form) return;
     if (field === "role" && value !== EUSER_ROLES.Partner) {
-      setForm({ ...form, [field]: value, companyId: null }); // Reset companyId if role is Partner
+      setForm({ ...form, [field]: value, companyId: null });
     } else {
       setForm({ ...form, [field]: value });
     }
@@ -65,7 +65,6 @@ export default function UpdateUserDialog({ open, onClose, onUpdated, user, compa
       setLoading(true);
       const payload: IUpdateUserRequest = {};
 
-      // So sánh từng trường, chỉ gửi trường đã thay đổi
       if (form.email !== user.email) payload.email = form.email;
       if (form.role !== user.role) payload.role = form.role;
       if (form.companyId !== (typeof user.companyId === "object" ? user.companyId?._id : user.companyId)) payload.companyId = form.companyId;
@@ -90,10 +89,10 @@ export default function UpdateUserDialog({ open, onClose, onUpdated, user, compa
       }
 
       await updateUserApi(user._id, payload);
-      showNotification("Cập nhật tài khoản thành công!", "success");
+      showNotification("User updated successfully!", "success");
       onUpdated();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi cập nhật!", "error");
+      showNotification(err.message || "Failed to update user!", "error");
     } finally {
       setLoading(false);
     }
@@ -101,7 +100,7 @@ export default function UpdateUserDialog({ open, onClose, onUpdated, user, compa
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Cập nhật tài khoản</DialogTitle>
+      <DialogTitle>Update User</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
@@ -112,23 +111,23 @@ export default function UpdateUserDialog({ open, onClose, onUpdated, user, compa
               <TextField label="Email" value={form?.email || ""} onChange={(e) => handleChange("email", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Họ tên" value={form?.contact?.fullname || ""} onChange={(e) => handleNestedChange("contact", "fullname", e.target.value)} fullWidth size="small" />
+              <TextField label="Full Name" value={form?.contact?.fullname || ""} onChange={(e) => handleNestedChange("contact", "fullname", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="SĐT" value={form?.contact?.phone || ""} onChange={(e) => handleNestedChange("contact", "phone", e.target.value)} fullWidth size="small" />
+              <TextField label="Contact Number" value={form?.contact?.phone || ""} onChange={(e) => handleNestedChange("contact", "phone", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Giới tính</InputLabel>
-                <Select label="Giới tính" value={form?.gender} onChange={(e) => handleChange("gender", e.target.value)}>
-                  <MenuItem value={EGENDER.MALE}>Nam</MenuItem>
-                  <MenuItem value={EGENDER.FEMALE}>Nữ</MenuItem>
+                <InputLabel>Gender</InputLabel>
+                <Select label="Gender" value={form?.gender} onChange={(e) => handleChange("gender", e.target.value)}>
+                  <MenuItem value={EGENDER.MALE}>Male</MenuItem>
+                  <MenuItem value={EGENDER.FEMALE}>Female</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid size={6}>
               <TextField
-                label="Ngày sinh"
+                label="Birthday"
                 type="date"
                 InputLabelProps={{ shrink: true }}
                 value={form?.birthday ? form.birthday : ""}
@@ -138,13 +137,13 @@ export default function UpdateUserDialog({ open, onClose, onUpdated, user, compa
               />
             </Grid>
             <Grid size={6}>
-              <TextField label="CMND/CCCD" value={form?.identity_key?.id || ""} onChange={(e) => handleNestedChange("identity_key", "id", e.target.value)} fullWidth size="small" />
+              <TextField label="ID Number" value={form?.identity_key?.id || ""} onChange={(e) => handleNestedChange("identity_key", "id", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Nơi cấp" value={form?.identity_key?.address || ""} onChange={(e) => handleNestedChange("identity_key", "address", e.target.value)} fullWidth size="small" />
+              <TextField label="Issued By" value={form?.identity_key?.address || ""} onChange={(e) => handleNestedChange("identity_key", "address", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Ảnh đại diện (URL)" value={form?.avatar || ""} onChange={(e) => handleChange("avatar", e.target.value)} fullWidth size="small" />
+              <TextField label="Avatar URL" value={form?.avatar || ""} onChange={(e) => handleChange("avatar", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
@@ -152,7 +151,6 @@ export default function UpdateUserDialog({ open, onClose, onUpdated, user, compa
                 <Select label="Role" value={form?.role || ""} onChange={(e) => handleChange("role", e.target.value)}>
                   {Object.values(EUSER_ROLES).map((r) => (
                     <MenuItem key={r} value={r}>
-                      {/* {userRoleLabel[r]} */}
                       <EnumChip type="userRole" value={r} />
                     </MenuItem>
                   ))}
@@ -177,9 +175,9 @@ export default function UpdateUserDialog({ open, onClose, onUpdated, user, compa
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          Cập nhật
+          Update
         </Button>
       </DialogActions>
     </Dialog>

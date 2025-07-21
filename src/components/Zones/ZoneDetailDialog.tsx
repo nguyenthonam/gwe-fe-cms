@@ -6,19 +6,19 @@ import { COUNTRIES } from "@/utils/constants";
 export default function ZoneDetailDialog({ open, onClose, carrier, groupZones = [] }: { open: boolean; onClose: () => void; carrier?: any; groupZones: any[] }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>Chi tiết Group Zone {carrier ? `- ${carrier.name}` : ""}</DialogTitle>
+      <DialogTitle>Zone Group Details {carrier ? `- ${carrier.name}` : ""}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           {carrier && (
             <Typography variant="subtitle2" color="primary">
-              Hãng: {carrier.name} ({carrier.code})
+              Sub Carrier: {carrier.name} ({carrier.code})
             </Typography>
           )}
           <Paper variant="outlined" sx={{ p: 1, overflow: "auto" }}>
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell width={40}>STT</TableCell>
+                  <TableCell width={40}>#</TableCell>
                   <TableCell width={180}>Country</TableCell>
                   <TableCell width={100}>Country Code</TableCell>
                   <TableCell width={60}>Zone</TableCell>
@@ -27,8 +27,8 @@ export default function ZoneDetailDialog({ open, onClose, carrier, groupZones = 
               <TableBody>
                 {groupZones.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5}>
-                      <Typography color="text.secondary">Không có zone nào!</Typography>
+                    <TableCell colSpan={4}>
+                      <Typography color="text.secondary">No zones available.</Typography>
                     </TableCell>
                   </TableRow>
                 )}
@@ -47,7 +47,7 @@ export default function ZoneDetailDialog({ open, onClose, carrier, groupZones = 
       </DialogContent>
       <DialogActions>
         <Box flexGrow={1} />
-        <Button onClick={onClose}>Đóng</Button>
+        <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );

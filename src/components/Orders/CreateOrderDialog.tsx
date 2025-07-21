@@ -45,6 +45,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
 
   // Billing Info
   const [note, setNote] = useState("");
+  const [carrierAirWaybillCode, setCarrierAirWaybillCode] = useState<string>("");
 
   // Volume Weight Rate
   const [volWeightRate, setVolWeightRate] = useState(null);
@@ -74,7 +75,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
   const [declaredValue, setDeclaredValue] = useState("");
   const [currency, setCurrency] = useState(ECURRENCY.USD);
 
-  // Dimension (dùng array cho nhiều kiện nếu cần)
+  // Dimension (array for multiple packages)
   const [dimensions, setDimensions] = useState<IDimension[] | []>();
 
   const [loading, setLoading] = useState(false);
@@ -83,19 +84,17 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
   const fetchServices = async (carrierId: string) => {
     const selected = carriers.find((c) => c._id === carrierId);
     const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
-
     if (!companyId) return;
-
     try {
       const res = await getServicesByCarrierApi(companyId);
       setServices(res?.data?.data?.data || []);
     } catch (err: any) {
-      console.log(err.massage);
-      showNotification("Không thể tải dịch vụ!", "error");
+      console.log(err.message);
+      showNotification("Failed to load services!", "error");
     }
   };
   useEffect(() => {
-    // Tính lại quantity (số dòng dimension) và tổng grossWeight
+    // Recalculate quantity (number of dimensions) and total grossWeight
     const qty = dimensions && Array.isArray(dimensions) ? dimensions.length : 0;
     const dw = dimensions && Array.isArray(dimensions) ? dimensions.reduce((sum, d) => sum + Number(d.grossWeight || 0), 0) : 0;
     setQuantity(qty.toString());
@@ -127,14 +126,14 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
 
   useEffect(() => {
     if (carrierId && serviceId) {
-      // Lấy danh sách phụ phí theo carrier và service đã chọn
+      // Load extra fee list by carrier and service
       getExtraFeesByCarrierServiceApi(carrierId, serviceId)
         .then((res) => {
           setExtraFeeList(res?.data?.data?.data || []);
         })
         .catch((err) => {
           console.error("Error fetching extra fees:", err);
-          showNotification("Không thể tải phụ phí!", "error");
+          showNotification("Failed to load extra fees!", "error");
         });
     } else {
       setExtraFeeList([]);
@@ -142,6 +141,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
   }, [carrierId, serviceId]);
 
   const resetForm = () => {
+    setCarrierAirWaybillCode("");
     setPartnerId("");
     setCarrierId("");
     setServiceId("");
@@ -169,31 +169,20 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
     setDimensions([]);
     setExtraFeeIds([]);
     setCustomVATPercentage(8);
-    setFSCFeePercentage(35); // hoặc giá trị mặc định bạn muốn
+    setFSCFeePercentage(35);
     setSurcharges([]);
   };
 
   // Validate & Submit
   const handleSubmit = async () => {
-    if (
-      !carrierId ||
-      // !sender.fullname ||
-      // !sender.address1 ||
-      // !sender.phone ||
-      // !recipient.fullname ||
-      // !recipient.address1 ||
-      // !recipient.phone ||
-      !recipient.country
-      // !content ||
-      // !declaredWeight ||
-      // !quantity
-    ) {
-      showNotification("Vui lòng nhập đầy đủ thông tin!", "warning");
+    if (!carrierId || !recipient.country) {
+      showNotification("Please enter all required information!", "warning");
       return;
     }
     try {
       setLoading(true);
       await createOrderApi({
+        carrierAirWaybillCode: carrierAirWaybillCode || "",
         carrierId,
         serviceId,
         supplierId,
@@ -231,10 +220,10 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
         extraFees: { extraFeeIds: extraFeeIds, fscFeePercentage: Number(fscFeePercentage) },
         vat: { customVATPercentage: Number(customVATPercentage) },
       });
-      showNotification("Tạo đơn hàng thành công", "success");
+      showNotification("Order created successfully", "success");
       onCreated();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi tạo đơn hàng", "error");
+      showNotification(err.message || "Failed to create order", "error");
     } finally {
       setLoading(false);
     }
@@ -242,7 +231,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>Tạo đơn hàng mới</DialogTitle>
+      <DialogTitle>Create New Order</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           {/* Billing Info */}
@@ -264,6 +253,8 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
                 setSupplierId={setSupplierId}
                 serviceId={serviceId}
                 setServiceId={setServiceId}
+                carrierAirWaybillCode={carrierAirWaybillCode}
+                setCarrierAirWaybillCode={setCarrierAirWaybillCode}
               />
             </Paper>
           </Box>
@@ -274,7 +265,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
               <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Sender Information
               </Typography>
-              <OrderAddressSection label="Sender" data={sender} setData={setSender} showCountry={false} />
+              <OrderAddressSection label="Company" data={sender} setData={setSender} showCountry={false} />
             </Paper>
           </Box>
 
@@ -284,7 +275,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
               <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Recipient Information
               </Typography>
-              <OrderAddressSection label="Recipient" data={recipient} setData={setRecipient} showCountry={true} />
+              <OrderAddressSection label="Company" data={recipient} setData={setRecipient} showCountry={true} />
             </Paper>
           </Box>
 
@@ -331,9 +322,9 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-          Tạo
+          Create
         </Button>
       </DialogActions>
     </Dialog>

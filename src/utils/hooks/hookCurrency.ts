@@ -1,6 +1,6 @@
 import { ECURRENCY } from "@/types/typeGlobals";
 
-export function formatCurrency(value: number | null = 0, currency: ECURRENCY | undefined | null = ECURRENCY.VND): string {
+export function formatCurrency(value: number | null = 0, currency: ECURRENCY | undefined | null = ECURRENCY.VND, isShowCurrency?: boolean): string {
   // const roundedValue =
   //   currency === ECURRENCY.VND
   //     ? Math.round(value) // làm tròn VND
@@ -11,5 +11,5 @@ export function formatCurrency(value: number | null = 0, currency: ECURRENCY | u
     maximumFractionDigits: currency === ECURRENCY.VND ? 0 : 2,
   }).format(value || 0);
 
-  return `${formatted}`;
+  return `${formatted} ${isShowCurrency ? currency : ""}`;
 }

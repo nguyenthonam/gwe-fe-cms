@@ -10,19 +10,19 @@ export default function OrdersPage() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Lấy tab index từ URL query, mặc định là 0 nếu không có hoặc không hợp lệ
+  // Get tab index from URL query, default to 0 if not found or invalid
   const tabParam = Number(searchParams.get("tab"));
   const tabDefault = Number.isInteger(tabParam) && tabParam >= 0 ? tabParam : 0;
   const [tabIndex, setTabIndex] = useState(tabDefault);
 
-  // Khi url ?tab= đổi, sync lại state tabIndex
+  // Sync tabIndex with url ?tab= changes
   useEffect(() => {
     const nextTab = Number.isInteger(tabParam) && tabParam >= 0 ? tabParam : 0;
     if (nextTab !== tabIndex) setTabIndex(nextTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabParam]);
 
-  // Khi đổi tab, cập nhật lại url
+  // Update url when switching tab
   const handleTabChange = (_: any, newIndex: number) => {
     setTabIndex(newIndex);
     const params = new URLSearchParams(searchParams.toString());
@@ -39,10 +39,10 @@ export default function OrdersPage() {
         }}
       >
         <Typography variant="h5" mb={2} sx={{ fontWeight: "bold", color: lightBlue[500] }}>
-          QUẢN LÝ ĐƠN HÀNG
+          ORDER MANAGEMENT
         </Typography>
         <Tabs value={tabIndex} onChange={handleTabChange}>
-          <Tab label="Đơn Hàng" />
+          <Tab label="Orders" />
         </Tabs>
 
         <Box mt={2} className="w-full ">

@@ -15,30 +15,30 @@ export default function ServiceDetailDialog({ open, onClose, service }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Chi tiết dịch vụ</DialogTitle>
+      <DialogTitle>Service Detail</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2}>
           <Typography variant="body2">
-            <strong>Mã:</strong> {service.code}
+            <strong>Service Code:</strong> {service.code}
           </Typography>
           <Typography variant="body2">
-            <strong>Tên:</strong> {service.name}
+            <strong>Service Name:</strong> {service.name}
           </Typography>
           <Typography variant="body2">
-            <strong>Hãng bay:</strong> {companyName}
+            <strong>Carrier:</strong> {companyName}
           </Typography>
           {service.description && (
             <Typography variant="body2">
-              <strong>Mô tả:</strong> {service.description}
+              <strong>Description:</strong> {service.description}
             </Typography>
           )}
           <Typography variant="body2">
-            <strong>Trạng thái:</strong> <EnumChip type="recordStatus" value={service.status} />
+            <strong>Status:</strong> <EnumChip type="recordStatus" value={service.status} />
           </Typography>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Đóng</Button>
+        <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );

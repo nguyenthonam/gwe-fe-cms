@@ -32,7 +32,7 @@ export default function ExtraFeeManagerView() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // NEW: Date filter
+  // Date filter
   const today = new Date();
   const [filterStartDate, setFilterStartDate] = useState<string>(new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10));
   const [filterEndDate, setFilterEndDate] = useState<string>(new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10));
@@ -52,7 +52,7 @@ export default function ExtraFeeManagerView() {
       const res = await getCarriersApi();
       setCarriers(res?.data?.data?.data || []);
     } catch (err: any) {
-      console.error("Failed to fetch carriers", err.massage);
+      console.error("Failed to fetch carriers", err.message);
     }
   };
 
@@ -117,14 +117,14 @@ export default function ExtraFeeManagerView() {
 
   const handleExportExcel = () => {
     const data = fees.map((f) => ({
-      CODE: f.code,
-      NAME: f.name,
-      CARRIER: typeof f.carrierId === "object" ? f.carrierId?.name : f.carrierId,
-      SERVICE: typeof f.serviceId === "object" ? f.serviceId?.code : f.serviceId,
-      VALUE: formatCurrency(f.value, f.currency) + " " + f.currency,
-      "START DATE": f.startDate ? new Date(f.startDate).toLocaleDateString() : "",
-      "END DATE": f.endDate ? new Date(f.endDate).toLocaleDateString() : "",
-      // STATUS: f.status,
+      "Fee Code": f.code,
+      "Fee Name": f.name,
+      "Sub Carrier": typeof f.carrierId === "object" ? f.carrierId?.name : f.carrierId,
+      Service: typeof f.serviceId === "object" ? f.serviceId?.code : f.serviceId,
+      Value: formatCurrency(f.value, f.currency) + " " + f.currency,
+      "Start Date": f.startDate ? dayjs(f.startDate).format("DD/MM/YYYY") : "",
+      "End Date": f.endDate ? dayjs(f.endDate).format("DD/MM/YYYY") : "",
+      Status: f.status,
     }));
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -169,7 +169,7 @@ export default function ExtraFeeManagerView() {
   const columns: GridColDef[] = [
     {
       field: "code",
-      headerName: "CODE",
+      headerName: "Fee Code",
       align: "center",
       headerAlign: "center",
       flex: 1,
@@ -189,10 +189,17 @@ export default function ExtraFeeManagerView() {
         </Box>
       ),
     },
-    { field: "name", headerName: "NAME", minWidth: 160, headerAlign: "center", align: "center", flex: 1.5 },
+    {
+      field: "name",
+      headerName: "Fee Name",
+      minWidth: 160,
+      headerAlign: "center",
+      align: "center",
+      flex: 1.5,
+    },
     {
       field: "carrierId",
-      headerName: "CARRIER",
+      headerName: "Sub Carrier",
       headerAlign: "center",
       align: "center",
       flex: 1,
@@ -201,7 +208,7 @@ export default function ExtraFeeManagerView() {
     },
     {
       field: "serviceId",
-      headerName: "SERVICE",
+      headerName: "Service",
       headerAlign: "center",
       align: "center",
       flex: 1,
@@ -210,31 +217,29 @@ export default function ExtraFeeManagerView() {
     },
     {
       field: "value",
-      headerName: "VALUE",
+      headerName: "Value",
       align: "center",
       headerAlign: "center",
       flex: 1,
       minWidth: 150,
       renderCell: ({ row, value }) => (
-        <>
-          <Chip
-            label={formatCurrency(value, row.currency) + " " + row.currency}
-            size="small"
-            sx={{
-              width: "100%",
-              fontSize: "14px",
-              padding: "4px 8px",
-              backgroundColor: orange[100],
-              color: orange[700],
-              "& .MuiChip-label": { fontWeight: "bold" },
-            }}
-          />
-        </>
+        <Chip
+          label={formatCurrency(value, row.currency) + " " + row.currency}
+          size="small"
+          sx={{
+            width: "100%",
+            fontSize: "14px",
+            padding: "4px 8px",
+            backgroundColor: orange[100],
+            color: orange[700],
+            "& .MuiChip-label": { fontWeight: "bold" },
+          }}
+        />
       ),
     },
     {
       field: "startDate",
-      headerName: "START DATE",
+      headerName: "Start Date",
       align: "center",
       headerAlign: "center",
       flex: 1,
@@ -243,7 +248,7 @@ export default function ExtraFeeManagerView() {
     },
     {
       field: "endDate",
-      headerName: "END DATE",
+      headerName: "End Date",
       align: "center",
       headerAlign: "center",
       flex: 1,
@@ -252,7 +257,7 @@ export default function ExtraFeeManagerView() {
     },
     {
       field: "status",
-      headerName: "STATUS",
+      headerName: "Status",
       align: "center",
       headerAlign: "center",
       width: 120,
@@ -315,7 +320,7 @@ export default function ExtraFeeManagerView() {
 
         <Stack direction="row" spacing={1}>
           <Select size="small" displayEmpty value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} sx={{ minWidth: 180 }}>
-            <MenuItem value="">All carriers</MenuItem>
+            <MenuItem value="">All Sub Carriers</MenuItem>
             {carriers?.map((c) => (
               <MenuItem key={c._id} value={c._id}>
                 {c.name}

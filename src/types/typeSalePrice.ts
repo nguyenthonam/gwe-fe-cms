@@ -1,7 +1,7 @@
 import { ECURRENCY, EPRODUCT_TYPE, ERECORD_STATUS, IBaseRecord } from "./typeGlobals";
 
 export interface ISalePrice extends IBaseRecord {
-  partnerId: { _id?: string; name?: string; code?: string; type?: string } | string | null; // Type: ECOMPANY_TYPE.Partner
+  partnerId: { _id?: string; name?: string; code?: string; type?: string } | string | null; // Type: ECOMPANY_TYPE.Customer
   carrierId: { _id?: string; name?: string; code?: string; companyId?: string } | string | null;
   serviceId: { _id?: string; name?: string; code?: string; companyId?: string } | string | null;
   zone: number;

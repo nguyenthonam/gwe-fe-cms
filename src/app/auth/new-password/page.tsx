@@ -12,10 +12,10 @@ import { resetPasswordApi } from "@/utils/apis/apiAuth";
 
 // Validation schema
 const ResetPasswordSchema = Yup.object().shape({
-  newPassword: Yup.string().min(6, "Mật khẩu ít nhất 6 ký tự").required("Bắt buộc nhập mật khẩu mới"),
+  newPassword: Yup.string().min(6, "Password must be at least 6 characters").required("New password is required"),
   confirmPassword: Yup.string()
-    .oneOf([Yup.ref("newPassword")], "Mật khẩu xác nhận không khớp")
-    .required("Bắt buộc nhập xác nhận mật khẩu"),
+    .oneOf([Yup.ref("newPassword")], "Passwords do not match")
+    .required("Confirmation password is required"),
 });
 
 export default function ResetPasswordPage() {
@@ -53,20 +53,19 @@ export default function ResetPasswordPage() {
   const handleSubmit = async () => {
     const isValid = await validateForm();
     if (!isValid) {
-      showNotification("Vui lòng kiểm tra mật khẩu nhập!", "warning");
+      showNotification("Please check your password!", "warning");
       return;
     }
 
     setIsLoading(true);
     try {
-      if (!confirmKey) throw new Error("Không có mã xác nhận!");
-      // Gọi API đổi mật khẩu tại đây (chưa có nên mô phỏng)
+      if (!confirmKey) throw new Error("Missing confirmation key!");
       const res = await resetPasswordApi({ newPassword, confirmKey });
-      if (!res) throw new Error("Đã xảy ra lỗi!");
-      showNotification("Đổi mật khẩu thành công!", "success");
+      if (!res) throw new Error("An error occurred!");
+      showNotification("Password reset successfully!", "success");
       router.push("/sign-in");
     } catch (error: any) {
-      showNotification(error.message || "Đã xảy ra lỗi!", "error");
+      showNotification(error.message || "An error occurred!", "error");
     } finally {
       setIsLoading(false);
     }
@@ -90,11 +89,11 @@ export default function ResetPasswordPage() {
             Reset Password
           </Typography>
 
-          {/* Mật khẩu mới */}
+          {/* New Password */}
           <TextField
             className="!mb-4 w-full"
             type={showPassword ? "text" : "password"}
-            label="New password"
+            label="New Password"
             variant="outlined"
             fullWidth
             size="small"
@@ -114,11 +113,11 @@ export default function ResetPasswordPage() {
             }}
           />
 
-          {/* Xác nhận mật khẩu mới */}
+          {/* Confirm Password */}
           <TextField
             className="!mb-4 w-full"
             type={showConfirmPassword ? "text" : "password"}
-            label="Confirm new password"
+            label="Confirm New Password"
             variant="outlined"
             fullWidth
             size="small"
@@ -138,7 +137,7 @@ export default function ResetPasswordPage() {
             }}
           />
 
-          {/* Nút Submit */}
+          {/* Submit Button */}
           <Button type="button" className="font-bold capitalize" color="primary" variant="contained" disabled={isLoading} onClick={handleSubmit}>
             {isLoading ? <CircularProgress size={24} /> : "Send"}
           </Button>

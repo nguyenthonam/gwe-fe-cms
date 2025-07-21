@@ -79,54 +79,49 @@ export default function ServiceManagerView() {
   const handleLockToggle = async (item: IService) => {
     try {
       if (!item._id) return;
-      const confirm = window.confirm(item.status === ERECORD_STATUS.Active ? "Khoá dịch vụ này?" : "Mở khoá dịch vụ này?");
+      const confirm = window.confirm(item.status === ERECORD_STATUS.Active ? "Lock this service?" : "Unlock this service?");
       if (!confirm) return;
 
       const res = item.status === ERECORD_STATUS.Active ? await lockServiceApi(item._id) : await unlockServiceApi(item._id);
 
-      showNotification(res?.data?.message || "Cập nhật trạng thái thành công", "success");
+      showNotification(res?.data?.message || "Status updated successfully", "success");
       fetchServices();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật trạng thái", "error");
+      showNotification(err.message || "Failed to update status", "error");
     }
   };
 
   const handleDelete = async (item: IService) => {
     if (!item._id) return;
-    if (!window.confirm("Bạn có chắc muốn xoá dịch vụ này?")) return;
+    if (!window.confirm("Are you sure you want to delete this service?")) return;
     try {
       await deleteServiceApi(item._id);
-      showNotification("Đã xoá thành công", "success");
+      showNotification("Deleted successfully", "success");
       fetchServices();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi xoá", "error");
+      showNotification(err.message || "Delete failed", "error");
     }
   };
 
   const handleExportExcel = () => {
     const data = services.map((s) => ({
-      "MÃ DỊCH VỤ": s.code,
-      TÊN: s.name,
-      "HÃNG BAY": typeof s.companyId === "object" ? s.companyId?.name || "" : String(s.companyId),
-      "MÔ TẢ": s.description || "",
-      "TRẠNG THÁI": recordStatusLabel[s.status as keyof typeof recordStatusLabel] || s.status,
+      "SERVICE CODE": s.code,
+      NAME: s.name,
+      "SUB CARRIER": typeof s.companyId === "object" ? s.companyId?.name || "" : String(s.companyId),
+      DESCRIPTION: s.description || "",
+      STATUS: recordStatusLabel[s.status as keyof typeof recordStatusLabel] || s.status,
     }));
     const ws = XLSX.utils.json_to_sheet(data);
     ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
 
-    // Style cho từng cell
     const range = XLSX.utils.decode_range(ws["!ref"] || "");
     for (let R = range.s.r; R <= range.e.r; ++R) {
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const cell = XLSX.utils.encode_cell({ r: R, c: C });
         if (!ws[cell]) continue;
         const isHeader = R === 0;
-
         (ws[cell] as any).s = {
-          font: {
-            bold: isHeader,
-            sz: isHeader ? 12 : 11,
-          },
+          font: { bold: isHeader, sz: isHeader ? 12 : 11 },
           alignment: {
             horizontal: isHeader ? "center" : "left",
             vertical: "center",
@@ -144,7 +139,7 @@ export default function ServiceManagerView() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "SERVICE");
-    XLSX.writeFile(wb, "DICH_VU.xlsx");
+    XLSX.writeFile(wb, "SERVICES.xlsx");
   };
 
   const handleCreated = () => {
@@ -161,7 +156,7 @@ export default function ServiceManagerView() {
   const columns: GridColDef[] = [
     {
       field: "code",
-      headerName: "MÃ",
+      headerName: "CODE",
       flex: 1.2,
       renderCell: ({ row }: { row: IService }) => (
         <Box display="flex" alignItems="center" height="100%">
@@ -178,16 +173,16 @@ export default function ServiceManagerView() {
         </Box>
       ),
     },
-    { field: "name", headerName: "TÊN DỊCH VỤ", flex: 1.5 },
+    { field: "name", headerName: "SERVICE NAME", flex: 1.5 },
     {
       field: "companyId",
-      headerName: "HÃNG BAY",
+      headerName: "SUB CARRIER",
       flex: 1.5,
       renderCell: ({ row }) => (typeof row.companyId === "object" ? row.companyId?.name : row.companyId),
     },
     {
       field: "status",
-      headerName: "TRẠNG THÁI",
+      headerName: "STATUS",
       flex: 1,
       renderCell: ({ value }) => <EnumChip type="recordStatus" value={value} />,
     },
@@ -212,9 +207,9 @@ export default function ServiceManagerView() {
   return (
     <Box className="space-y-4">
       <Box mb={2} display="flex" gap={2} alignItems="center" justifyContent="space-between">
-        <TextField placeholder="Tìm dịch vụ..." size="small" onChange={(e) => debouncedSearch(e.target.value)} className="max-w-[250px] w-full" />
+        <TextField placeholder="Search service..." size="small" onChange={(e) => debouncedSearch(e.target.value)} className="max-w-[250px] w-full" />
         <Select size="small" displayEmpty value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)} sx={{ minWidth: 200 }}>
-          <MenuItem value="">Tất cả Hãng Bay</MenuItem>
+          <MenuItem value="">All Sub Carriers</MenuItem>
           {companies.map((c) => (
             <MenuItem key={c._id} value={c._id}>
               {c.name}
@@ -222,19 +217,19 @@ export default function ServiceManagerView() {
           ))}
         </Select>
         <Select size="small" displayEmpty value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 150 }}>
-          <MenuItem value="">Mặc định</MenuItem>
-          <MenuItem value="all">Tất cả</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Locked}>Đã khoá</MenuItem>
-          <MenuItem value={ERECORD_STATUS.NoActive}>Không hoạt động</MenuItem>
-          <MenuItem value={ERECORD_STATUS.Deleted}>Đã xoá</MenuItem>
+          <MenuItem value="">Default</MenuItem>
+          <MenuItem value="all">All</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Active}>Active</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Locked}>Locked</MenuItem>
+          <MenuItem value={ERECORD_STATUS.NoActive}>Inactive</MenuItem>
+          <MenuItem value={ERECORD_STATUS.Deleted}>Deleted</MenuItem>
         </Select>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
-            Xuất Excel
+            Export Excel
           </Button>
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
-            Tạo mới
+            Create New
           </Button>
         </Stack>
       </Box>

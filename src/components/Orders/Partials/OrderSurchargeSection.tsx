@@ -13,12 +13,12 @@ export default function OrderSurchargeSection({ surcharges, setSurcharges }: Pro
   return (
     <Box gap={2}>
       <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
-        Phí phát sinh
+        Additional Charges
       </Typography>
       {surcharges.map((fee, idx) => (
         <Stack direction="row" spacing={1} key={idx}>
           <TextField
-            label="Tên phí"
+            label="Charge Name"
             value={fee.name}
             onChange={(e) => {
               const s = [...surcharges];
@@ -26,9 +26,10 @@ export default function OrderSurchargeSection({ surcharges, setSurcharges }: Pro
               setSurcharges(s);
             }}
             size="small"
+            placeholder="Enter charge name"
           />
           <NumericInput
-            label="Số tiền"
+            label="Amount"
             value={String(fee.amount)}
             onChange={(value) => {
               const s = [...surcharges];
@@ -38,9 +39,10 @@ export default function OrderSurchargeSection({ surcharges, setSurcharges }: Pro
             fullWidth
             size="small"
             sx={{ width: "120px" }}
+            placeholder="Enter amount"
           />
           <Select
-            label="Tiền tệ"
+            label="Currency"
             value={fee.currency}
             onChange={(e) => {
               const s = [...surcharges];
@@ -57,12 +59,12 @@ export default function OrderSurchargeSection({ surcharges, setSurcharges }: Pro
             ))}
           </Select>
           <Button color="error" onClick={() => setSurcharges(surcharges.filter((_, i) => i !== idx))}>
-            Xóa
+            Delete
           </Button>
         </Stack>
       ))}
       <Button variant="outlined" onClick={() => setSurcharges([...surcharges, { name: "", amount: 0, currency: ECURRENCY.VND }])} sx={{ mt: 1 }}>
-        Thêm phí
+        Add Charge
       </Button>
     </Box>
   );

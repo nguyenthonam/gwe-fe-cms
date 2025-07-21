@@ -13,17 +13,17 @@ import { lightBlue } from "@mui/material/colors";
 
 // Validation schema
 const AuthSchema = Yup.object().shape({
-  email: Yup.string().email("Email không hợp lệ").required("Bắt buộc"),
+  email: Yup.string().email("Invalid email format").required("This field is required"),
 });
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState({ email: "" });
   const router = useRouter();
-  const { isLoading, accessToken } = useSelector((state: AppState) => state.auth); // Giả định token trong Redux
+  const { isLoading, accessToken } = useSelector((state: AppState) => state.auth);
   const { showNotification } = useNotification();
 
-  // Chuyển hướng nếu đã đăng nhập
+  // Redirect if already logged in
   useEffect(() => {
     if (accessToken) {
       router.push("/dashboard");
@@ -50,17 +50,17 @@ export default function ForgotPasswordPage() {
 
     const isValid = await validateForm();
     if (!isValid) {
-      showNotification("Vui lòng kiểm tra thông tin nhập!", "warning");
+      showNotification("Please check your input!", "warning");
       return;
     }
 
     try {
       const res = await forgotPasswordApi({ email });
-      if (!res) throw new Error("Không nhận được phản hồi từ máy chủ!");
-      showNotification("Yêu cầu lấy mật khẩu thành công! Hãy kiểm tra Email!", "success");
+      if (!res) throw new Error("No response from server!");
+      showNotification("Password reset request sent! Please check your email!", "success");
       return true;
     } catch (error: any) {
-      showNotification(error.message || "Không nhận được phản hồi từ máy chủ!", "error");
+      showNotification(error.message || "No response from server!", "error");
       return false;
     }
   };
@@ -88,7 +88,7 @@ export default function ForgotPasswordPage() {
             size="small"
             type="text"
             label="Email"
-            placeholder="Email"
+            placeholder="Enter your email"
             fullWidth
             variant="outlined"
             value={email}
