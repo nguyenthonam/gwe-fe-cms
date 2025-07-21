@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { signInUser } from "@/store/reducers/authReducer";
@@ -17,8 +18,8 @@ import * as Yup from "yup";
 
 // Validation schema
 const LoginSchema = Yup.object().shape({
-  email: Yup.string().email("Email không hợp lệ").required("Bắt buộc"),
-  password: Yup.string().min(6, "Mật khẩu phải dài hơn 6 ký tự").required("Bắt buộc"),
+  email: Yup.string().email("Invalid email format").required("Email is required"),
+  password: Yup.string().min(6, "Password must be at least 6 characters").required("Password is required"),
 });
 
 export default function LoginPage() {
@@ -27,11 +28,11 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({ email: "", password: "" });
   const router = useRouter();
-  const { isLoading, accessToken } = useSelector((state: AppState) => state.auth); // Giả định token trong Redux
+  const { isLoading, accessToken } = useSelector((state: AppState) => state.auth);
   const dispatch = useDispatch();
   const { showNotification } = useNotification();
 
-  // Chuyển hướng nếu đã đăng nhập
+  // Redirect if already logged in
   useEffect(() => {
     if (accessToken) {
       router.push("/dashboard");
@@ -58,20 +59,20 @@ export default function LoginPage() {
 
     const isValid = await validateForm();
     if (!isValid) {
-      showNotification("Vui lòng kiểm tra thông tin nhập!", "warning");
+      showNotification("Please check your input!", "warning");
       return;
     }
 
     try {
       const result = await dispatch(signInUser({ email, password }) as any);
       if (signInUser.fulfilled.match(result)) {
-        showNotification("Đăng nhập thành công!", "success");
+        showNotification("Login successful!", "success");
         router.push("/dashboard");
       } else {
-        throw new Error(result.payload?.message || "Đăng nhập thất bại");
+        throw new Error(result.payload?.message || "Login failed");
       }
     } catch (error: any) {
-      showNotification(error.message || "Đăng nhập thất bại, vui lòng thử lại!", "error");
+      showNotification(error.message || "Login failed, please try again!", "error");
     }
   };
 
@@ -95,7 +96,7 @@ export default function LoginPage() {
             size="small"
             type="text"
             label="Email"
-            placeholder="Email"
+            placeholder="Enter your email"
             fullWidth
             variant="outlined"
             value={email}
@@ -110,7 +111,7 @@ export default function LoginPage() {
             label="Password"
             size="small"
             value={password}
-            placeholder="Password"
+            placeholder="Enter your password"
             type={showPassword ? "text" : "password"}
             onKeyDown={handleKeyDown}
             onChange={(e) => setPassword(e.target.value)}
@@ -120,7 +121,7 @@ export default function LoginPage() {
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label={showPassword ? "hide the password" : "display the password"}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                     onClick={() => setShowPassword((show) => !show)}
                     onMouseDown={(e) => e.preventDefault()}
                     onMouseUp={(e) => e.preventDefault()}

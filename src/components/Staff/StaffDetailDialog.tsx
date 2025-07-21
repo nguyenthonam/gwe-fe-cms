@@ -10,7 +10,7 @@ interface Props {
   staff: IUser | null;
 }
 
-// Component dùng cho từng dòng thông tin
+// Component for each row
 const DetailItem = ({ label, value }: { label: string; value?: string | number | React.ReactNode }) => (
   <Stack direction="row" spacing={1}>
     <Typography fontWeight="bold" sx={{ width: 130, minWidth: 130 }}>
@@ -25,24 +25,24 @@ export default function StaffDetailDialog({ open, onClose, staff }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: "bold", color: "primary.main" }}>CHI TIẾT NHÂN VIÊN</DialogTitle>
+      <DialogTitle sx={{ fontWeight: "bold", color: "primary.main" }}>STAFF DETAILS</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={1.5}>
           <DetailItem label="User ID" value={staff.userId} />
           <DetailItem label="Email" value={staff.email} />
-          <DetailItem label="Họ tên" value={staff.contact?.fullname} />
-          <DetailItem label="SĐT" value={staff.contact?.phone} />
-          <DetailItem label="Giới tính" value={<EnumChip type="gender" value={staff.gender} />} />
-          <DetailItem label="Ngày sinh" value={staff.birthday ? new Date(staff.birthday).toLocaleDateString("vi-VN") : "---"} />
-          <DetailItem label="CMND/CCCD" value={staff.identity_key?.id} />
-          <DetailItem label="Nơi cấp" value={staff.identity_key?.address} />
-          <DetailItem label="Công ty" value={staff.companyId && typeof staff.companyId === "object" ? staff.companyId.name : String(staff.companyId || "---")} />
-          <DetailItem label="Trạng thái" value={<EnumChip type="recordStatus" value={staff.status} />} />
+          <DetailItem label="Full Name" value={staff.contact?.fullname} />
+          <DetailItem label="Contact Number" value={staff.contact?.phone} />
+          <DetailItem label="Gender" value={<EnumChip type="gender" value={staff.gender} />} />
+          <DetailItem label="Birthday" value={staff.birthday ? new Date(staff.birthday).toLocaleDateString("en-GB") : "---"} />
+          <DetailItem label="National ID" value={staff.identity_key?.id} />
+          <DetailItem label="Issued At" value={staff.identity_key?.address} />
+          <DetailItem label="Customer Company" value={staff.companyId && typeof staff.companyId === "object" ? staff.companyId.name : String(staff.companyId || "---")} />
+          <DetailItem label="Status" value={<EnumChip type="recordStatus" value={staff.status} />} />
         </Stack>
       </DialogContent>
       <DialogActions>
         <Box flex={1} />
-        <Button onClick={onClose}>Đóng</Button>
+        <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );

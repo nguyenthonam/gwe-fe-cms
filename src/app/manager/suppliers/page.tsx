@@ -10,18 +10,18 @@ export default function SuppliersPage() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Lấy tab index từ URL, mặc định là 0 nếu không có hoặc lỗi
+  // Get tab index from URL; default to 0 if missing or invalid
   const tabParam = Number(searchParams.get("tab"));
   const [tabIndex, setTabIndex] = useState(Number.isInteger(tabParam) && tabParam >= 0 ? tabParam : 0);
 
-  // Khi query tab thay đổi, đồng bộ lại state
+  // Sync tab index when query param changes
   useEffect(() => {
     const nextTab = Number.isInteger(tabParam) && tabParam >= 0 ? tabParam : 0;
     if (tabIndex !== nextTab) setTabIndex(nextTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabParam]);
 
-  // Khi đổi tab, cập nhật lại url (không reload trang)
+  // Update URL when tab changes (without reload)
   const handleTabChange = (_: any, newValue: number) => {
     setTabIndex(newValue);
     const params = new URLSearchParams(searchParams.toString());
@@ -38,14 +38,14 @@ export default function SuppliersPage() {
         }}
       >
         <Typography variant="h5" mb={2} fontWeight="bold" sx={{ color: lightBlue[500] }}>
-          SUPPLIER MANAGER
+          SUPPLIER MANAGEMENT
         </Typography>
 
         <Tabs value={tabIndex} onChange={handleTabChange}>
-          <Tab label="SUPPLIER" />
+          <Tab label="Suppliers" />
         </Tabs>
 
-        <Box mt={2} className="w-full ">
+        <Box mt={2} className="w-full">
           <Paper>{tabIndex === 0 && <SupplierManagerView />}</Paper>
         </Box>
       </Box>

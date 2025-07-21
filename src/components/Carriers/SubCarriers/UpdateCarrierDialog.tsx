@@ -7,7 +7,7 @@ import { getCompanyCarriersApi, updateCarrierApi } from "@/utils/apis/apiCarrier
 import { useNotification } from "@/contexts/NotificationProvider";
 import { ECHARGEABLE_WEIGHT_TYPE } from "@/types/typeGlobals";
 import { ICompany } from "@/types/typeCompany";
-import NumericInput from "../Globals/NumericInput";
+import NumericInput from "../../Globals/NumericInput";
 
 interface Props {
   open: boolean;
@@ -42,10 +42,10 @@ export default function UpdateCarrierDialog({ open, onClose, onUpdated, carrier 
       if (!form?._id) return;
       setLoading(true);
       await updateCarrierApi(form._id, form);
-      showNotification("Cập nhật thành công", "success");
+      showNotification("Update successful", "success");
       onUpdated();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật", "error");
+      showNotification(err.message || "Update failed", "error");
     } finally {
       setLoading(false);
     }
@@ -53,12 +53,12 @@ export default function UpdateCarrierDialog({ open, onClose, onUpdated, carrier 
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Cập nhật Nhà Vận Chuyển</DialogTitle>
+      <DialogTitle>Update Sub Carrier</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={12}>
-              <TextField label="Hãng bay" select value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
+              <TextField label="Carrier" select value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
                 {companyOptions.map((c) => (
                   <MenuItem key={c._id} value={c._id}>
                     {c.name}
@@ -67,28 +67,27 @@ export default function UpdateCarrierDialog({ open, onClose, onUpdated, carrier 
               </TextField>
             </Grid>
             <Grid size={6}>
-              <TextField label="Mã" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
+              <TextField label="Sub Carrier Code" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Tên" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
+              <TextField label="Sub Carrier Name" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
             </Grid>
-
             <Grid size={12}>
-              <TextField label="Cách tính cân nặng" select value={form.chargeableWeightType} onChange={(e) => handleChange("chargeableWeightType", +e.target.value)} fullWidth size="small">
-                <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.DETAIL}>Tính theo kiện</MenuItem>
-                <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.TOTAL}>Tính toàn bộ</MenuItem>
+              <TextField label="Charge Weight Type" select value={form.chargeableWeightType} onChange={(e) => handleChange("chargeableWeightType", e.target.value)} fullWidth size="small">
+                <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.DETAIL}>By Piece</MenuItem>
+                <MenuItem value={ECHARGEABLE_WEIGHT_TYPE.TOTAL}>Total</MenuItem>
               </TextField>
             </Grid>
             <Grid size={12}>
-              <NumericInput label="Hệ số quy đổi thể tích" fullWidth size="small" value={String(form.volWeightRate)} onChange={(val) => handleChange("volWeightRate", Number(val))} />
+              <NumericInput label="Volume Conversion Rate" fullWidth size="small" value={String(form.volWeightRate || "")} onChange={(val) => handleChange("volWeightRate", Number(val))} />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          Cập nhật
+          Update
         </Button>
       </DialogActions>
     </Dialog>

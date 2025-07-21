@@ -38,7 +38,7 @@ export default function VATRateDetailDialog({ open, onClose, vatRate, carriers, 
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={6}>
-              <InfoRow label="Carrier" value={getCarrierName()} />
+              <InfoRow label="Sub Carrier" value={getCarrierName()} />
             </Grid>
             <Grid size={6}>
               <InfoRow label="Service" value={getServiceCode()} />

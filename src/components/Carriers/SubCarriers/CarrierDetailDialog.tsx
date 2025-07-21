@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Grid, Typography, Box, Chip } from "@mui/material";
-import { EnumChip } from "../Globals/EnumChip";
+import { EnumChip } from "../../Globals/EnumChip";
 import { ICarrier } from "@/types/typeCarrier";
 import { orange } from "@mui/material/colors";
 
@@ -17,37 +17,37 @@ export default function CarrierDetailDialog({ open, onClose, carrier }: Props) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle color="primary" sx={{ fontWeight: "bold" }}>
-        CHI TIẾT NHÀ VẬN CHUYỂN
+        SUB CARRIER DETAILS
       </DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={2}>
           <Grid size={12}>
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
-              CODE
+              SUB CARRIER CODE
             </Typography>
             <Typography>{carrier.code}</Typography>
           </Grid>
           <Grid size={12}>
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
-              TÊN NHÀ VẬN CHUYỂN
+              SUB CARRIER NAME
             </Typography>
             <Typography>{carrier.name}</Typography>
           </Grid>
           <Grid size={12}>
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
-              HÃNG BAY
+              CARRIER
             </Typography>
             <Typography>{(carrier as any).companyId?.name || carrier.companyId}</Typography>
           </Grid>
           <Grid size={12}>
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
-              CÁCH TÍNH CÂN NẶNG
+              CHARGEABLE WEIGHT TYPE
             </Typography>
             <EnumChip type="chargeWeightType" value={carrier.chargeableWeightType} />
           </Grid>
           <Grid size={12}>
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
-              HỆ SỐ QUY ĐỔI THỂ TÍCH
+              VOLUME WEIGHT RATE
             </Typography>
             <Chip
               label={carrier.volWeightRate}
@@ -61,7 +61,7 @@ export default function CarrierDetailDialog({ open, onClose, carrier }: Props) {
           </Grid>
           <Grid size={12}>
             <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
-              TRẠNG THÁI
+              STATUS
             </Typography>
             <EnumChip type="recordStatus" value={carrier.status} />
           </Grid>
@@ -69,7 +69,7 @@ export default function CarrierDetailDialog({ open, onClose, carrier }: Props) {
       </DialogContent>
       <DialogActions>
         <Box flex={1} />
-        <Button onClick={onClose}>Đóng</Button>
+        <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );

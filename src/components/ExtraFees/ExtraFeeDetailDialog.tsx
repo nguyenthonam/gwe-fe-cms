@@ -20,20 +20,20 @@ export default function ExtraFeeDetailDialog({ open, onClose, extraFee }: Props)
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle color="primary" sx={{ fontWeight: "bold" }}>
-        CHI TIẾT PHỤ PHÍ
+        Extra Fee Details
       </DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={2}>
-          <InfoRow label="Mã phụ phí" value={extraFee.code} />
-          <InfoRow label="Tên phụ phí" value={extraFee.name} />
-          <InfoRow label="Hãng vận chuyển" value={typeof extraFee.carrierId === "object" ? extraFee.carrierId?.name : String(extraFee.carrierId)} />
-          <InfoRow label="Dịch vụ" value={typeof extraFee.serviceId === "object" ? extraFee.serviceId?.code : String(extraFee.serviceId)} />
+          <InfoRow label="Fee Code" value={extraFee.code} />
+          <InfoRow label="Fee Name" value={extraFee.name} />
+          <InfoRow label="Sub Carrier" value={typeof extraFee.carrierId === "object" ? extraFee.carrierId?.name : String(extraFee.carrierId)} />
+          <InfoRow label="Service" value={typeof extraFee.serviceId === "object" ? extraFee.serviceId?.code : String(extraFee.serviceId)} />
 
           <InfoRow
-            label="Giá trị"
+            label="Value"
             value={
-              <Typography sx={{ fontWeight: "bold", color: orange[500] }}>
-                {formatCurrency(extraFee.value, extraFee.currency)}{" "}
+              <Box display="flex" alignItems="center" gap={1}>
+                <Typography sx={{ fontWeight: "bold", color: orange[500] }}>{formatCurrency(extraFee.value, extraFee.currency)}</Typography>
                 <Chip
                   label={extraFee.currency}
                   size="small"
@@ -43,33 +43,33 @@ export default function ExtraFeeDetailDialog({ open, onClose, extraFee }: Props)
                     fontWeight: 500,
                   }}
                 />
-              </Typography>
+              </Box>
             }
           />
-          {/* Thêm ngày hiệu lực nếu có */}
-          <InfoRow label="Hiệu lực từ" value={formatDate((extraFee as any).startDate)} />
-          <InfoRow label="Hiệu lực đến" value={formatDate((extraFee as any).endDate)} />
-          <InfoRow label="Trạng thái" value={<EnumChip type="recordStatus" value={extraFee.status} />} />
+          {/* Effective Dates */}
+          <InfoRow label="Effective From" value={formatDate((extraFee as any).startDate)} />
+          <InfoRow label="Effective To" value={formatDate((extraFee as any).endDate)} />
+          <InfoRow label="Status" value={<EnumChip type="recordStatus" value={extraFee.status} />} />
         </Grid>
         {(extraFee.createdAt || extraFee.updatedAt) && (
           <>
             <Divider sx={{ my: 1 }} />
             <Grid container spacing={2}>
-              {extraFee.createdAt && <InfoRow label="Ngày tạo" value={formatDate(extraFee.createdAt)} />}
-              {extraFee.updatedAt && <InfoRow label="Cập nhật gần nhất" value={formatDate(extraFee.updatedAt)} />}
+              {extraFee.createdAt && <InfoRow label="Created At" value={formatDate(extraFee.createdAt)} />}
+              {extraFee.updatedAt && <InfoRow label="Last Updated" value={formatDate(extraFee.updatedAt)} />}
             </Grid>
           </>
         )}
       </DialogContent>
       <DialogActions>
         <Box flex={1} />
-        <Button onClick={onClose}>Đóng</Button>
+        <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );
 }
 
-// InfoRow sử dụng Grid đúng chuẩn, tránh lồng <p> vào <p>
+// InfoRow - Correct Grid usage, no <p> nesting
 const InfoRow = ({ label, value }: { label: string; value?: React.ReactNode }) => (
   <>
     <Grid size={5}>

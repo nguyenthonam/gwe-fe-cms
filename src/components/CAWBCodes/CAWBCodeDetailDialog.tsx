@@ -16,25 +16,25 @@ export default function CAWBCodeDetailDialog({ open, onClose, cawbCode }: Props)
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Chi tiết mã CAWBCode</DialogTitle>
+      <DialogTitle>CAWB Code Detail</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2}>
           <Typography variant="body2">
-            <strong>Mã:</strong> {cawbCode.code}
+            <strong>CAWB Code:</strong> {cawbCode.code}
           </Typography>
           <Typography variant="body2">
-            <strong>Carrier:</strong> {carrierName}
+            <strong>Sub Carrier:</strong> {carrierName}
           </Typography>
           <Typography variant="body2">
-            <strong>Đã dùng:</strong> {cawbCode.isUsed ? <CheckedIcon fontSize="small" sx={{ color: "#2E7D32" }} /> : <NoCheckIcon fontSize="small" sx={{ color: "#616161" }} />}
+            <strong>Used:</strong> {cawbCode.isUsed ? <CheckedIcon fontSize="small" sx={{ color: "#2E7D32" }} /> : <NoCheckIcon fontSize="small" sx={{ color: "#616161" }} />}
           </Typography>
           <Typography variant="body2">
-            <strong>Trạng thái:</strong> <EnumChip type="recordStatus" value={cawbCode.status} />
+            <strong>Status:</strong> <EnumChip type="recordStatus" value={cawbCode.status} />
           </Typography>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Đóng</Button>
+        <Button onClick={onClose}>Close</Button>
       </DialogActions>
     </Dialog>
   );

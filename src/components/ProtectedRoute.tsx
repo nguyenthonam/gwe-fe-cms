@@ -20,7 +20,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const handleVerifyToken = async () => {
       try {
         const res = await verifyTokenApi();
-        if (!res) throw new Error("Không nhận được phản hồi từ máy chủ!");
+        if (!res) throw new Error("No response from server!");
 
         const data = res?.data;
         if (data?.data) {
@@ -29,18 +29,19 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         }
         return true;
       } catch (err: any) {
-        showNotification(err.message, "error");
+        showNotification(err.message || "Token verification failed!", "error");
         return false;
       }
     };
 
     const handleCheckAuthHeaders = async () => {
       try {
-        // Không có token trong Redux và localStorage);
+        // If there's no token in Redux or localStorage
         if (!accessToken) {
           dispatch(signOutUser());
           return false;
         }
+
         const isValid = await handleVerifyToken();
         if (!isValid) {
           dispatch(signOutUser());
@@ -49,25 +50,24 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
         return true;
       } catch (err: any) {
-        showNotification(err.message, "error");
+        showNotification(err.message || "Authentication check failed!", "error");
         return false;
       }
     };
 
-    const EXCEPT_PATH = ["/auth/forgot-password", "/auth/new-password"];
+    const EXCEPT_PATHS = ["/auth/forgot-password", "/auth/new-password"];
 
-    if (!EXCEPT_PATH.includes(pathname)) {
-      // Check middleware response first
+    if (!EXCEPT_PATHS.includes(pathname)) {
       handleCheckAuthHeaders().then((isValid) => {
         if (!isValid && pathname !== "/sign-in") {
-          showNotification("Phiên đăng nhập kết thúc!", "error");
+          showNotification("Session expired. Please sign in again!", "error");
           router.push("/sign-in");
         }
       });
     }
   }, [pathname, router, dispatch, showNotification, accessToken]);
 
-  // Handle routing based on auth state
+  // Redirect if already signed in and on sign-in page
   useEffect(() => {
     if (accessToken && pathname === "/sign-in") {
       router.push("/dashboard");

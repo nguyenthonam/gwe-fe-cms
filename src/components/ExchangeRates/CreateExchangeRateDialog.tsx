@@ -66,7 +66,7 @@ export default function CreateExchangeRateDialog({ open, onClose, onCreated }: P
           <Grid container spacing={2}>
             <Grid size={6}>
               <Select value={currencyFrom} onChange={(e) => setCurrencyFrom(e.target.value as ECURRENCY)} fullWidth displayEmpty size="small">
-                <MenuItem value="">From currency</MenuItem>
+                <MenuItem value="">From Currency</MenuItem>
                 {currencyOptions.map((c) => (
                   <MenuItem key={c} value={c}>
                     {c}
@@ -76,7 +76,7 @@ export default function CreateExchangeRateDialog({ open, onClose, onCreated }: P
             </Grid>
             <Grid size={6}>
               <Select value={currencyTo} onChange={(e) => setCurrencyTo(e.target.value as ECURRENCY)} fullWidth displayEmpty size="small">
-                <MenuItem value="">To currency</MenuItem>
+                <MenuItem value="">To Currency</MenuItem>
                 {currencyOptions.map((c) => (
                   <MenuItem key={c} value={c}>
                     {c}
@@ -105,7 +105,7 @@ export default function CreateExchangeRateDialog({ open, onClose, onCreated }: P
               </Grid>
             )}
             <Grid size={12}>
-              <NumericInput label="Exchange Rate" fullWidth size="small" value={rate} onChange={(val) => setRate(val)} />
+              <NumericInput label="Exchange Rate" fullWidth size="small" value={rate} onChange={setRate} />
             </Grid>
           </Grid>
         </Stack>

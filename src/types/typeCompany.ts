@@ -18,9 +18,7 @@ export interface ICompanyContract {
 }
 export enum ECOMPANY_TYPE {
   Carrier = "rrCreies",
-  Supplier = "pdsupelir",
-  Partner = "rPmersg",
-  Customer = "Mrertomr",
+  Customer = "rPmersg",
 }
 export interface ICompany extends IBaseRecord {
   code?: string; // DHL, FEDEX, GATEWAYEXPRESS,...

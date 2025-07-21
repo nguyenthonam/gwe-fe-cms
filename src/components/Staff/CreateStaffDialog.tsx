@@ -56,7 +56,7 @@ export default function CreateStaffDialog({ open, onClose, onCreated }: Props) {
     try {
       setLoading(true);
       const res = await createUserApi(form);
-      showNotification(res?.data?.message || "Tạo thành công!", "success");
+      showNotification(res?.data?.message || "Created successfully!", "success");
       onCreated();
       setForm({
         email: "",
@@ -67,7 +67,7 @@ export default function CreateStaffDialog({ open, onClose, onCreated }: Props) {
         role: EUSER_ROLES.Partner,
       });
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi tạo nhân viên!", "error");
+      showNotification(err.message || "Failed to create staff!", "error");
     } finally {
       setLoading(false);
     }
@@ -75,12 +75,12 @@ export default function CreateStaffDialog({ open, onClose, onCreated }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Tạo nhân viên mới</DialogTitle>
+      <DialogTitle>Create New Staff</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={12}>
-              <TextField select label="Đối tác" value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
+              <TextField select label="Customer" value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
                 {partners.map((p) => (
                   <MenuItem key={p._id} value={p._id}>
                     {p.name}
@@ -92,24 +92,24 @@ export default function CreateStaffDialog({ open, onClose, onCreated }: Props) {
               <TextField label="Email" value={form.email} onChange={(e) => handleChange("email", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Họ tên" value={form.contact?.fullname || ""} onChange={(e) => handleNestedChange("contact", "fullname", e.target.value)} fullWidth size="small" />
+              <TextField label="Full Name" value={form.contact?.fullname || ""} onChange={(e) => handleNestedChange("contact", "fullname", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="SĐT" value={form.contact?.phone || ""} onChange={(e) => handleNestedChange("contact", "phone", e.target.value)} fullWidth size="small" />
+              <TextField label="Phone" value={form.contact?.phone || ""} onChange={(e) => handleNestedChange("contact", "phone", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
               <FormControl fullWidth size="small">
-                <InputLabel>Giới tính</InputLabel>
-                <Select label="Giới tính" value={form.gender} onChange={(e) => handleChange("gender", e.target.value)}>
-                  <MenuItem value={EGENDER.MALE}>Nam</MenuItem>
-                  <MenuItem value={EGENDER.FEMALE}>Nữ</MenuItem>
+                <InputLabel>Gender</InputLabel>
+                <Select label="Gender" value={form.gender} onChange={(e) => handleChange("gender", e.target.value)}>
+                  <MenuItem value={EGENDER.MALE}>Male</MenuItem>
+                  <MenuItem value={EGENDER.FEMALE}>Female</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
 
             <Grid size={6}>
               <TextField
-                label="Ngày sinh"
+                label="Birthday"
                 type="date"
                 InputLabelProps={{ shrink: true }}
                 value={form.birthday ? new Date(form.birthday).toISOString().split("T")[0] : ""}
@@ -122,15 +122,15 @@ export default function CreateStaffDialog({ open, onClose, onCreated }: Props) {
               <TextField label="CMND/CCCD" value={form.identity_key?.id || ""} onChange={(e) => handleNestedChange("identity_key", "id", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Nơi cấp" value={form.identity_key?.address || ""} onChange={(e) => handleNestedChange("identity_key", "address", e.target.value)} fullWidth size="small" />
+              <TextField label="{Place}" value={form.identity_key?.address || ""} onChange={(e) => handleNestedChange("identity_key", "address", e.target.value)} fullWidth size="small" />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          Tạo
+          Create
         </Button>
       </DialogActions>
     </Dialog>

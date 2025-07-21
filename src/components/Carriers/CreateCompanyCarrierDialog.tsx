@@ -28,8 +28,7 @@ export default function CreateCompanyCarrierDialog({ open, onClose, onCreated }:
   const { showNotification } = useNotification();
 
   useEffect(() => {
-    // if (!open) setForm(defaultForm);
-
+    // Reset form when dialog closes
     return () => {
       setForm(defaultForm);
     };
@@ -43,11 +42,11 @@ export default function CreateCompanyCarrierDialog({ open, onClose, onCreated }:
     try {
       setLoading(true);
       await createCompanyCarrierApi(form);
-      showNotification("Tạo Hãng Bay thành công!", "success");
+      showNotification("Carrier created successfully!", "success");
       onCreated();
       onClose();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi tạo!", "error");
+      showNotification(err.message || "Error creating carrier!", "error");
     } finally {
       setLoading(false);
     }
@@ -55,29 +54,29 @@ export default function CreateCompanyCarrierDialog({ open, onClose, onCreated }:
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Tạo Hãng Bay mới</DialogTitle>
+      <DialogTitle>Create New Carrier</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={12}>
-              <TextField label="Mã Hãng Bay" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
+              <TextField label="Carrier Code" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={12}>
-              <TextField label="Tên Hãng Bay" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
+              <TextField label="Carrier Name" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={12}>
-              <TextField label="Mã số thuế" value={form.taxCode || ""} onChange={(e) => handleChange("taxCode", e.target.value)} fullWidth size="small" />
+              <TextField label="Tax Code" value={form.taxCode || ""} onChange={(e) => handleChange("taxCode", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={12}>
-              <TextField label="Địa chỉ" value={form.address || ""} onChange={(e) => handleChange("address", e.target.value)} fullWidth size="small" />
+              <TextField label="Address" value={form.address || ""} onChange={(e) => handleChange("address", e.target.value)} fullWidth size="small" />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-          Tạo mới
+          Create
         </Button>
       </DialogActions>
     </Dialog>

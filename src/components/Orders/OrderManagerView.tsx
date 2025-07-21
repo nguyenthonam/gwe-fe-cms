@@ -94,7 +94,7 @@ export default function OrderManagerView() {
       setTotal(res?.data?.data?.meta?.total || 0);
     } catch (err) {
       console.error(err);
-      showNotification("Không thể tải danh sách đơn hàng", "error");
+      showNotification("Failed to load orders list", "error");
     } finally {
       setLoading(false);
     }
@@ -126,8 +126,9 @@ export default function OrderManagerView() {
       DATE: formatDate(c.createdAt || ""),
       "CUSTOMER NAME": c.partner?.partnerName || "",
       SUPPLIER: typeof c.supplierId === "object" ? c.supplierId?.name : c.supplierId,
-      CARRIER: typeof c.carrierId === "object" ? c.carrierId?.name : c.carrierId,
+      "SUB CARRIER": typeof c.carrierId === "object" ? c.carrierId?.name : c.carrierId,
       SERVICE: typeof c.serviceId === "object" ? c.serviceId?.code : c.serviceId,
+      DESTINATION: c.recipient?.country?.name || "",
       TYPE: c.productType,
       DIMENSIONS: c.packageDetail?.dimensions && c.packageDetail?.dimensions?.length > 0 ? c.packageDetail?.dimensions.map((d) => `${d.length}x${d.width}x${d.height}`).join(", ") : "",
       "GROSS WEIGHT": calculateGrossWeight(c),
@@ -135,15 +136,15 @@ export default function OrderManagerView() {
       "CHARGE WEIGHT": c.chargeableWeight,
       NOTE: c.note || "",
       "BASE RATE (BUYING RATE)": formatCurrency(c.basePrice?.purchasePrice?.value || 0, c.currency || ECURRENCY.VND),
-      "EXTRA FEE (BUY)": formatCurrency(c.extraFees?.extraFeesTotal || 0, c.currency || ECURRENCY.VND),
-      "PPXD (BUY)": formatCurrency(c.extraFees?.fscFeeValue?.purchaseFSCFee || 0, c.currency || ECURRENCY.VND),
-      "VAT (BUY)": formatCurrency(c.vat?.purchaseVATTotal || 0, c.currency || ECURRENCY.VND),
-      "TOTAL (BUY)": formatCurrency(c.totalPrice?.purchaseTotal || 0, c.currency || ECURRENCY.VND),
+      "EXTRA FEE (BUYING)": formatCurrency(c.extraFees?.extraFeesTotal || 0, c.currency || ECURRENCY.VND),
+      "FSC (BUYING)": formatCurrency(c.extraFees?.fscFeeValue?.purchaseFSCFee || 0, c.currency || ECURRENCY.VND),
+      "VAT (BUYING)": formatCurrency(c.vat?.purchaseVATTotal || 0, c.currency || ECURRENCY.VND),
+      "TOTAL (BUYING)": formatCurrency(c.totalPrice?.purchaseTotal || 0, c.currency || ECURRENCY.VND),
       "BASE RATE (SELLING RATE)": formatCurrency(c.basePrice?.salePrice?.value || 0, c.currency || ECURRENCY.VND),
-      "EXTRA FEE (SELL)": formatCurrency(c.extraFees?.extraFeesTotal || 0, c.currency || ECURRENCY.VND),
-      "PPXD (SELL)": formatCurrency(c.extraFees?.fscFeeValue?.saleFSCFee || 0, c.currency || ECURRENCY.VND),
-      "VAT (SELL)": formatCurrency(c.vat?.saleVATTotal || 0, c.currency || ECURRENCY.VND),
-      "TOTAL (SELL)": formatCurrency(c.totalPrice?.saleTotal || 0, c.currency || ECURRENCY.VND),
+      "EXTRA FEE (SELLING)": formatCurrency(c.extraFees?.extraFeesTotal || 0, c.currency || ECURRENCY.VND),
+      "FSC (SELLING)": formatCurrency(c.extraFees?.fscFeeValue?.saleFSCFee || 0, c.currency || ECURRENCY.VND),
+      "VAT (SELLING)": formatCurrency(c.vat?.saleVATTotal || 0, c.currency || ECURRENCY.VND),
+      "TOTAL (SELLING)": formatCurrency(c.totalPrice?.saleTotal || 0, c.currency || ECURRENCY.VND),
       PROFIT: formatCurrency((c.totalPrice?.saleTotal || 0) - (c.totalPrice?.purchaseTotal || 0), c.currency || ECURRENCY.VND),
     }));
 
@@ -179,7 +180,7 @@ export default function OrderManagerView() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "ORDERS");
-    XLSX.writeFile(wb, "DANH_SACH_DON_HANG.xlsx");
+    XLSX.writeFile(wb, "ORDER_LIST.xlsx");
   };
 
   // Table columns
@@ -243,7 +244,7 @@ export default function OrderManagerView() {
     },
     {
       field: "carrierId",
-      headerName: "CARRIER",
+      headerName: "SUB CARRIER",
       align: "center",
       headerAlign: "center",
       minWidth: 130,
@@ -259,6 +260,38 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (typeof row.serviceId === "object" ? row.serviceId?.code : row.serviceId),
     },
+    // ----- DESTINATION COLUMN ADDED HERE -----
+    {
+      field: "destination",
+      headerName: "DESTINATION",
+      align: "center",
+      headerAlign: "center",
+      minWidth: 220,
+      flex: 1,
+      renderCell: ({ row }) =>
+        row.recipient?.country?.code || row.recipient?.country?.name ? (
+          <Chip
+            label={`${row.recipient?.country?.name || ""} (${row.recipient?.country?.code || ""})`}
+            size="small"
+            sx={{
+              backgroundColor: blue[200],
+              color: "#fff",
+              fontWeight: 500,
+            }}
+          />
+        ) : (
+          <Chip
+            label="N/A"
+            size="small"
+            sx={{
+              backgroundColor: grey[500],
+              color: "#fff",
+              fontWeight: 500,
+            }}
+          />
+        ),
+    },
+    // ------------------------------------------
     {
       field: "productType",
       headerName: "TYPE",
@@ -303,7 +336,7 @@ export default function OrderManagerView() {
       headerName: "GROSS WEIGHT",
       align: "center",
       headerAlign: "center",
-      minWidth: 120,
+      minWidth: 160,
       flex: 0.7,
       renderCell: ({ row }) => (
         <Chip
@@ -322,7 +355,7 @@ export default function OrderManagerView() {
       headerName: "VOLUME WEIGHT",
       align: "center",
       headerAlign: "center",
-      minWidth: 120,
+      minWidth: 160,
       flex: 0.7,
       renderCell: ({ row }) => (
         <Chip
@@ -341,7 +374,7 @@ export default function OrderManagerView() {
       headerName: "CHARGE WEIGHT",
       align: "center",
       headerAlign: "center",
-      minWidth: 120,
+      minWidth: 140,
       flex: 0.7,
       renderCell: ({ value }) => (
         <Chip
@@ -355,7 +388,6 @@ export default function OrderManagerView() {
         />
       ),
     },
-
     {
       field: "note",
       headerName: "NOTE",
@@ -366,10 +398,10 @@ export default function OrderManagerView() {
     },
     {
       field: "basePrice.purchasePrice.value",
-      headerName: "BASE RATE (BUYING RATE)",
+      headerName: "BASE RATE (BUYING)",
       align: "center",
       headerAlign: "center",
-      minWidth: 150,
+      minWidth: 180,
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
@@ -382,7 +414,7 @@ export default function OrderManagerView() {
       headerName: "EXTRA FEE",
       align: "center",
       headerAlign: "center",
-      minWidth: 120,
+      minWidth: 150,
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
@@ -392,10 +424,10 @@ export default function OrderManagerView() {
     },
     {
       field: "extraFees.fscFeeValue.purchaseFSCFee",
-      headerName: "PPXD",
+      headerName: "FSC (BUYING)",
       align: "center",
       headerAlign: "center",
-      minWidth: 110,
+      minWidth: 150,
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
@@ -405,10 +437,10 @@ export default function OrderManagerView() {
     },
     {
       field: "vat.purchaseVATTotal",
-      headerName: "VAT",
+      headerName: "VAT (BUYING)",
       align: "center",
       headerAlign: "center",
-      minWidth: 110,
+      minWidth: 150,
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
@@ -418,10 +450,10 @@ export default function OrderManagerView() {
     },
     {
       field: "totalPrice.purchaseTotal",
-      headerName: "TOTAL",
+      headerName: "TOTAL (BUYING)",
       align: "center",
       headerAlign: "center",
-      minWidth: 110,
+      minWidth: 150,
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
@@ -431,10 +463,10 @@ export default function OrderManagerView() {
     },
     {
       field: "basePrice.salePrice.value",
-      headerName: "BASE RATE (SELLING RATE)",
+      headerName: "BASE RATE (SELLING)",
       align: "center",
       headerAlign: "center",
-      minWidth: 110,
+      minWidth: 180,
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
@@ -444,10 +476,10 @@ export default function OrderManagerView() {
     },
     {
       field: "extraFees.extraFeesTotal",
-      headerName: "EXTRA FEE",
+      headerName: "EXTRA FEE (SELLING)",
       align: "center",
       headerAlign: "center",
-      minWidth: 110,
+      minWidth: 180,
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
@@ -457,10 +489,10 @@ export default function OrderManagerView() {
     },
     {
       field: "extraFees.fscFeeValue.saleFSCFee",
-      headerName: "PPXD",
+      headerName: "FSC (SELLING)",
       align: "center",
       headerAlign: "center",
-      minWidth: 110,
+      minWidth: 150,
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
@@ -470,10 +502,10 @@ export default function OrderManagerView() {
     },
     {
       field: "vat.saleVATTotal",
-      headerName: "VAT",
+      headerName: "VAT (SELLING)",
       align: "center",
       headerAlign: "center",
-      minWidth: 110,
+      minWidth: 150,
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
@@ -483,12 +515,11 @@ export default function OrderManagerView() {
     },
     {
       field: "totalPrice.saleTotal",
-      headerName: "TOTAL",
+      headerName: "TOTAL (SELLING)",
       align: "center",
       headerAlign: "center",
-      minWidth: 110,
+      minWidth: 150,
       flex: 1,
-
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
           <Typography>{formatCurrency(row.totalPrice?.saleTotal, row.currency)}</Typography>
@@ -500,7 +531,7 @@ export default function OrderManagerView() {
       headerName: "PROFIT",
       align: "center",
       headerAlign: "center",
-      minWidth: 110,
+      minWidth: 160,
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: pink[100] }}>
@@ -510,7 +541,7 @@ export default function OrderManagerView() {
     },
     {
       field: "orderStatus",
-      headerName: "Status",
+      headerName: "STATUS",
       align: "center",
       headerAlign: "center",
       minWidth: 110,
@@ -563,43 +594,43 @@ export default function OrderManagerView() {
   const handleLockToggle = async (item: IOrder) => {
     try {
       if (!item._id) return;
-      const confirm = window.confirm(item.status === ERECORD_STATUS.Active ? "Khoá đơn hàng này?" : "Mở khoá đơn này?");
+      const confirm = window.confirm(item.status === ERECORD_STATUS.Active ? "Lock this order?" : "Unlock this order?");
       if (!confirm) return;
       const res = item.status === ERECORD_STATUS.Active ? await lockOrderApi(item._id) : await unlockOrderApi(item._id);
-      showNotification(res?.data?.message || "Cập nhật thành công", "success");
+      showNotification(res?.data?.message || "Update successful", "success");
       fetchData();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật trạng thái", "error");
+      showNotification(err.message || "Failed to update status", "error");
     }
   };
 
   const handleDelete = async (item: IOrder) => {
     if (!item._id) return;
-    if (!window.confirm("Bạn có chắc muốn xoá đơn hàng này?")) return;
+    if (!window.confirm("Are you sure you want to delete this order?")) return;
     try {
       await deleteOrderApi(item._id);
-      showNotification("Đã xoá thành công", "success");
+      showNotification("Order deleted successfully", "success");
       fetchData();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi xoá", "error");
+      showNotification(err.message || "Failed to delete", "error");
     }
   };
 
   return (
     <Box className="space-y-4 p-6">
       <Box display="flex" flexWrap="wrap" gap={1} justifyContent="space-between" alignItems="center">
-        <TextField placeholder="Tìm kiếm, tracking..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 250 }} />
+        <TextField placeholder="Search, tracking..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 250 }} />
         <Stack direction="row" spacing={1} overflow={"auto"}>
           <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
-            Xuất Excel
+            Export Excel
           </Button>
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
-            Tạo mới
+            Create Order
           </Button>
         </Stack>
         <Stack direction="row" spacing={1} overflow={"auto"}>
           <Select size="small" value={partnerIdFilter} onChange={(e) => setPartnerIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 140 }}>
-            <MenuItem value="">Tất cả Partner</MenuItem>
+            <MenuItem value="">All Customers</MenuItem>
             {partners?.map((s) => (
               <MenuItem key={s._id} value={s._id}>
                 {s.name}
@@ -607,7 +638,7 @@ export default function OrderManagerView() {
             ))}
           </Select>
           <Select size="small" value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 140 }}>
-            <MenuItem value="">Tất cả Hãng</MenuItem>
+            <MenuItem value="">All Sub Carriers</MenuItem>
             {carriers?.map((c) => (
               <MenuItem key={c._id} value={c._id}>
                 {c.name}
@@ -615,7 +646,7 @@ export default function OrderManagerView() {
             ))}
           </Select>
           <Select size="small" value={serviceIdFilter} onChange={(e) => setServiceIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 140 }}>
-            <MenuItem value="">Tất cả Dịch vụ</MenuItem>
+            <MenuItem value="">All Services</MenuItem>
             {services?.map((s) => (
               <MenuItem key={s._id} value={s._id}>
                 {s.code}
@@ -623,7 +654,7 @@ export default function OrderManagerView() {
             ))}
           </Select>
           <Select size="small" value={supplierIdFilter} onChange={(e) => setSupplierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 140 }}>
-            <MenuItem value="">Tất cả Supplier</MenuItem>
+            <MenuItem value="">All Suppliers</MenuItem>
             {suppliers?.map((s) => (
               <MenuItem key={s._id} value={s._id}>
                 {s.name}
@@ -631,13 +662,13 @@ export default function OrderManagerView() {
             ))}
           </Select>
           <Select size="small" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} displayEmpty sx={{ minWidth: 120 }}>
-            <MenuItem value="">Mặc định</MenuItem>
-            <MenuItem value="all">Tất cả</MenuItem>
-            <MenuItem value={EORDER_STATUS.Pending}>Chờ xử lý</MenuItem>
-            <MenuItem value={EORDER_STATUS.Confirmed}>Đã xác nhận</MenuItem>
-            <MenuItem value={EORDER_STATUS.InTransit}>Đang vận chuyển</MenuItem>
-            <MenuItem value={EORDER_STATUS.Delivered}>Đã giao</MenuItem>
-            <MenuItem value={EORDER_STATUS.Cancelled}>Đã huỷ</MenuItem>
+            <MenuItem value="">Default</MenuItem>
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value={EORDER_STATUS.Pending}>Pending</MenuItem>
+            <MenuItem value={EORDER_STATUS.Confirmed}>Confirmed</MenuItem>
+            <MenuItem value={EORDER_STATUS.InTransit}>In Transit</MenuItem>
+            <MenuItem value={EORDER_STATUS.Delivered}>Delivered</MenuItem>
+            <MenuItem value={EORDER_STATUS.Cancelled}>Cancelled</MenuItem>
           </Select>
         </Stack>
       </Box>

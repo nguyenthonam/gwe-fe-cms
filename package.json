@@ -47,6 +47,7 @@
     "@types/yup": "^0.32.0",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
+    "framer-motion": "^12.23.6",
     "lodash": "^4.17.21",
     "postcss": "^8",
     "sheetjs-style": "^0.15.8",

@@ -6,7 +6,7 @@ export const getPartnersApi = async () => {
   try {
     const res = await AxiosAPI.get("/api/companies/type", {
       params: {
-        type: ECOMPANY_TYPE.Partner,
+        type: ECOMPANY_TYPE.Customer,
       },
     });
     return res;
@@ -24,7 +24,7 @@ export const searchPartnersApi = async ({ keyword, page = 1, perPage = 10, statu
         page,
         perPage,
         status,
-        type: ECOMPANY_TYPE.Partner,
+        type: ECOMPANY_TYPE.Customer,
       },
     });
     return res;
@@ -36,7 +36,7 @@ export const searchPartnersApi = async ({ keyword, page = 1, perPage = 10, statu
 
 export const createPartnerApi = async (payload: ICompany) => {
   try {
-    const res = await AxiosAPI.post("/api/companies", { ...payload, type: ECOMPANY_TYPE.Partner });
+    const res = await AxiosAPI.post("/api/companies", { ...payload, type: ECOMPANY_TYPE.Customer });
     return res;
   } catch (error: any) {
     console.error("Error login:", error);

@@ -36,7 +36,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [extraFeeList, setExtraFeeList] = useState<any[]>([]);
 
-  // Form State (điền lại data khi open)
+  // Form State
   const [partnerId, setPartnerId] = useState("");
   const [carrierId, setCarrierId] = useState("");
   const [serviceId, setServiceId] = useState("");
@@ -48,6 +48,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
 
   // Billing Info
   const [note, setNote] = useState("");
+  const [carrierAirWaybillCode, setCarrierAirWaybillCode] = useState<string>("");
 
   // Volume Weight Rate
   const [volWeightRate, setVolWeightRate] = useState(null);
@@ -71,29 +72,29 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
 
   // Product Info
   const [content, setContent] = useState("");
-  const [productType, setProductType] = useState<EPRODUCT_TYPE>(EPRODUCT_TYPE.DOCUMENT); // Mặc định là DOCUMENT
+  const [productType, setProductType] = useState<EPRODUCT_TYPE>(EPRODUCT_TYPE.DOCUMENT);
   const [declaredWeight, setDeclaredWeight] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [declaredValue, setDeclaredValue] = useState("");
-  const [currency, setCurrency] = useState<ECURRENCY>(ECURRENCY.VND); // Mặc định là VND
+  const [currency, setCurrency] = useState<ECURRENCY>(ECURRENCY.VND);
 
-  // Dimension (dùng array cho nhiều kiện nếu cần)
+  // Dimension
   const [dimensions, setDimensions] = useState<IDimension[] | []>();
 
   const [loading, setLoading] = useState(false);
   const { showNotification } = useNotification();
 
   useEffect(() => {
-    // Tính lại quantity (số dòng dimension) và tổng grossWeight
+    // Calculate quantity and grossWeight
     const qty = dimensions && Array.isArray(dimensions) ? dimensions.length : 0;
     const dw = dimensions && Array.isArray(dimensions) ? dimensions.reduce((sum, d) => sum + Number(d.grossWeight || 0), 0) : 0;
     setQuantity(qty.toString());
     setDeclaredWeight(dw > 0 ? dw.toString() : "");
   }, [dimensions]);
-  // Fill lại dữ liệu khi order thay đổi
+
+  // Fill data on dialog open
   useEffect(() => {
     if (open && order) {
-      console.log(" ===== Updating order data in dialog: =====", order);
       getPartnersApi().then((res) => setPartners(res?.data?.data?.data || []));
       getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
       getSuppliersApi().then((res) => setSuppliers(res?.data?.data?.data || []));
@@ -128,10 +129,11 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
       setSurcharges(order.surcharges || []);
       setExtraFeeIds(order.extraFees?.extraFeeIds || []);
       setCustomVATPercentage(order.vat?.customVATPercentage ?? 8);
+      setCarrierAirWaybillCode(order.carrierAirWaybillCode || "");
     }
   }, [order, open]);
 
-  // Fetch lại services khi đổi carrier
+  // Fetch services on carrier change
   useEffect(() => {
     if (carrierId) {
       fetchServices(carrierId);
@@ -144,14 +146,13 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
 
   useEffect(() => {
     if (carrierId && serviceId) {
-      // Lấy danh sách phụ phí theo carrier và service đã chọn
       getExtraFeesByCarrierServiceApi(carrierId, serviceId)
         .then((res) => {
           setExtraFeeList(res?.data?.data?.data || []);
         })
         .catch((err) => {
           console.error("Error fetching extra fees:", err);
-          showNotification("Không thể tải phụ phí!", "error");
+          showNotification("Failed to load extra fees!", "error");
         });
     } else {
       setExtraFeeList([]);
@@ -167,9 +168,9 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
     try {
       const res = await getServicesByCarrierApi(companyId);
       setServices(res?.data?.data?.data || []);
+      // eslint-disable-next-line
     } catch (err: any) {
-      console.log(err.massage);
-      showNotification("Không thể tải dịch vụ!", "error");
+      showNotification("Failed to load services!", "error");
     }
   };
 
@@ -185,28 +186,16 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
 
   // Validate & Submit
   const handleSubmit = async () => {
-    if (
-      !order?._id ||
-      // !carrierId ||
-      // !sender.fullname ||
-      // !sender.address1 ||
-      // !sender.phone ||
-      // !recipient.fullname ||
-      // !recipient.address1 ||
-      // !recipient.phone ||
-      !recipient.country
-      // !content ||
-      // !declaredWeight ||
-      // !quantity
-    ) {
-      showNotification("Vui lòng nhập đầy đủ thông tin!", "warning");
+    if (!order?._id || !recipient.country) {
+      showNotification("Please fill in all required fields!", "warning");
       return;
     }
     try {
       setLoading(true);
 
-      // Build payload hiện tại & gốc (original lấy từ order prop truyền vào dialog)
+      // Build current & original payload
       const currentPayload = {
+        carrierAirWaybillCode: carrierAirWaybillCode || null,
         carrierId: carrierId || null,
         serviceId: serviceId || null,
         supplierId: supplierId || null,
@@ -229,6 +218,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
       };
 
       const originalPayload = {
+        carrierAirWaybillCode: order.carrierAirWaybillCode || null,
         carrierId: typeof order.carrierId === "object" ? order.carrierId?._id : order.carrierId,
         serviceId: typeof order.serviceId === "object" ? order.serviceId?._id : order.serviceId,
         supplierId: typeof order.supplierId === "object" ? order.supplierId?._id : order.supplierId,
@@ -246,25 +236,21 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
         vat: order.vat,
       };
 
-      // Lấy các field đã đổi
+      // Get changed fields only
       const diffPayload = getUpdatedFieldsDeep(originalPayload, currentPayload);
 
-      console.log("Diff Payload:", diffPayload);
-      console.log("Original Payload:", originalPayload);
-      console.log("Current Payload:", currentPayload);
-
       if (Object.keys(diffPayload).length === 0) {
-        showNotification("Không có thay đổi nào để cập nhật!", "info");
+        showNotification("No changes to update!", "info");
         setLoading(false);
         return;
       }
-      diffPayload._id = order._id; // Đảm bảo có ID của đơn hàng
+      diffPayload._id = order._id; // Ensure order ID present
       await updateOrderApi(order._id, diffPayload);
-      showNotification("Cập nhật đơn hàng thành công", "success");
+      showNotification("Order updated successfully", "success");
       onUpdated();
       onClose();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật đơn hàng", "error");
+      showNotification(err.message || "Failed to update order", "error");
     } finally {
       setLoading(false);
     }
@@ -272,7 +258,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>Cập nhật đơn hàng</DialogTitle>
+      <DialogTitle>Update Order</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           {/* Billing Info */}
@@ -294,6 +280,8 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
                 setSupplierId={setSupplierId}
                 serviceId={serviceId}
                 setServiceId={setServiceId}
+                carrierAirWaybillCode={carrierAirWaybillCode}
+                setCarrierAirWaybillCode={setCarrierAirWaybillCode}
               />
             </Paper>
           </Box>
@@ -361,9 +349,9 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-          Lưu thay đổi
+          Save Changes
         </Button>
       </DialogActions>
     </Dialog>

@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default function UpdateCompanyCarrierDialog({ open, onClose, onUpdated, company }: Props) {
-  const [form, setForm] = useState<ICompany>({});
+  const [form, setForm] = useState<ICompany>({} as ICompany);
   const [loading, setLoading] = useState(false);
   const { showNotification } = useNotification();
 
@@ -36,21 +36,21 @@ export default function UpdateCompanyCarrierDialog({ open, onClose, onUpdated, c
 
       keysToCheck.forEach((key) => {
         if (form[key] !== company[key]) {
-          changedFields[key] = form[key] as any; // fix lỗi TS2322
+          changedFields[key] = form[key] as any; // fix TS2322
         }
       });
 
       if (Object.keys(changedFields).length === 0) {
-        showNotification("Không có thay đổi nào để cập nhật", "info");
+        showNotification("No changes to update.", "info");
         return;
       }
 
       await updateCompanyCarrierApi(company._id, changedFields);
-      showNotification("Cập nhật thành công!", "success");
+      showNotification("Carrier updated successfully!", "success");
       onUpdated();
       onClose();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi cập nhật!", "error");
+      showNotification(err.message || "Error updating carrier!", "error");
     } finally {
       setLoading(false);
     }
@@ -58,29 +58,29 @@ export default function UpdateCompanyCarrierDialog({ open, onClose, onUpdated, c
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Cập nhật Hãng Bay</DialogTitle>
+      <DialogTitle>Update Carrier</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={12}>
-              <TextField label="Mã Hãng Bay" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
+              <TextField label="Carrier Code" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={12}>
-              <TextField label="Tên Hãng Bay" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
+              <TextField label="Carrier Name" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Mã số thuế" value={form.taxCode || ""} onChange={(e) => handleChange("taxCode", e.target.value)} fullWidth size="small" />
+              <TextField label="Tax Code" value={form.taxCode || ""} onChange={(e) => handleChange("taxCode", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Địa chỉ" value={form.address || ""} onChange={(e) => handleChange("address", e.target.value)} fullWidth size="small" />
+              <TextField label="Address" value={form.address || ""} onChange={(e) => handleChange("address", e.target.value)} fullWidth size="small" />
             </Grid>
           </Grid>
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit} disabled={loading}>
-          Cập nhật
+          Update
         </Button>
       </DialogActions>
     </Dialog>

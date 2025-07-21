@@ -49,17 +49,17 @@ export default function CreateCAWBCodeDialog({ open, onClose, onCreated }: Props
 
   const handleSubmit = async () => {
     if (!carrierId || parsedCodes.length === 0) {
-      showNotification("Vui lòng chọn carrier và nhập mã hợp lệ.", "warning");
+      showNotification("Please select a carrier and enter valid codes.", "warning");
       return;
     }
 
     try {
       setLoading(true);
       const res = await createCAWBCodeApi({ carrierId, codes: parsedCodes });
-      showNotification(res?.data?.message || "Tạo thành công", "success");
+      showNotification(res?.data?.message || "Codes created successfully!", "success");
       onCreated();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi tạo mã", "error");
+      showNotification(err.message || "Failed to create codes", "error");
     } finally {
       setLoading(false);
     }
@@ -67,11 +67,11 @@ export default function CreateCAWBCodeDialog({ open, onClose, onCreated }: Props
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Thêm mã CAWBCode hàng loạt</DialogTitle>
+      <DialogTitle>Batch Add CAWB Codes</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Select fullWidth value={carrierId} onChange={(e) => setCarrierId(e.target.value)} displayEmpty>
-            <MenuItem value="">Chọn Carrier</MenuItem>
+            <MenuItem value="">Select Sub Carrier</MenuItem>
             {carriers.map((carrier) => (
               <MenuItem key={carrier._id} value={carrier._id}>
                 {carrier.name}
@@ -82,19 +82,19 @@ export default function CreateCAWBCodeDialog({ open, onClose, onCreated }: Props
           <TextField
             multiline
             minRows={6}
-            label="Dán danh sách mã từ Excel (mỗi dòng 1 mã)"
+            label="Paste codes from Excel (one code per line)"
             value={rawInput}
             onChange={(e) => setRawInput(e.target.value)}
-            placeholder="VD:\nAB12345678\nAB12345679\n..."
+            placeholder={`Eg:\nAB12345678\nAB12345679\n...`}
           />
 
           <Button onClick={handleParse} variant="outlined">
-            Xử lý mã
+            Parse Codes
           </Button>
 
           {parsedCodes.length > 0 && (
             <Box>
-              <Typography variant="subtitle2">Danh sách mã đã xử lý ({parsedCodes.length}):</Typography>
+              <Typography variant="subtitle2">Parsed Codes ({parsedCodes.length}):</Typography>
               <Box sx={{ maxHeight: 150, overflowY: "auto", border: "1px solid #ddd", p: 1, borderRadius: 1 }}>
                 <Stack spacing={0.5}>
                   {parsedCodes.map((code, index) => (
@@ -109,9 +109,9 @@ export default function CreateCAWBCodeDialog({ open, onClose, onCreated }: Props
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button onClick={handleSubmit} disabled={loading} variant="contained">
-          Tạo mã
+          Create Codes
         </Button>
       </DialogActions>
     </Dialog>

@@ -14,15 +14,14 @@ interface Props {
   title?: string;
 }
 
-export default function OrderDimensionSection({ volWeightRate, dimensions, setDimensions, disabled, className, title = "Dimension" }: Props) {
+export default function OrderDimensionSection({ volWeightRate, dimensions, setDimensions, disabled, className, title = "Package Dimensions" }: Props) {
   const handleInputChange = (no: number, field: keyof IDimension, value: string) => {
     setDimensions(
       dimensions.map((row, idx) =>
         idx === no - 1
           ? {
               ...row,
-              [field]: value, // để nguyên string ở state!
-              // Nếu muốn tính toán volumeWeight thì phải kiểm tra giá trị có hợp lệ mới convert
+              [field]: value,
               volumeWeight:
                 field === "length" || field === "width" || field === "height"
                   ? volWeightRate && value && !isNaN(Number(value))
@@ -112,10 +111,10 @@ export default function OrderDimensionSection({ volWeightRate, dimensions, setDi
                   Height (cm)
                 </TableCell>
                 <TableCell align="center" width={"100px"}>
-                  Gross (kg)
+                  Gross Weight (kg)
                 </TableCell>
                 <TableCell align="center" width={"100px"}>
-                  Volume (m³)
+                  Volume Weight (kg)
                 </TableCell>
                 {!disabled && <TableCell align="center">Action</TableCell>}
               </TableRow>

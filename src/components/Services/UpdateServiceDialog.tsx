@@ -43,7 +43,7 @@ export default function UpdateServiceDialog({ open, onClose, onUpdated, service 
 
   const handleSubmit = async () => {
     if (!code || !name || !companyId || !service?._id) {
-      showNotification("Vui lòng điền đầy đủ thông tin", "warning");
+      showNotification("Please fill in all required fields", "warning");
       return;
     }
 
@@ -54,20 +54,20 @@ export default function UpdateServiceDialog({ open, onClose, onUpdated, service 
         description,
         companyId,
       });
-      showNotification(res?.data?.message || "Cập nhật thành công", "success");
+      showNotification(res?.data?.message || "Service updated successfully", "success");
       onUpdated();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật dịch vụ", "error");
+      showNotification(err.message || "Failed to update service", "error");
     }
   };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Cập nhật dịch vụ</DialogTitle>
+      <DialogTitle>Update Service</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
-          <TextField label="Hãng bay" select value={companyId} onChange={(e) => setCompanyId(e.target.value)} fullWidth size="small">
-            <MenuItem value="">Chọn hãng bay</MenuItem>
+          <TextField label="Carrier" select value={companyId} onChange={(e) => setCompanyId(e.target.value)} fullWidth size="small">
+            <MenuItem value="">Select carrier</MenuItem>
             {companies.map((c) => (
               <MenuItem key={c._id} value={c._id}>
                 {c.name}
@@ -75,17 +75,15 @@ export default function UpdateServiceDialog({ open, onClose, onUpdated, service 
             ))}
           </TextField>
 
-          <TextField label="Mã dịch vụ" fullWidth value={code} onChange={(e) => setCode(e.target.value)} />
-
-          <TextField label="Tên dịch vụ" fullWidth value={name} onChange={(e) => setName(e.target.value)} />
-
-          <TextField label="Mô tả" fullWidth value={description} onChange={(e) => setDescription(e.target.value)} multiline minRows={3} />
+          <TextField label="Service Code" fullWidth value={code} onChange={(e) => setCode(e.target.value)} />
+          <TextField label="Service Name" fullWidth value={name} onChange={(e) => setName(e.target.value)} />
+          <TextField label="Description" fullWidth value={description} onChange={(e) => setDescription(e.target.value)} multiline minRows={3} />
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button variant="contained" onClick={handleSubmit}>
-          Cập nhật
+          Update
         </Button>
       </DialogActions>
     </Dialog>

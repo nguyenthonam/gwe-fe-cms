@@ -8,7 +8,7 @@ interface CarrierSelectProps {
   required?: boolean;
 }
 
-const CarrierSelect = ({ value, onChange, carriers, label = "Carrier", required }: CarrierSelectProps) => (
+const CarrierSelect = ({ value, onChange, carriers, label = "Sub Carrier", required }: CarrierSelectProps) => (
   <FormControl fullWidth size="small">
     <InputLabel>{label}</InputLabel>
     <Select label={label} value={value} required={required} onChange={(e) => onChange(e.target.value as string)}>

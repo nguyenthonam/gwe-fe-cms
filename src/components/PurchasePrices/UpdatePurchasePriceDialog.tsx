@@ -77,7 +77,6 @@ export default function UpdatePurchasePriceDialog({ open, group, onClose, onUpda
     setShowPerKg(false);
   }, [group, open]);
 
-  // ✅ FIX DELETE LOGIC CHUẨN:
   const handleDeleteRow = (type: "doc" | "parcel" | "perKg", weight: string) => {
     const updater = type === "doc" ? setDocRows : type === "parcel" ? setParcelRows : setPerKgRows;
     const rows = type === "doc" ? docRows : type === "parcel" ? parcelRows : perKgRows;
@@ -108,11 +107,11 @@ export default function UpdatePurchasePriceDialog({ open, group, onClose, onUpda
         datas,
       };
       await updateGroupPurchasePriceApi(payload);
-      showNotification("Cập nhật bảng giá thành công", "success");
+      showNotification("Purchase price updated successfully", "success");
       onUpdated();
       onClose();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật", "error");
+      showNotification(err.message || "Update error", "error");
     }
   };
 
@@ -183,14 +182,14 @@ export default function UpdatePurchasePriceDialog({ open, group, onClose, onUpda
 
   return (
     <Dialog open={open} maxWidth="lg" fullWidth onClose={onClose}>
-      <DialogTitle sx={{ color: lightBlue[500], fontWeight: "bold" }}>CẬP NHẬT BẢNG GIÁ MUA</DialogTitle>
+      <DialogTitle sx={{ color: lightBlue[500], fontWeight: "bold" }}>UPDATE PURCHASE PRICE</DialogTitle>
       <DialogContent>
         <Stack spacing={2}>
           <Paper sx={{ p: 2, mb: 1 }} variant="outlined">
             <Grid container spacing={2}>
               <Grid size={6}>
                 <Typography>
-                  Hãng: <b>{typeof group.carrierId === "object" ? group.carrierId?.name : group.carrierId}</b>
+                  Sub Carrier: <b>{typeof group.carrierId === "object" ? group.carrierId?.name : group.carrierId}</b>
                 </Typography>
               </Grid>
               <Grid size={6}>
@@ -200,12 +199,12 @@ export default function UpdatePurchasePriceDialog({ open, group, onClose, onUpda
               </Grid>
               <Grid size={6}>
                 <Typography>
-                  Dịch vụ: <b>{typeof group.serviceId === "object" ? group.serviceId?.code : group.serviceId}</b>
+                  Service: <b>{typeof group.serviceId === "object" ? group.serviceId?.code : group.serviceId}</b>
                 </Typography>
               </Grid>
               <Grid size={6}>
                 <Typography>
-                  Tiền tệ: <b>{currency}</b>
+                  Currency: <b>{currency}</b>
                 </Typography>
               </Grid>
             </Grid>
@@ -225,13 +224,13 @@ export default function UpdatePurchasePriceDialog({ open, group, onClose, onUpda
                   }, 0);
                 }}
               >
-                Hiển thị bảng Non-Document Rates
+                Show Non-Document Rates Table
               </Button>
             )}
             {loadingParcel && (
               <Box display="flex" justifyContent="center" alignItems="center" height={40}>
-                <span style={{ color: lightBlue[500] }}>loading...</span>
-                <CircularProgress size="18px" sx={{ color: lightBlue[800] }} />
+                <span style={{ color: lightBlue[500] }}>Loading...</span>
+                <CircularProgress size="18px" sx={{ color: lightBlue[800], ml: 1 }} />
               </Box>
             )}
             {showParcel && renderTable("Non-Document Rates", parcelRows, "parcel")}
@@ -249,25 +248,25 @@ export default function UpdatePurchasePriceDialog({ open, group, onClose, onUpda
                   }, 0);
                 }}
               >
-                Hiển thị bảng Per KG Rates
+                Show Per KG Rates Table
               </Button>
             )}
             {loadingPerKg && (
               <Box display="flex" justifyContent="center" alignItems="center" height={40}>
-                <span style={{ color: lightBlue[500] }}>loading...</span>
-                <CircularProgress size="18px" sx={{ color: lightBlue[800] }} />
+                <span style={{ color: lightBlue[500] }}>Loading...</span>
+                <CircularProgress size="18px" sx={{ color: lightBlue[800], ml: 1 }} />
               </Box>
             )}
-            {showPerKg && renderTable("Giá cước mỗi kg (Per KG)", perKgRows, "perKg", true)}
+            {showPerKg && renderTable("Rates per KG", perKgRows, "perKg", true)}
           </Box>
         </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} variant="outlined">
-          Đóng
+          Close
         </Button>
         <Button onClick={handleSubmit} variant="contained">
-          Cập nhật
+          Update
         </Button>
       </DialogActions>
     </Dialog>

@@ -104,7 +104,7 @@ export default function VATRateManagerView() {
   // Excel export
   const handleExportExcel = () => {
     const data = rates.map((v) => ({
-      CARRIER: typeof v.carrierId === "object" ? v.carrierId?.name : v.carrierId,
+      "SUB CARRIER": typeof v.carrierId === "object" ? v.carrierId?.name : v.carrierId,
       SERVICE: typeof v.serviceId === "object" ? v.serviceId?.code : v.serviceId,
       SUPPLIER: typeof v.supplierId === "object" ? v.supplierId?.name : v.supplierId,
       "VAT RATE (%)": v.value,
@@ -145,7 +145,7 @@ export default function VATRateManagerView() {
     },
     {
       field: "carrierId",
-      headerName: "CARRIER",
+      headerName: "SUB CARRIER",
       minWidth: 140,
       flex: 1,
       renderCell: ({ row }) => (typeof row.carrierId === "object" ? row.carrierId?.name : row.carrierId),
@@ -278,7 +278,7 @@ export default function VATRateManagerView() {
 
         <Stack direction="row" spacing={1}>
           <Select size="small" displayEmpty value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} sx={{ minWidth: 180 }}>
-            <MenuItem value="">All carriers</MenuItem>
+            <MenuItem value="">All sub carriers</MenuItem>
             {carriers?.map((c) => (
               <MenuItem key={c._id} value={c._id}>
                 {c.name}

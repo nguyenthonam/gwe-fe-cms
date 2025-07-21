@@ -5,14 +5,17 @@ import { Box, Button, Stack, TextField, Select, MenuItem, CircularProgress, Typo
 import { Add, Download } from "@mui/icons-material";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import debounce from "lodash/debounce";
+
 import { useNotification } from "@/contexts/NotificationProvider";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getPartnersApi } from "@/utils/apis/apiPartner";
 import { getServicesApi, getServicesByCarrierApi } from "@/utils/apis/apiService";
 import { searchSalePriceGroupsApi, deleteSalePriceGroupApi, lockSalePriceGroupApi, unlockSalePriceGroupApi } from "@/utils/apis/apiSalePrice";
+
 import CreateSalePriceDialog from "./CreateSalePriceDialog";
 import UpdateSalePriceDialog from "./UpdateSalePriceDialog";
 import SalePriceDetailDialog from "./SalePriceDetailDialog";
+
 import { ERECORD_STATUS } from "@/types/typeGlobals";
 import { getId } from "@/utils/hooks/hookGlobals";
 import { ActionMenu } from "../Globals/ActionMenu";
@@ -35,7 +38,6 @@ export default function SalePriceManagerView() {
   const [services, setServices] = useState<any[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
 
-  // Dialog & selection state
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openUpdateDialog, setOpenUpdateDialog] = useState(false);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
@@ -44,7 +46,6 @@ export default function SalePriceManagerView() {
   const { showNotification } = useNotification();
   const debouncedSearch = useMemo(() => debounce((v) => setKeyword(v), 500), []);
 
-  // Lấy options filter
   useEffect(() => {
     getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
     getPartnersApi().then((res) => setPartners(res?.data?.data?.data || []));
@@ -61,7 +62,6 @@ export default function SalePriceManagerView() {
     }
   }, [carrierIdFilter, carriers]);
 
-  // Fetch group data
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -77,31 +77,30 @@ export default function SalePriceManagerView() {
       const arr: ISalePriceGroup[] = Array.isArray(res?.data?.data?.data) ? res.data.data.data.filter(Boolean) : [];
       setGroups(arr);
       setTotal(res?.data?.data?.meta?.total || 0);
+      // eslint-disable-next-line
     } catch (err) {
-      console.error("Error fetching sale price groups:", err);
-      showNotification("Không thể tải danh sách nhóm giá bán", "error");
+      showNotification("Failed to load sale price groups", "error");
     }
     setLoading(false);
   };
 
   useEffect(() => {
     fetchData();
-    // eslint-disable-next-line
   }, [keyword, page, pageSize, carrierIdFilter, serviceIdFilter, partnerIdFilter, statusFilter]);
 
-  // ==== Action cho group ====
   const handleDeleteGroup = async (group: ISalePriceGroup) => {
-    if (!window.confirm("Bạn có chắc muốn xoá group này?")) return;
-    if (!group || !group.carrierId || !group.partnerId || !group.serviceId) {
-      showNotification("Thông tin group không đầy đủ để xoá!", "error");
+    if (!window.confirm("Are you sure you want to delete this group?")) return;
+    if (!group?.carrierId || !group?.partnerId || !group?.serviceId) {
+      showNotification("Incomplete group data for deletion!", "error");
       return;
     }
+
     const carrierId = typeof group.carrierId === "object" ? group.carrierId._id : group.carrierId;
     const partnerId = typeof group.partnerId === "object" ? group.partnerId._id : group.partnerId;
     const serviceId = typeof group.serviceId === "object" ? group.serviceId._id : group.serviceId;
 
     if (!carrierId || !partnerId || !serviceId) {
-      showNotification("Không tìm thấy ID để xoá!", "error");
+      showNotification("Incomplete group data for deletion!", "error");
       return;
     }
 
@@ -114,21 +113,22 @@ export default function SalePriceManagerView() {
       showNotification("Đã xoá group!");
       fetchData();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi khi xoá", "error");
+      showNotification(err.message || "Error deleting group", "error");
     }
   };
 
   const handleLockUnlockGroup = async (group: ISalePriceGroup) => {
-    if (!group || !group.carrierId || !group.partnerId || !group.serviceId) {
-      showNotification("Thông tin group không đầy đủ để khoá/mở khoá!", "error");
+    if (!group?.carrierId || !group?.partnerId || !group?.serviceId) {
+      showNotification("Incomplete group data for lock/unlock!", "error");
       return;
     }
+
     const carrierId = typeof group.carrierId === "object" ? group.carrierId._id : group.carrierId;
     const partnerId = typeof group.partnerId === "object" ? group.partnerId._id : group.partnerId;
     const serviceId = typeof group.serviceId === "object" ? group.serviceId._id : group.serviceId;
 
     if (!carrierId || !partnerId || !serviceId) {
-      showNotification("Không tìm thấy ID để khoá/mở khoá!", "error");
+      showNotification("Incomplete group data for lock/unlock!", "error");
       return;
     }
 
@@ -136,34 +136,28 @@ export default function SalePriceManagerView() {
 
     try {
       const api = isLocked ? unlockSalePriceGroupApi : lockSalePriceGroupApi;
-      await api({
-        carrierId,
-        partnerId,
-        serviceId,
-      });
-      showNotification(isLocked ? "Đã mở khoá!" : "Đã khoá!");
+      await api({ carrierId, partnerId, serviceId });
+      showNotification(isLocked ? "Group unlocked!" : "Group locked!");
       fetchData();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật trạng thái", "error");
+      showNotification(err.message || "Error updating status", "error");
     }
   };
 
-  // ==== Export Excel cho từng group ====
   const exportGroupToExcel = (group: ISalePriceGroup) => {
-    if (!group || !group.datas) {
-      showNotification("Không có dữ liệu để xuất Excel!");
+    if (!group?.datas) {
+      showNotification("No data to export!");
       return;
     }
     exportSalePriceGroupToExcelFull(group);
   };
 
-  // ==== Columns cho 1 DataGrid duy nhất ====
   const columns: GridColDef[] = [
     {
       field: "code",
       headerName: "CODE",
       flex: 1.2,
-      renderCell: ({ row }: { row: ISalePriceGroup }) => (
+      renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" height="100%">
           <Typography
             sx={{ cursor: "pointer", textDecoration: "underline" }}
@@ -173,43 +167,42 @@ export default function SalePriceManagerView() {
               setOpenDetailDialog(true);
             }}
           >
-            Chi tiết
+            Detail
           </Typography>
         </Box>
       ),
     },
     {
       field: "partnerId",
-      headerName: "Đối tác",
+      headerName: "Partner",
       minWidth: 120,
       flex: 1,
-      renderCell: ({ row }: { row: ISalePriceGroup }) => getId(row.partnerId),
+      renderCell: ({ row }) => getId(row.partnerId),
     },
     {
       field: "carrierId",
-      headerName: "Hãng",
+      headerName: "Sub Carrier",
       minWidth: 120,
       flex: 1,
-      renderCell: ({ row }: { row: ISalePriceGroup }) => getId(row.carrierId),
+      renderCell: ({ row }) => getId(row.carrierId),
     },
     {
       field: "serviceId",
-      headerName: "Dịch vụ",
+      headerName: "Service",
       minWidth: 120,
       flex: 1,
-      renderCell: ({ row }: { row: ISalePriceGroup }) => getId(row.serviceId),
+      renderCell: ({ row }) => getId(row.serviceId),
     },
     {
       field: "actions",
-      headerName: "Thao tác",
+      headerName: "Actions",
       minWidth: 100,
       flex: 1.2,
-      renderCell: ({ row }: { row: ISalePriceGroup }) => (
-        <Stack direction="row" height={"100%"} spacing={1} alignItems={"center"} justifyItems={"center"}>
+      renderCell: ({ row }) => (
+        <Stack direction="row" height="100%" spacing={1} alignItems="center">
           <Button size="small" startIcon={<Download />} onClick={() => exportGroupToExcel(row)}>
-            Xuất Excel
+            Export
           </Button>
-
           <ActionMenu
             onEdit={() => {
               setSelectedGroup(row);
@@ -224,22 +217,21 @@ export default function SalePriceManagerView() {
     },
   ];
 
-  // ==== Render DataGrid duy nhất ====
   const rows = useMemo(() => groups.map((g, idx) => ({ ...g, id: idx })), [groups]);
 
   return (
     <Box className="space-y-4 p-6">
       {/* Toolbar */}
       <Box display="flex" flexWrap="wrap" gap={1} justifyContent="space-between" alignItems="center">
-        <TextField placeholder="Tìm kiếm..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 220 }} />
+        <TextField placeholder="Search..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 220 }} />
         <Stack direction="row" spacing={1}>
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
-            Tạo mới
+            Create New
           </Button>
         </Stack>
         <Stack direction="row" spacing={1}>
           <Select size="small" value={partnerIdFilter} onChange={(e) => setPartnerIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 130 }}>
-            <MenuItem value="">Tất cả Partner</MenuItem>
+            <MenuItem value="">All Partners</MenuItem>
             {partners.map((s) => (
               <MenuItem key={s._id} value={s._id}>
                 {s.name}
@@ -247,7 +239,7 @@ export default function SalePriceManagerView() {
             ))}
           </Select>
           <Select size="small" value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 130 }}>
-            <MenuItem value="">Tất cả Hãng</MenuItem>
+            <MenuItem value="">All Sub Carriers</MenuItem>
             {carriers.map((c) => (
               <MenuItem key={c._id} value={c._id}>
                 {c.name}
@@ -255,7 +247,7 @@ export default function SalePriceManagerView() {
             ))}
           </Select>
           <Select size="small" value={serviceIdFilter} onChange={(e) => setServiceIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 130 }}>
-            <MenuItem value="">Tất cả Dịch vụ</MenuItem>
+            <MenuItem value="">All Services</MenuItem>
             {services.map((s) => (
               <MenuItem key={s._id} value={s._id}>
                 {s.code}
@@ -263,17 +255,17 @@ export default function SalePriceManagerView() {
             ))}
           </Select>
           <Select size="small" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} displayEmpty sx={{ minWidth: 120 }}>
-            <MenuItem value="">Mặc định</MenuItem>
-            <MenuItem value="all">Tất cả</MenuItem>
-            <MenuItem value={ERECORD_STATUS.Active}>Hoạt động</MenuItem>
-            <MenuItem value={ERECORD_STATUS.Locked}>Đã khoá</MenuItem>
-            <MenuItem value={ERECORD_STATUS.NoActive}>Không hoạt động</MenuItem>
-            <MenuItem value={ERECORD_STATUS.Deleted}>Đã xoá</MenuItem>
+            <MenuItem value="">Default</MenuItem>
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value={ERECORD_STATUS.Active}>Active</MenuItem>
+            <MenuItem value={ERECORD_STATUS.Locked}>Locked</MenuItem>
+            <MenuItem value={ERECORD_STATUS.NoActive}>Inactive</MenuItem>
+            <MenuItem value={ERECORD_STATUS.Deleted}>Deleted</MenuItem>
           </Select>
         </Stack>
       </Box>
 
-      {/* DataGrid 1 bảng duy nhất */}
+      {/* DataGrid */}
       {loading ? (
         <Box textAlign="center">
           <CircularProgress />

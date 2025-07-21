@@ -16,13 +16,13 @@ export default function OrderExtraFeeSection({ fscFeePercentage, setFSCFeePercen
     <div>
       <div className="mb-4">
         <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
-          Phụ phí xăng dầu (FSC) (%)
+          Fuel Surcharge (FSC) (%)
         </Typography>
-        <NumericInput label="VAT" value={String(fscFeePercentage)} onChange={(value) => setFSCFeePercentage(Number(value))} fullWidth size="small" />
+        <NumericInput label="FSC (%)" value={String(fscFeePercentage)} onChange={(value) => setFSCFeePercentage(Number(value))} fullWidth size="small" />
       </div>
       <div>
         <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
-          Phụ Phí
+          Extra Fees
         </Typography>
         <ExtraFeeMultiSelect extraFeeList={extraFeeList} value={extraFeeIds} onChange={setExtraFeeIds} label="" required={false} />
       </div>

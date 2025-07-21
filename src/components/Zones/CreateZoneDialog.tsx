@@ -31,12 +31,10 @@ import NumericInput from "../Globals/NumericInput";
 import CountrySelect from "../Globals/CountrySelect";
 import { COUNTRIES } from "@/utils/constants";
 
-// Nhận props giống chuẩn cũ
 export default function CreateZoneDialog({ open, onClose, onCreated, carriers }: { open: boolean; onClose: () => void; onCreated: () => void; carriers: ICarrier[] }) {
   const { showNotification } = useNotification();
   const [tab, setTab] = useState(0);
 
-  // State cho từng zone
   const [form, setForm] = useState<IZone>({
     carrierId: "",
     countryCode: ECountryCode.VN,
@@ -44,13 +42,11 @@ export default function CreateZoneDialog({ open, onClose, onCreated, carriers }:
   });
   const [loading, setLoading] = useState(false);
 
-  // State cho tạo hàng loạt
   const [bulkCarrierId, setBulkCarrierId] = useState("");
   const [bulkInput, setBulkInput] = useState("");
   const [bulkRows, setBulkRows] = useState<{ country: string; code: string; zone: number; isChecked: boolean }[]>([]);
   const [bulkLoading, setBulkLoading] = useState(false);
 
-  // Khi open hoặc đóng dialog, reset toàn bộ state
   useEffect(() => {
     if (!open) return;
     setTab(0);
@@ -60,7 +56,6 @@ export default function CreateZoneDialog({ open, onClose, onCreated, carriers }:
     setBulkRows([]);
   }, [open]);
 
-  // Parse data từ Excel/clipboard (nhận cả Country Code hoặc Name)
   const handleBulkParse = () => {
     const parsed = bulkInput
       .split("\n")
@@ -68,15 +63,11 @@ export default function CreateZoneDialog({ open, onClose, onCreated, carriers }:
       .filter(Boolean)
       .map((line) => {
         const [col1, zoneVal] = line.split(/\t| {2,}| +/).map((s) => (s || "").trim());
-
-        // Nếu thiếu data thì không match
         if (!col1 || !zoneVal) return { country: col1, code: "", zone: Number(zoneVal), isChecked: false };
 
-        // 1. Ưu tiên match theo code
         const codeInput = col1.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
         let found = COUNTRIES.find((c) => c.code.replace(/[^A-Za-z0-9]/g, "").toUpperCase() === codeInput);
 
-        // 2. Nếu không thấy code, match theo tên không dấu
         if (!found) {
           const nameInput = col1
             .toLowerCase()
@@ -116,49 +107,45 @@ export default function CreateZoneDialog({ open, onClose, onCreated, carriers }:
         }));
 
       if (!bulkCarrierId) {
-        showNotification("Chọn Carrier!", "error");
+        showNotification("Please select a carrier!", "error");
         setBulkLoading(false);
         return;
       }
       if (validRows.length === 0) {
-        showNotification("Không có dòng hợp lệ!", "error");
+        showNotification("No valid rows to submit!", "error");
         setBulkLoading(false);
         return;
       }
-      // Gọi API tạo group zone
       await createZoneGroupApi(bulkCarrierId, validRows);
-      showNotification("Tạo Zone group thành công!", "success");
+      showNotification("Zone group created successfully!", "success");
       onCreated();
       handleClose();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi tạo Zone", "error");
+      showNotification(err.message || "Failed to create zone group", "error");
     } finally {
       setBulkLoading(false);
     }
   };
 
-  // Gửi từng dòng create zone truyền thống
   const handleSingleSubmit = async () => {
     try {
       setLoading(true);
-      // validate bắt buộc
       if (!form.carrierId || !form.countryCode || !form.zone) {
-        showNotification("Vui lòng nhập đủ Carrier, Country, Zone!", "error");
+        showNotification("Please fill in carrier, country and zone!", "error");
         setLoading(false);
         return;
       }
       await createZoneApi(form);
-      showNotification("Tạo Zone thành công", "success");
+      showNotification("Zone created successfully!", "success");
       onCreated();
       handleClose();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi tạo Zone", "error");
+      showNotification(err.message || "Failed to create zone", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // Reset toàn bộ state khi đóng dialog (đúng chuẩn)
   const handleClose = () => {
     setForm({ carrierId: "", countryCode: ECountryCode.VN, zone: 1 });
     setBulkCarrierId("");
@@ -170,16 +157,17 @@ export default function CreateZoneDialog({ open, onClose, onCreated, carriers }:
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>Tạo Zone mới</DialogTitle>
+      <DialogTitle>Create New Zone</DialogTitle>
       <DialogContent>
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
-          <Tab label="Tạo nhiều Zone (Paste từ Excel)" />
-          <Tab label="Tạo từng Zone" />
+          <Tab label="Bulk Create (Paste from Excel)" />
+          <Tab label="Single Create" />
         </Tabs>
-        {/* Tab tạo hàng loạt */}
+
+        {/* Bulk create tab */}
         <Box hidden={tab !== 0}>
           <Stack spacing={2} mt={1}>
-            <TextField label="Carrier" select value={bulkCarrierId} onChange={(e) => setBulkCarrierId(e.target.value)} fullWidth>
+            <TextField label="Sub Carrier" select value={bulkCarrierId} onChange={(e) => setBulkCarrierId(e.target.value)} fullWidth>
               {carriers.map((c) => (
                 <MenuItem key={c._id} value={c._id}>
                   {c.name}
@@ -187,15 +175,15 @@ export default function CreateZoneDialog({ open, onClose, onCreated, carriers }:
               ))}
             </TextField>
             <Typography>
-              Copy 2 cột <b>Country Name/Country Code</b> và <b>Zone</b> từ Excel và dán vào ô dưới đây (phân cách bằng tab hoặc nhiều khoảng trắng):
+              Copy two columns: <b>Country Name / Country Code</b> and <b>Zone</b> from Excel and paste below (tab or multi-space separated):
               <br />
               <span style={{ color: "#888" }}>
-                VD: <b>Afghanistan&nbsp;&nbsp;10</b> hoặc <b>VN&nbsp;&nbsp;6</b>
+                Example: <b>Afghanistan&nbsp;&nbsp;10</b> or <b>VN&nbsp;&nbsp;6</b>
               </span>
             </Typography>
             <TextField multiline minRows={8} placeholder={`Afghanistan\t10\nVN\t6\n...`} value={bulkInput} onChange={(e) => setBulkInput(e.target.value)} fullWidth />
             <Button onClick={handleBulkParse} disabled={!bulkInput || !bulkCarrierId} variant="outlined">
-              Parse dữ liệu
+              Parse Data
             </Button>
             {bulkRows.length > 0 && (
               <Paper sx={{ maxHeight: 260, overflow: "auto" }}>
@@ -205,7 +193,7 @@ export default function CreateZoneDialog({ open, onClose, onCreated, carriers }:
                       <TableCell />
                       <TableCell>Country</TableCell>
                       <TableCell>Zone</TableCell>
-                      <TableCell>Mã nước</TableCell>
+                      <TableCell>Country Code</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -220,7 +208,7 @@ export default function CreateZoneDialog({ open, onClose, onCreated, carriers }:
                         </TableCell>
                         <TableCell>{r.country}</TableCell>
                         <TableCell>{r.zone}</TableCell>
-                        <TableCell>{r.code || <span style={{ color: "red" }}>Không match</span>}</TableCell>
+                        <TableCell>{r.code || <span style={{ color: "red" }}>Not matched</span>}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -229,10 +217,11 @@ export default function CreateZoneDialog({ open, onClose, onCreated, carriers }:
             )}
           </Stack>
         </Box>
-        {/* Tab tạo từng dòng */}
+
+        {/* Single create tab */}
         <Box hidden={tab !== 1}>
           <Stack spacing={2} mt={1}>
-            <TextField label="Carrier" select value={form.carrierId} onChange={(e) => setForm({ ...form, carrierId: e.target.value })} fullWidth>
+            <TextField label="Sub Carrier" select value={form.carrierId} onChange={(e) => setForm({ ...form, carrierId: e.target.value })} fullWidth>
               {carriers.map((c) => (
                 <MenuItem key={c._id} value={c._id}>
                   {c.name}
@@ -247,7 +236,7 @@ export default function CreateZoneDialog({ open, onClose, onCreated, carriers }:
                   countryCode: country?.code as ECountryCode,
                 })
               }
-              label="Quốc gia"
+              label="Country"
               required
             />
             <NumericInput label="Zone" value={String(form.zone)} onChange={(val) => setForm({ ...form, zone: Number(val) })} fullWidth />
@@ -255,14 +244,14 @@ export default function CreateZoneDialog({ open, onClose, onCreated, carriers }:
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Huỷ</Button>
+        <Button onClick={handleClose}>Cancel</Button>
         {tab === 0 ? (
           <Button onClick={handleBulkSubmit} variant="contained" disabled={bulkLoading || !bulkCarrierId || bulkRows.filter((r) => r.isChecked && r.code && r.zone).length === 0}>
-            Tạo {bulkRows.filter((r) => r.isChecked && r.code && r.zone).length} Zone
+            Create {bulkRows.filter((r) => r.isChecked && r.code && r.zone).length} Zone
           </Button>
         ) : (
-          <Button onClick={handleSingleSubmit} variant="contained" disabled={loading || !form.carrierId || !form.countryCode || !form.zone}>
-            Tạo
+          <Button onClick={handleSingleSubmit} variant="contained" disabled={!form.carrierId || !form.countryCode || !form.zone || loading}>
+            Create
           </Button>
         )}
       </DialogActions>

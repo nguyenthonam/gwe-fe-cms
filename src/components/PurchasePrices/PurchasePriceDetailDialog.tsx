@@ -4,7 +4,6 @@ import { IPurchasePriceGroup } from "@/types/typePurchasePrice";
 import { EPRODUCT_TYPE, ECURRENCY } from "@/types/typeGlobals";
 import { lightBlue } from "@mui/material/colors";
 
-// Format
 function formatWeight(w: number) {
   return Number(w).toFixed(1);
 }
@@ -13,7 +12,6 @@ function formatCurrency(value: number, currency: ECURRENCY) {
   return value.toLocaleString("vi-VN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ` ${currency}`;
 }
 
-// Table renderer
 function PriceTable({ label, currency, zones, rows, headerTitle = "Weight (kg)" }: { label: string; currency: string; zones: number[]; rows: any[]; headerTitle?: string }) {
   const theme = useTheme();
   return (
@@ -22,7 +20,7 @@ function PriceTable({ label, currency, zones, rows, headerTitle = "Weight (kg)" 
         {label}
       </Typography>
       <Typography fontWeight={600} fontSize={13} color="#1b4786" mb={1}>
-        Tiền tệ: {currency}
+        Currency: {currency}
       </Typography>
       <Table
         size="small"
@@ -101,11 +99,9 @@ function PriceTable({ label, currency, zones, rows, headerTitle = "Weight (kg)" 
   );
 }
 
-// Main Detail Dialog
 export default function PurchasePriceDetailDialog({ open, group, onClose }: { open: boolean; group: IPurchasePriceGroup; onClose: () => void }) {
   if (!group) return null;
 
-  // 1. Tách dữ liệu từng bảng
   const docDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.DOCUMENT);
   const parcelDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && !d.isPricePerKG);
   const perKgDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && d.isPricePerKG);
@@ -113,7 +109,6 @@ export default function PurchasePriceDetailDialog({ open, group, onClose }: { op
   const getZones = (datas: typeof group.datas) => [...new Set(datas.map((d) => d.zone))].sort((a, b) => a - b);
   const getCurrency = (datas: typeof group.datas) => [...new Set(datas.map((d) => d.currency))].join(", ");
 
-  // Document table
   const docZones = getZones(docDatas);
   const docCurrency = getCurrency(docDatas);
   const docWeight = [...new Set(docDatas.map((d) => formatWeight(d.weightMax)))].sort((a, b) => Number(a) - Number(b));
@@ -125,7 +120,6 @@ export default function PurchasePriceDetailDialog({ open, group, onClose }: { op
     }),
   ]);
 
-  // Parcel table
   const parcelZones = getZones(parcelDatas);
   const parcelCurrency = getCurrency(parcelDatas);
   const parcelWeight = [...new Set(parcelDatas.map((d) => formatWeight(d.weightMax)))].sort((a, b) => Number(a) - Number(b));
@@ -137,7 +131,6 @@ export default function PurchasePriceDetailDialog({ open, group, onClose }: { op
     }),
   ]);
 
-  // Per KG table
   const perKgZones = getZones(perKgDatas);
   const perKgCurrency = getCurrency(perKgDatas);
   const perKgRanges = [...new Set(perKgDatas.map((d) => `${formatWeight(d.weightMin)}–${formatWeight(d.weightMax)}`))].sort((a, b) => {
@@ -156,12 +149,11 @@ export default function PurchasePriceDetailDialog({ open, group, onClose }: { op
     ];
   });
 
-  // 2. Thông tin group
   const infoItems = [
-    { label: "Nhà cung cấp", value: typeof group.supplierId === "object" ? group.supplierId?.code : group.supplierId },
-    { label: "Hãng", value: typeof group.carrierId === "object" ? group.carrierId?.code : group.carrierId },
-    { label: "Dịch vụ", value: typeof group.serviceId === "object" ? group.serviceId?.code : group.serviceId },
-    { label: "Tiền tệ", value: group.datas[0]?.currency ?? "" },
+    { label: "Supplier", value: typeof group.supplierId === "object" ? group.supplierId?.code : group.supplierId },
+    { label: "Sub Carrier", value: typeof group.carrierId === "object" ? group.carrierId?.code : group.carrierId },
+    { label: "Service", value: typeof group.serviceId === "object" ? group.serviceId?.code : group.serviceId },
+    { label: "Currency", value: group.datas[0]?.currency ?? "" },
   ];
 
   return (
@@ -177,10 +169,9 @@ export default function PurchasePriceDetailDialog({ open, group, onClose }: { op
           letterSpacing: 0.5,
         }}
       >
-        BẢNG GIÁ MUA
+        PURCHASE PRICE TABLE
       </DialogTitle>
       <DialogContent dividers sx={{ background: "#f6f8fa" }}>
-        {/* Thông tin group */}
         <Stack direction="row" spacing={3} alignItems="center" sx={{ mb: 2 }}>
           <Grid container spacing={2}>
             {infoItems.map((item) => (
@@ -193,14 +184,13 @@ export default function PurchasePriceDetailDialog({ open, group, onClose }: { op
           </Grid>
         </Stack>
         <Divider sx={{ my: 2 }} />
-        {/* 3 bảng giá */}
         {docRows.length > 0 && <PriceTable label="Document Rates" currency={docCurrency} zones={docZones} rows={docRows} />}
         {parcelRows.length > 0 && <PriceTable label="Non-Document Rates" currency={parcelCurrency} zones={parcelZones} rows={parcelRows} />}
-        {perKgRows.length > 0 && <PriceTable label="Giá cước mỗi kg với lô hàng từ 30.1kg trở lên" currency={perKgCurrency} zones={perKgZones} rows={perKgRows} headerTitle="Range (kg)" />}
+        {perKgRows.length > 0 && <PriceTable label="Rates per KG for shipments from 30.1kg and above" currency={perKgCurrency} zones={perKgZones} rows={perKgRows} headerTitle="Range (kg)" />}
       </DialogContent>
       <DialogActions sx={{ background: "#fafbfc", borderTop: "1px solid #e0e0e0" }}>
         <Button variant="contained" color="primary" onClick={onClose}>
-          Đóng
+          Close
         </Button>
       </DialogActions>
     </Dialog>

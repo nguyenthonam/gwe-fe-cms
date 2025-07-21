@@ -1,4 +1,3 @@
-// UpdatePartnerDialog.tsx
 "use client";
 
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, MenuItem, Stack, Grid } from "@mui/material";
@@ -12,19 +11,19 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onUpdated: () => void;
-  company: ICompany | null;
+  customer: ICompany | null;
 }
 
 const paymentOptions = Object.entries(EPaymentTerms);
 
-export default function UpdatePartnerDialog({ open, onClose, onUpdated, company }: Props) {
+export default function UpdateCustomerDialog({ open, onClose, onUpdated, customer }: Props) {
   const [form, setForm] = useState<ICompany>({});
   const [loading, setLoading] = useState(false);
   const { showNotification } = useNotification();
 
   useEffect(() => {
-    if (company) setForm(company);
-  }, [company]);
+    if (customer) setForm(customer);
+  }, [customer]);
 
   const handleChange = (field: string, value: any) => {
     setForm({ ...form, [field]: value });
@@ -42,12 +41,12 @@ export default function UpdatePartnerDialog({ open, onClose, onUpdated, company 
   };
 
   const buildUpdatePayload = () => {
-    if (!company) return {};
+    if (!customer) return {};
     const payload: any = {};
 
     for (const key in form) {
       const value = form[key as keyof ICompany];
-      const original = company[key as keyof ICompany];
+      const original = customer[key as keyof ICompany];
 
       if (typeof value !== "object" && value !== original) {
         payload[key] = value;
@@ -74,18 +73,17 @@ export default function UpdatePartnerDialog({ open, onClose, onUpdated, company 
   };
 
   const handleSubmit = async () => {
-    if (!company?._id) return;
+    if (!customer?._id) return;
     setLoading(true);
     try {
       const payload = buildUpdatePayload();
-      await updatePartnerApi(company._id, payload);
-      showNotification("Cập nhật thành công!", "success");
+      await updatePartnerApi(customer._id, payload);
+      showNotification("Customer updated successfully!", "success");
       setForm({});
       onClose();
       onUpdated();
     } catch (err: any) {
-      console.log(err.message);
-      showNotification(`Cập nhật thất bại! ${err.message}`, "error");
+      showNotification(`Failed to update customer! ${err.message}`, "error");
     } finally {
       setLoading(false);
     }
@@ -98,49 +96,39 @@ export default function UpdatePartnerDialog({ open, onClose, onUpdated, company 
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Cập nhật Đối tác</DialogTitle>
+      <DialogTitle>Update Customer</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
           <Grid container spacing={2}>
             <Grid size={12}>
-              <TextField label="Mã" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
+              <TextField label="Customer Code" value={form.code || ""} onChange={(e) => handleChange("code", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={12}>
-              <TextField label="Tên" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
+              <TextField label="Customer Name" value={form.name || ""} onChange={(e) => handleChange("name", e.target.value)} fullWidth size="small" />
             </Grid>
-
             <Grid size={12}>
-              <TextField label="Địa chỉ" value={form.address || ""} onChange={(e) => handleChange("address", e.target.value)} fullWidth size="small" />
+              <TextField label="Address" value={form.address || ""} onChange={(e) => handleChange("address", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Người đại diện" value={form.representative?.name || ""} onChange={(e) => handleNestedChange("representative", "name", e.target.value)} fullWidth size="small" />
+              <TextField label="Representative Name" value={form.representative?.name || ""} onChange={(e) => handleNestedChange("representative", "name", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="SĐT đại diện" value={form.representative?.phone || ""} onChange={(e) => handleNestedChange("representative", "phone", e.target.value)} fullWidth size="small" />
+              <TextField label="Representative Phone" value={form.representative?.phone || ""} onChange={(e) => handleNestedChange("representative", "phone", e.target.value)} fullWidth size="small" />
             </Grid>
-
             <Grid size={6}>
               <TextField label="Hotline" value={form.contact?.hotline || ""} onChange={(e) => handleNestedChange("contact", "hotline", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Mã Số Thuế" value={form.taxCode || ""} onChange={(e) => handleChange("taxCode", e.target.value)} fullWidth size="small" />
+              <TextField label="Tax Code" value={form.taxCode || ""} onChange={(e) => handleChange("taxCode", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
-              <TextField label="Email liên hệ" value={form.contact?.email || ""} onChange={(e) => handleNestedChange("contact", "email", e.target.value)} fullWidth size="small" />
+              <TextField label="Contact Email" value={form.contact?.email || ""} onChange={(e) => handleNestedChange("contact", "email", e.target.value)} fullWidth size="small" />
             </Grid>
             <Grid size={6}>
               <TextField label="Website" value={form.contact?.website || ""} onChange={(e) => handleNestedChange("contact", "website", e.target.value)} fullWidth size="small" />
             </Grid>
-
             <Grid size={12}>
-              <TextField
-                label="Hình thức thanh toán"
-                select
-                value={form.contract?.paymentTerms || ""}
-                onChange={(e) => handleNestedChange("contract", "paymentTerms", e.target.value)}
-                fullWidth
-                size="small"
-              >
+              <TextField label="Payment Terms" select value={form.contract?.paymentTerms || ""} onChange={(e) => handleNestedChange("contract", "paymentTerms", e.target.value)} fullWidth size="small">
                 {paymentOptions.map(([k, v]) => (
                   <MenuItem key={k} value={v}>
                     {k}
@@ -152,9 +140,9 @@ export default function UpdatePartnerDialog({ open, onClose, onUpdated, company 
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose}>Huỷ</Button>
+        <Button onClick={handleClose}>Cancel</Button>
         <Button onClick={handleSubmit} variant="contained" disabled={loading}>
-          Cập nhật
+          Update
         </Button>
       </DialogActions>
     </Dialog>

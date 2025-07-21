@@ -27,6 +27,7 @@ export default function UpdateCAWBCodeDialog({ open, onClose, onUpdated, cawbCod
       setIsUsed(!!cawbCode?.isUsed);
       fetchCarriers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, cawbCode]);
 
   const fetchCarriers = async () => {
@@ -47,19 +48,22 @@ export default function UpdateCAWBCodeDialog({ open, onClose, onUpdated, cawbCod
         carrierId,
         isUsed,
       });
-      showNotification(res?.data?.message || "Cập nhật thành công", "success");
+      showNotification(res?.data?.message || "Updated successfully!", "success");
       onUpdated();
     } catch (err: any) {
-      showNotification(err.message || "Lỗi cập nhật", "error");
+      showNotification(err.message || "Failed to update", "error");
     }
   };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Cập nhật mã CAWBCode</DialogTitle>
+      <DialogTitle>Update CAWB Code</DialogTitle>
       <DialogContent>
         <Stack spacing={2} mt={1}>
-          <Select fullWidth value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
+          <Select fullWidth value={carrierId} onChange={(e) => setCarrierId(e.target.value)} displayEmpty>
+            <MenuItem value="" disabled>
+              Select Sub Carrier
+            </MenuItem>
             {carriers.map((carrier) => (
               <MenuItem key={carrier._id} value={carrier._id}>
                 {carrier.name}
@@ -67,15 +71,15 @@ export default function UpdateCAWBCodeDialog({ open, onClose, onUpdated, cawbCod
             ))}
           </Select>
 
-          <TextField fullWidth label="Mã Code" value={code} onChange={(e) => setCode(e.target.value)} />
+          <TextField fullWidth label="Code" value={code} onChange={(e) => setCode(e.target.value)} />
 
-          <FormControlLabel control={<Checkbox checked={isUsed} onChange={(e) => setIsUsed(e.target.checked)} />} label="Đã dùng" />
+          <FormControlLabel control={<Checkbox checked={isUsed} onChange={(e) => setIsUsed(e.target.checked)} />} label="Used" />
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Huỷ</Button>
+        <Button onClick={onClose}>Cancel</Button>
         <Button onClick={handleUpdate} variant="contained">
-          Cập nhật
+          Update
         </Button>
       </DialogActions>
     </Dialog>

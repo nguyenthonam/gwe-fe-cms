@@ -146,7 +146,7 @@ export default function UpdateStaffDialog({ open, onClose, onUpdated, user }: Pr
             </Grid>
             {/* Partner/Company */}
             <Grid size={12}>
-              <TextField select label="Partner" value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
+              <TextField select label="Customer" value={form.companyId || ""} onChange={(e) => handleChange("companyId", e.target.value)} fullWidth size="small">
                 {partners.map((p) => (
                   <MenuItem key={p._id} value={p._id}>
                     {p.name}
