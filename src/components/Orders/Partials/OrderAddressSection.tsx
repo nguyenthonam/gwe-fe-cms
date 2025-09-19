@@ -5,7 +5,7 @@ import { RequiredLabel } from "@/components/commons/RequiredLabel";
 
 interface Props {
   label: string;
-  data: IBasicContactInfor & { attention?: string | null };
+  data: IBasicContactInfor & { attention?: string | null; country?: any; city?: string; state?: string; postCode?: string };
   setData: (v: any) => void;
   showCountry?: boolean;
   requiredFields?: string[];
@@ -14,7 +14,7 @@ interface Props {
   fieldPrefix?: string;
 }
 
-export default function OrderAddressSection({ label, data, setData, showCountry = false, requiredFields = [], disabled, errors = {}, fieldPrefix = "" }: Props) {
+export default function OrderAddressSection({ label, data, setData, showCountry = false, requiredFields = [], disabled = false, errors = {}, fieldPrefix = "" }: Props) {
   return (
     <Box sx={{ p: 2 }}>
       {/* Full Name */}

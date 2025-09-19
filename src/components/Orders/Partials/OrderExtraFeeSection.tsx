@@ -9,22 +9,23 @@ interface Props {
   extraFeeList: any[];
   extraFeeIds: string[];
   setExtraFeeIds: (ids: string[]) => void;
+  disabled?: boolean;
 }
 
-export default function OrderExtraFeeSection({ fscFeePercentage, setFSCFeePercentage, extraFeeList, extraFeeIds, setExtraFeeIds }: Props) {
+export default function OrderExtraFeeSection({ fscFeePercentage, setFSCFeePercentage, extraFeeList, extraFeeIds, setExtraFeeIds, disabled = false }: Props) {
   return (
     <div>
       <div className="mb-4">
         <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
           Fuel Surcharge (FSC) (%)
         </Typography>
-        <NumericInput label="FSC (%)" value={String(fscFeePercentage)} onChange={(value) => setFSCFeePercentage(Number(value))} fullWidth size="small" />
+        <NumericInput label="FSC (%)" value={String(fscFeePercentage)} onChange={(value) => setFSCFeePercentage(Number(value))} fullWidth size="small" disabled={disabled} />
       </div>
       <div>
         <Typography variant="subtitle2" sx={{ fontWeight: "bold" }}>
           Extra Fees
         </Typography>
-        <ExtraFeeMultiSelect extraFeeList={extraFeeList} value={extraFeeIds} onChange={setExtraFeeIds} label="" required={false} />
+        <ExtraFeeMultiSelect extraFeeList={extraFeeList} value={extraFeeIds} onChange={setExtraFeeIds} label="" required={false} disabled={disabled} />
       </div>
     </div>
   );

@@ -5,14 +5,29 @@ import { grey, orange, red } from "@mui/material/colors";
 import { ERECORD_STATUS } from "@/types/typeGlobals";
 
 interface ActionMenuProps {
-  onEdit: () => void;
-  onLockUnlock: () => void;
+  onEdit?: () => void;
+  onLockUnlock?: () => void;
   onDelete?: () => void;
   onResetPassword?: () => void;
-  status: ERECORD_STATUS | undefined;
+  status?: ERECORD_STATUS;
+  // Flexible disable controls for each action
+  disabledEdit?: boolean;
+  disabledLockUnlock?: boolean;
+  disabledDelete?: boolean;
+  disabledResetPassword?: boolean;
 }
 
-export const ActionMenu: React.FC<ActionMenuProps> = ({ onEdit, onLockUnlock, onDelete, onResetPassword, status }) => {
+export const ActionMenu: React.FC<ActionMenuProps> = ({
+  onEdit,
+  onLockUnlock,
+  onDelete,
+  onResetPassword,
+  status,
+  disabledEdit = false,
+  disabledLockUnlock = false,
+  disabledDelete = false,
+  disabledResetPassword = false,
+}) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -37,29 +52,33 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({ onEdit, onLockUnlock, on
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <MenuItem
-          onClick={() => {
-            handleClose();
-            onEdit();
-          }}
-          sx={{ display: "flex", justifyContent: "center", minWidth: 0 }}
-        >
-          <Tooltip title="Sửa" placement="right">
-            <ListItemIcon sx={{ minWidth: 32 }}>
-              <EditIcon fontSize="small" sx={{ color: grey[600] }} />
-            </ListItemIcon>
-          </Tooltip>
-        </MenuItem>
+        {onEdit && (
+          <MenuItem
+            onClick={() => {
+              handleClose();
+              if (!disabledEdit) onEdit();
+            }}
+            disabled={disabledEdit}
+            sx={{ display: "flex", justifyContent: "center", minWidth: 0 }}
+          >
+            <Tooltip title={disabledEdit ? "Cannot edit when record is locked or deleted." : "Edit"} placement="right">
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                <EditIcon fontSize="small" sx={{ color: grey[600] }} />
+              </ListItemIcon>
+            </Tooltip>
+          </MenuItem>
+        )}
 
         {onResetPassword && (
           <MenuItem
             onClick={() => {
               handleClose();
-              onResetPassword();
+              if (!disabledResetPassword) onResetPassword();
             }}
+            disabled={disabledResetPassword}
             sx={{ display: "flex", justifyContent: "center", minWidth: 0 }}
           >
-            <Tooltip title="Lấy lại mật khẩu" placement="right">
+            <Tooltip title={disabledResetPassword ? "Action not available." : "Reset password"} placement="right">
               <ListItemIcon sx={{ minWidth: 32 }}>
                 <ResetPasswordIcon fontSize="small" sx={{ color: orange[500] }} />
               </ListItemIcon>
@@ -67,33 +86,39 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({ onEdit, onLockUnlock, on
           </MenuItem>
         )}
 
-        <MenuItem
-          onClick={() => {
-            handleClose();
-            onLockUnlock();
-          }}
-          sx={{ display: "flex", justifyContent: "center", minWidth: 0 }}
-        >
-          <Tooltip title={status === ERECORD_STATUS.Locked ? "Mở khoá" : "Khoá"} placement="right">
-            <ListItemIcon sx={{ minWidth: 32 }}>
-              {status === ERECORD_STATUS.Locked ? <LockOpenIcon fontSize="small" sx={{ color: orange[600] }} /> : <LockIcon fontSize="small" sx={{ color: red[500] }} />}
-            </ListItemIcon>
-          </Tooltip>
-        </MenuItem>
+        {onLockUnlock && (
+          <MenuItem
+            onClick={() => {
+              handleClose();
+              if (!disabledLockUnlock) onLockUnlock();
+            }}
+            disabled={disabledLockUnlock}
+            sx={{ display: "flex", justifyContent: "center", minWidth: 0 }}
+          >
+            <Tooltip title={disabledLockUnlock ? "Cannot lock/unlock when record is deleted." : status === ERECORD_STATUS.Locked ? "Unlock" : "Lock"} placement="right">
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                {status === ERECORD_STATUS.Locked ? <LockOpenIcon fontSize="small" sx={{ color: orange[600] }} /> : <LockIcon fontSize="small" sx={{ color: red[500] }} />}
+              </ListItemIcon>
+            </Tooltip>
+          </MenuItem>
+        )}
 
-        <MenuItem
-          onClick={() => {
-            handleClose();
-            onDelete?.();
-          }}
-          sx={{ display: "flex", justifyContent: "center", minWidth: 0 }}
-        >
-          <Tooltip title="Xoá" placement="right">
-            <ListItemIcon sx={{ minWidth: 32 }}>
-              <DeleteIcon fontSize="small" sx={{ color: red[600] }} />
-            </ListItemIcon>
-          </Tooltip>
-        </MenuItem>
+        {onDelete && (
+          <MenuItem
+            onClick={() => {
+              handleClose();
+              if (!disabledDelete) onDelete();
+            }}
+            disabled={disabledDelete}
+            sx={{ display: "flex", justifyContent: "center", minWidth: 0 }}
+          >
+            <Tooltip title={disabledDelete ? "Cannot delete when record is locked or deleted." : "Delete"} placement="right">
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                <DeleteIcon fontSize="small" sx={{ color: red[600] }} />
+              </ListItemIcon>
+            </Tooltip>
+          </MenuItem>
+        )}
       </Menu>
     </>
   );

@@ -1,92 +1,80 @@
 import { ICreateOrderRequest, IFilterOrder, IOrder } from "@/types/typeOrder";
 import AxiosAPI from "@/utils/configs/axiosClient";
 
-export const getOrderApi = async () => {
-  try {
-    const res = await AxiosAPI.get("/api/orders");
-    return res;
-  } catch (error: any) {
-    console.error("Error:", error);
-    throw new Error(error.response.data.message);
-  }
-};
-export const getOrderByIdApi = async (id: string) => {
-  try {
-    const res = await AxiosAPI.get(`/api/orders/${id}`);
-    return res;
-  } catch (error: any) {
-    console.error("Error:", error);
-    throw new Error(error.response.data.message);
-  }
-};
-export const searchOrdersApi = async ({ keyword, page = 1, perPage = 10, status = "all", carrierId, serviceId, supplierId, partnerId }: IFilterOrder) => {
-  try {
-    const query = {
-      page,
-      perPage,
-      keyword,
-      status,
-    } as any;
-    if (carrierId) query.carrierId = carrierId;
-    if (serviceId) query.serviceId = serviceId;
-    if (supplierId) query.supplierId = supplierId;
-    if (partnerId) query.partnerId = partnerId;
-
-    const res = await AxiosAPI.get(`/api/orders/search`, {
-      params: query,
-    });
-
-    return res;
-  } catch (error: any) {
-    console.error("Error:", error);
-    throw new Error(error.response.data.message);
-  }
-};
-
+// Tạo đơn hàng
 export const createOrderApi = async (payload: ICreateOrderRequest) => {
-  try {
-    const res = await AxiosAPI.post("/api/orders", payload);
-    return res;
-  } catch (error: any) {
-    console.error("Error login:", error);
-    throw new Error(error.response.data.message);
-  }
+  const res = await AxiosAPI.post("/api/orders", payload);
+  return res.data;
 };
 
-export const updateOrderApi = async (id: string, payload: IOrder) => {
-  try {
-    const res = await AxiosAPI.put(`/api/orders/${id}`, payload);
-    return res;
-  } catch (error: any) {
-    console.error("Error login:", error);
-    throw new Error(error.response.data.message);
-  }
+export const bulkUpdateOrdersApi = async (orderIds: string[], update: Record<string, any>) => {
+  const res = await AxiosAPI.put("/api/orders/update/list", { orderIds, update });
+  return res.data;
 };
 
+// Cập nhật đơn hàng (theo id)
+export const updateOrderApi = async (id: string, payload: Partial<IOrder>) => {
+  const res = await AxiosAPI.put(`/api/orders/update/${id}`, payload);
+  return res.data;
+};
+
+// Tìm kiếm đơn hàng (filter nâng cao)
+export const searchOrdersApi = async (params: IFilterOrder) => {
+  const res = await AxiosAPI.get("/api/orders/search", { params });
+  return res.data;
+};
+
+// Lấy danh sách đơn hàng (phân trang)
+export const getOrderListApi = async (params?: IFilterOrder) => {
+  const res = await AxiosAPI.get("/api/orders/list", { params });
+  return res.data;
+};
+
+// Lấy chi tiết đơn hàng theo id
+export const getOrderByIdApi = async (id: string) => {
+  const res = await AxiosAPI.get(`/api/orders/${id}`);
+  return res.data;
+};
+
+// Lock 1 đơn hàng
 export const lockOrderApi = async (id: string) => {
-  try {
-    const res = await AxiosAPI.put(`/api/orders/${id}/lock`);
-    return res;
-  } catch (error: any) {
-    console.error("Error login:", error);
-    throw new Error(error.response.data.message);
-  }
+  const res = await AxiosAPI.put(`/api/orders/lock/${id}`);
+  return res.data;
 };
+
+// Lock nhiều đơn hàng
+export const lockOrdersApi = async (ids: string[]) => {
+  const res = await AxiosAPI.put("/api/orders/lock/list", { ids });
+  return res.data;
+};
+
+// Unlock 1 đơn hàng
 export const unlockOrderApi = async (id: string) => {
-  try {
-    const res = await AxiosAPI.put(`/api/orders/${id}/unlock`);
-    return res;
-  } catch (error: any) {
-    console.error("Error login:", error);
-    throw new Error(error.response.data.message);
-  }
+  const res = await AxiosAPI.put(`/api/orders/unlock/${id}`);
+  return res.data;
 };
+
+// Unlock nhiều đơn hàng
+export const unlockOrdersApi = async (ids: string[]) => {
+  const res = await AxiosAPI.put("/api/orders/unlock/list", { ids });
+  return res.data;
+};
+
+// Xóa 1 đơn hàng
 export const deleteOrderApi = async (id: string) => {
-  try {
-    const res = await AxiosAPI.delete(`/api/orders/${id}`);
-    return res;
-  } catch (error: any) {
-    console.error("Error login:", error);
-    throw new Error(error.response.data.message);
-  }
+  const res = await AxiosAPI.delete(`/api/orders/delete/${id}`);
+  return res.data;
+};
+
+// Xóa nhiều đơn hàng
+export const deleteOrdersApi = async (ids: string[]) => {
+  // Với axios delete + data phải truyền vào config object
+  const res = await AxiosAPI.delete("/api/orders/delete/list", { data: { ids } });
+  return res.data;
+};
+
+// Lấy logs của đơn hàng
+export const getOrderLogsApi = async (id: string) => {
+  const res = await AxiosAPI.get(`/api/orders/logs/${id}`);
+  return res.data;
 };

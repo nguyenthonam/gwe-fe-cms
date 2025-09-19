@@ -101,10 +101,11 @@ function PriceTable({ label, currency, zones, rows, headerTitle = "Weight (kg)" 
 
 export default function PurchasePriceDetailDialog({ open, group, onClose }: { open: boolean; group: IPurchasePriceGroup; onClose: () => void }) {
   if (!group) return null;
+  const datas = Array.isArray((group as any).datas) ? group.datas : [];
 
-  const docDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.DOCUMENT);
-  const parcelDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && !d.isPricePerKG);
-  const perKgDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && d.isPricePerKG);
+  const docDatas = datas.filter((d) => d.productType === EPRODUCT_TYPE.DOCUMENT);
+  const parcelDatas = datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && !d.isPricePerKG);
+  const perKgDatas = datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && d.isPricePerKG);
 
   const getZones = (datas: typeof group.datas) => [...new Set(datas.map((d) => d.zone))].sort((a, b) => a - b);
   const getCurrency = (datas: typeof group.datas) => [...new Set(datas.map((d) => d.currency))].join(", ");
@@ -153,7 +154,7 @@ export default function PurchasePriceDetailDialog({ open, group, onClose }: { op
     { label: "Supplier", value: typeof group.supplierId === "object" ? group.supplierId?.code : group.supplierId },
     { label: "Sub Carrier", value: typeof group.carrierId === "object" ? group.carrierId?.code : group.carrierId },
     { label: "Service", value: typeof group.serviceId === "object" ? group.serviceId?.code : group.serviceId },
-    { label: "Currency", value: group.datas[0]?.currency ?? "" },
+    { label: "Currency", value: datas[0]?.currency ?? "" },
   ];
 
   return (

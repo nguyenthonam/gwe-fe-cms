@@ -8,9 +8,11 @@ import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getPartnersApi } from "@/utils/apis/apiPartner";
 import { getSuppliersApi } from "@/utils/apis/apiSupplier";
 import { getServicesByCarrierApi } from "@/utils/apis/apiService";
+import { getExtraFeesByCarrierServiceApi } from "@/utils/apis/apiExtraFee";
+
 import { ECountryCode, ECURRENCY, EPRODUCT_TYPE, IBasicContactInfor, IDimension } from "@/types/typeGlobals";
 import { ISurchargeDetail } from "@/types/typeOrder";
-import { getExtraFeesByCarrierServiceApi } from "@/utils/apis/apiExtraFee";
+
 import OrderBillingInfoSection from "./Partials/OrderBillingInfoSection";
 import OrderAddressSection from "./Partials/OrderAddressSection";
 import OrderProductSection from "./Partials/OrderProductSection";
@@ -26,34 +28,39 @@ interface Props {
 }
 
 export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
-  // Dropdown Data
-  const [partners, setPartners] = useState<any[]>([]);
-  const [carriers, setCarriers] = useState<any[]>([]);
-  const [services, setServices] = useState<any[]>([]);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+  // Dropdown data
+  const [partners, setPartners] = useState<{ _id: string; name: string }[]>([]);
+  const [carriers, setCarriers] = useState<{ _id: string; name: string; companyId?: any; volWeightRate?: number }[]>([]);
+  const [services, setServices] = useState<{ _id: string; code: string; name: string }[]>([]);
+  const [suppliers, setSuppliers] = useState<{ _id: string; name: string }[]>([]);
   const [extraFeeList, setExtraFeeList] = useState<any[]>([]);
 
-  // Form State
-  const [partnerId, setPartnerId] = useState("");
-  const [carrierId, setCarrierId] = useState("");
-  const [serviceId, setServiceId] = useState("");
-  const [supplierId, setSupplierId] = useState("");
+  // Form state
+  const [partnerId, setPartnerId] = useState<string>("");
+  const [carrierId, setCarrierId] = useState<string>("");
+  const [serviceId, setServiceId] = useState<string>("");
+  const [supplierId, setSupplierId] = useState<string>("");
   const [surcharges, setSurcharges] = useState<ISurchargeDetail[]>([]);
   const [extraFeeIds, setExtraFeeIds] = useState<string[]>([]);
   const [customVATPercentage, setCustomVATPercentage] = useState<number>(8);
   const [fscFeePercentage, setFSCFeePercentage] = useState<number>(35);
 
-  // Billing Info
-  const [note, setNote] = useState("");
+  // Misc
+  const [note, setNote] = useState<string>("");
   const [carrierAirWaybillCode, setCarrierAirWaybillCode] = useState<string>("");
 
-  // Volume Weight Rate
-  const [volWeightRate, setVolWeightRate] = useState(null);
+  // Vol weight rate
+  const [volWeightRate, setVolWeightRate] = useState<number | null>(null);
 
-  // Sender
-  const [sender, setSender] = useState<IBasicContactInfor>({ fullname: "", address1: "", address2: "", address3: "", phone: "" });
+  // Sender / Recipient
+  const [sender, setSender] = useState<IBasicContactInfor>({
+    fullname: "",
+    address1: "",
+    address2: "",
+    address3: "",
+    phone: "",
+  });
 
-  // Recipient
   const [recipient, setRecipient] = useState<{ attention?: string | null } & IBasicContactInfor>({
     fullname: "",
     attention: "",
@@ -67,56 +74,62 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
     postCode: "",
   });
 
-  // Product Info
-  const [content, setContent] = useState("");
-  const [productType, setProductType] = useState(EPRODUCT_TYPE.DOCUMENT);
-  const [declaredWeight, setDeclaredWeight] = useState("");
-  const [quantity, setQuantity] = useState("1");
-  const [declaredValue, setDeclaredValue] = useState("");
-  const [currency, setCurrency] = useState(ECURRENCY.USD);
+  // Product info
+  const [content, setContent] = useState<string>("");
+  const [productType, setProductType] = useState<EPRODUCT_TYPE>(EPRODUCT_TYPE.DOCUMENT);
+  const [declaredWeight, setDeclaredWeight] = useState<string>("");
+  const [quantity, setQuantity] = useState<string>("1");
+  const [declaredValue, setDeclaredValue] = useState<string>("");
+  const [currency, setCurrency] = useState<ECURRENCY>(ECURRENCY.USD);
 
-  // Dimension (array for multiple packages)
-  const [dimensions, setDimensions] = useState<IDimension[] | []>();
+  // Dimensions
+  const [dimensions, setDimensions] = useState<IDimension[]>([]);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const { showNotification } = useNotification();
 
-  const fetchServices = async (carrierId: string) => {
-    const selected = carriers.find((c) => c._id === carrierId);
-    const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
+  // Helpers
+  const fetchServices = async (selectedCarrierId: string) => {
+    const selected = carriers.find((c) => c._id === selectedCarrierId);
+    const companyId = selected && typeof selected.companyId === "object" ? selected.companyId?._id : (selected as any)?.companyId;
+
     if (!companyId) return;
+
     try {
       const res = await getServicesByCarrierApi(companyId);
       setServices(res?.data?.data?.data || []);
     } catch (err: any) {
-      console.log(err.message);
       showNotification("Failed to load services!", "error");
     }
   };
+
+  // Auto-calc quantity & declaredWeight from dimensions
   useEffect(() => {
-    // Recalculate quantity (number of dimensions) and total grossWeight
-    const qty = dimensions && Array.isArray(dimensions) ? dimensions.length : 0;
-    const dw = dimensions && Array.isArray(dimensions) ? dimensions.reduce((sum, d) => sum + Number(d.grossWeight || 0), 0) : 0;
-    setQuantity(qty.toString());
-    setDeclaredWeight(dw > 0 ? dw.toString() : "");
+    const qty = Array.isArray(dimensions) ? dimensions.length : 0;
+    const dw = Array.isArray(dimensions) ? dimensions.reduce((sum, d) => sum + Number(d.grossWeight || 0), 0) : 0;
+
+    setQuantity(String(qty));
+    setDeclaredWeight(dw > 0 ? String(dw) : "");
   }, [dimensions]);
 
-  // Preload Dropdown
+  // Preload dropdowns
   useEffect(() => {
     if (open) {
       getPartnersApi().then((res) => setPartners(res?.data?.data?.data || []));
       getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
       getSuppliersApi().then((res) => setSuppliers(res?.data?.data?.data || []));
-    }
-    if (!open) {
+    } else {
+      // Clear form when dialog closes
       resetForm();
     }
   }, [open]);
 
+  // Carrier change -> services & volWeightRate
   useEffect(() => {
     if (carrierId) {
       fetchServices(carrierId);
-      setVolWeightRate(carriers.find((c) => c._id === carrierId)?.volWeightRate || null);
+      const vwr = carriers.find((c) => c._id === carrierId)?.volWeightRate ?? null;
+      setVolWeightRate(typeof vwr === "number" ? vwr : null);
     } else {
       setServices([]);
       setVolWeightRate(null);
@@ -124,17 +137,12 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
     setServiceId("");
   }, [carrierId, carriers]);
 
+  // Load extra fee list by carrier & service
   useEffect(() => {
     if (carrierId && serviceId) {
-      // Load extra fee list by carrier and service
       getExtraFeesByCarrierServiceApi(carrierId, serviceId)
-        .then((res) => {
-          setExtraFeeList(res?.data?.data?.data || []);
-        })
-        .catch((err) => {
-          console.error("Error fetching extra fees:", err);
-          showNotification("Failed to load extra fees!", "error");
-        });
+        .then((res) => setExtraFeeList(res?.data?.data?.data || []))
+        .catch(() => showNotification("Failed to load extra fees!", "error"));
     } else {
       setExtraFeeList([]);
     }
@@ -173,7 +181,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
     setSurcharges([]);
   };
 
-  // Validate & Submit
+  // Submit
   const handleSubmit = async () => {
     if (!carrierId || !recipient.country) {
       showNotification("Please enter all required information!", "warning");
@@ -181,12 +189,18 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
     }
     try {
       setLoading(true);
+
       await createOrderApi({
         carrierAirWaybillCode: carrierAirWaybillCode || "",
         carrierId,
-        serviceId,
-        supplierId,
-        partner: { partnerId, partnerName: partners.find((p) => p._id === partnerId)?.name || "" },
+        serviceId: serviceId || null,
+        supplierId: supplierId || null,
+        partner: partnerId
+          ? {
+              partnerId,
+              partnerName: partners.find((p) => p._id === partnerId)?.name || "",
+            }
+          : null,
         sender: {
           fullname: sender.fullname,
           phone: sender.phone,
@@ -200,7 +214,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
           address1: recipient.address1 || "",
           address2: recipient.address2 || "",
           address3: recipient.address3 || "",
-          country: recipient.country,
+          country: recipient.country, // object {code, name}
           attention: recipient.attention,
           city: recipient.city,
           state: recipient.state,
@@ -208,22 +222,29 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
         },
         packageDetail: {
           content,
-          declaredWeight: Number(declaredWeight),
-          quantity: Number(quantity),
-          declaredValue: Number(declaredValue),
+          declaredWeight: Number(declaredWeight || 0),
+          quantity: Number(quantity || 0),
+          declaredValue: Number(declaredValue || 0),
           currency,
           dimensions: dimensions || [],
         },
-        note,
-        productType: productType,
+        note: note || null,
+        productType,
         surcharges,
-        extraFees: { extraFeeIds: extraFeeIds, fscFeePercentage: Number(fscFeePercentage) },
-        vat: { customVATPercentage: Number(customVATPercentage) },
+        extraFees: {
+          extraFeeIds,
+          fscFeePercentage: Number.isFinite(fscFeePercentage) ? fscFeePercentage : undefined,
+        },
+        vat: {
+          customVATPercentage: Number.isFinite(customVATPercentage) ? customVATPercentage : undefined,
+        },
+        // currency: optional at create; BE defaults to VND
       });
+
       showNotification("Order created successfully", "success");
       onCreated();
     } catch (err: any) {
-      showNotification(err.message || "Failed to create order", "error");
+      showNotification(err?.message || "Failed to create order", "error");
     } finally {
       setLoading(false);
     }
@@ -255,6 +276,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
                 setServiceId={setServiceId}
                 carrierAirWaybillCode={carrierAirWaybillCode}
                 setCarrierAirWaybillCode={setCarrierAirWaybillCode}
+                disabled={loading}
               />
             </Paper>
           </Box>
@@ -265,7 +287,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
               <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Sender Information
               </Typography>
-              <OrderAddressSection label="Company" data={sender} setData={setSender} showCountry={false} />
+              <OrderAddressSection label="Company" data={sender} setData={setSender} showCountry={false} disabled={loading} />
             </Paper>
           </Box>
 
@@ -275,7 +297,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
               <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Recipient Information
               </Typography>
-              <OrderAddressSection label="Company" data={recipient} setData={setRecipient} showCountry={true} />
+              <OrderAddressSection label="Company" data={recipient} setData={setRecipient} showCountry disabled={loading} />
             </Paper>
           </Box>
 
@@ -296,12 +318,13 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
                 setDeclaredValue={setDeclaredValue}
                 currency={currency}
                 setCurrency={setCurrency}
+                disabled={loading}
               />
             </Paper>
           </Box>
 
-          {/* Dimension */}
-          <OrderDimensionSection volWeightRate={volWeightRate} dimensions={dimensions || []} setDimensions={setDimensions} />
+          {/* Dimensions */}
+          <OrderDimensionSection volWeightRate={volWeightRate} dimensions={dimensions} setDimensions={setDimensions} disabled={loading} />
 
           {/* Note */}
           <Box className="mb-2 ">
@@ -310,19 +333,28 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
                 Note
               </Typography>
               <Box sx={{ p: 2 }}>
-                <TextField label="Note" value={note} onChange={(e) => setNote(e.target.value)} fullWidth multiline minRows={3} />
+                <TextField label="Note" value={note} onChange={(e) => setNote(e.target.value)} fullWidth multiline minRows={3} disabled={loading} />
               </Box>
             </Paper>
           </Box>
 
           {/* Extra Fee, VAT, Surcharges */}
-          <OrderVATSection customVATPercentage={customVATPercentage} setCustomVATPercentage={setCustomVATPercentage} />
-          <OrderExtraFeeSection fscFeePercentage={fscFeePercentage} setFSCFeePercentage={setFSCFeePercentage} extraFeeList={extraFeeList} extraFeeIds={extraFeeIds} setExtraFeeIds={setExtraFeeIds} />
-          <OrderSurchargeSection surcharges={surcharges} setSurcharges={setSurcharges} />
+          <OrderVATSection customVATPercentage={customVATPercentage} setCustomVATPercentage={setCustomVATPercentage} disabled={loading} />
+          <OrderExtraFeeSection
+            fscFeePercentage={fscFeePercentage}
+            setFSCFeePercentage={setFSCFeePercentage}
+            extraFeeList={extraFeeList}
+            extraFeeIds={extraFeeIds}
+            setExtraFeeIds={setExtraFeeIds}
+            disabled={loading}
+          />
+          <OrderSurchargeSection surcharges={surcharges} setSurcharges={setSurcharges} disabled={loading} />
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} disabled={loading}>
+          Cancel
+        </Button>
         <Button onClick={handleSubmit} variant="contained" disabled={loading}>
           Create
         </Button>
