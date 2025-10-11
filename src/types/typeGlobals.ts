@@ -201,7 +201,7 @@ export enum ECountryCode {
   CL = "CL",
   CN = "CN",
   CN1 = "CN1",
-  CN2 = "CN1",
+  CN2 = "CN2",
   CO = "CO",
   MP = "MP", // Mariana Islands
   KM = "KM",
