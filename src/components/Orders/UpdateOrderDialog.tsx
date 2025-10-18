@@ -51,8 +51,8 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
   const [supplierId, setSupplierId] = useState("");
   const [surcharges, setSurcharges] = useState<ISurchargeDetail[]>([]);
   const [extraFeeIds, setExtraFeeIds] = useState<string[]>([]);
-  const [customVATPercentage, setCustomVATPercentage] = useState<number>(8);
-  const [fscFeePercentage, setFSCFeePercentage] = useState<number>(35);
+  const [customVATPercentage, setCustomVATPercentage] = useState<string>("8");
+  const [fscFeePercentage, setFSCFeePercentage] = useState<string>("35");
 
   const [note, setNote] = useState("");
   const [carrierAirWaybillCode, setCarrierAirWaybillCode] = useState<string>("");
@@ -143,8 +143,8 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
       setDimensions(order?.packageDetail?.dimensions || []);
       setSurcharges(order?.surcharges?.items || []);
       setExtraFeeIds(order?.pricing?.extraFeeInput?.extraFeeIds || []);
-      setCustomVATPercentage(order?.pricing?.vatPercentage?.manual ?? order?.pricing?.vatPercentage?.system ?? 8);
-      setFSCFeePercentage(order?.pricing?.fscPercentage?.manual ?? order?.pricing?.fscPercentage?.system ?? 35);
+      setCustomVATPercentage(String(order?.pricing?.vatPercentage?.manual ?? order?.pricing?.vatPercentage?.system ?? 8));
+      setFSCFeePercentage(String(order?.pricing?.fscPercentage?.manual ?? order?.pricing?.fscPercentage?.system ?? 35));
       setCarrierAirWaybillCode(order?.carrierAirWaybillCode || "");
     }
   }, [order, open]);

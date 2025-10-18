@@ -17,7 +17,7 @@ import UpdateSalePriceDialog from "./UpdateSalePriceDialog";
 import SalePriceDetailDialog from "./SalePriceDetailDialog";
 
 import { ERECORD_STATUS } from "@/types/typeGlobals";
-import { getId } from "@/utils/hooks/hookGlobals";
+import { getNameOfObjectId } from "@/utils/hooks/hookGlobals";
 import { ActionMenu } from "../Globals/ActionMenu";
 import { exportSalePriceGroupToExcelFull } from "@/utils/hooks/hookPrice";
 import { ISalePriceGroup } from "@/types/typeSalePrice";
@@ -177,21 +177,21 @@ export default function SalePriceManagerView() {
       headerName: "Partner",
       minWidth: 120,
       flex: 1,
-      renderCell: ({ row }) => getId(row.partnerId),
+      renderCell: ({ row }) => getNameOfObjectId(row.partnerId),
     },
     {
       field: "carrierId",
       headerName: "Sub Carrier",
       minWidth: 120,
       flex: 1,
-      renderCell: ({ row }) => getId(row.carrierId),
+      renderCell: ({ row }) => getNameOfObjectId(row.carrierId),
     },
     {
       field: "serviceId",
       headerName: "Service",
       minWidth: 120,
       flex: 1,
-      renderCell: ({ row }) => getId(row.serviceId),
+      renderCell: ({ row }) => getNameOfObjectId(row.serviceId),
     },
     {
       field: "actions",

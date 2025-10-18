@@ -42,8 +42,8 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
   const [supplierId, setSupplierId] = useState<string>("");
   const [surcharges, setSurcharges] = useState<ISurchargeDetail[]>([]);
   const [extraFeeIds, setExtraFeeIds] = useState<string[]>([]);
-  const [customVATPercentage, setCustomVATPercentage] = useState<number>(8);
-  const [fscFeePercentage, setFSCFeePercentage] = useState<number>(35);
+  const [customVATPercentage, setCustomVATPercentage] = useState<string>("8");
+  const [fscFeePercentage, setFSCFeePercentage] = useState<string>("35");
 
   // Misc
   const [note, setNote] = useState<string>("");
@@ -118,9 +118,9 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
       getPartnersApi().then((res) => setPartners(res?.data?.data?.data || []));
       getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
       getSuppliersApi().then((res) => setSuppliers(res?.data?.data?.data || []));
-    } else {
-      // Clear form when dialog closes
-      resetForm();
+    }
+    if (!open) {
+      // resetForm();
     }
   }, [open]);
 
@@ -148,38 +148,38 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
     }
   }, [carrierId, serviceId]);
 
-  const resetForm = () => {
-    setCarrierAirWaybillCode("");
-    setPartnerId("");
-    setCarrierId("");
-    setServiceId("");
-    setSupplierId("");
-    setNote("");
-    setSender({ fullname: "", address1: "", address2: "", address3: "", phone: "" });
-    setRecipient({
-      fullname: "",
-      attention: "",
-      address1: "",
-      address2: "",
-      address3: "",
-      phone: "",
-      country: { code: ECountryCode.VN, name: "Vietnam" },
-      city: "",
-      state: "",
-      postCode: "",
-    });
-    setContent("");
-    setProductType(EPRODUCT_TYPE.DOCUMENT);
-    setDeclaredWeight("");
-    setQuantity("1");
-    setDeclaredValue("");
-    setCurrency(ECURRENCY.USD);
-    setDimensions([]);
-    setExtraFeeIds([]);
-    setCustomVATPercentage(8);
-    setFSCFeePercentage(35);
-    setSurcharges([]);
-  };
+  // const resetForm = () => {
+  //   setCarrierAirWaybillCode("");
+  //   setPartnerId("");
+  //   setCarrierId("");
+  //   setServiceId("");
+  //   setSupplierId("");
+  //   setNote("");
+  //   setSender({ fullname: "", address1: "", address2: "", address3: "", phone: "" });
+  //   setRecipient({
+  //     fullname: "",
+  //     attention: "",
+  //     address1: "",
+  //     address2: "",
+  //     address3: "",
+  //     phone: "",
+  //     country: { code: ECountryCode.VN, name: "Vietnam" },
+  //     city: "",
+  //     state: "",
+  //     postCode: "",
+  //   });
+  //   setContent("");
+  //   setProductType(EPRODUCT_TYPE.DOCUMENT);
+  //   setDeclaredWeight("");
+  //   setQuantity("1");
+  //   setDeclaredValue("");
+  //   setCurrency(ECURRENCY.USD);
+  //   setDimensions([]);
+  //   setExtraFeeIds([]);
+  //   setCustomVATPercentage("8");
+  //   setFSCFeePercentage("35");
+  //   setSurcharges([]);
+  // };
 
   // Submit
   const handleSubmit = async () => {
@@ -233,10 +233,10 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
         surcharges,
         extraFees: {
           extraFeeIds,
-          fscFeePercentage: Number.isFinite(fscFeePercentage) ? fscFeePercentage : undefined,
+          fscFeePercentage: Number(fscFeePercentage),
         },
         vat: {
-          customVATPercentage: Number.isFinite(customVATPercentage) ? customVATPercentage : undefined,
+          customVATPercentage: Number(customVATPercentage),
         },
         // currency: optional at create; BE defaults to VND
       });
