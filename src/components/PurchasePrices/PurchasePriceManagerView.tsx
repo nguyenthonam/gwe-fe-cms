@@ -17,7 +17,7 @@ import UpdatePurchasePriceDialog from "./UpdatePurchasePriceDialog";
 import PurchasePriceDetailDialog from "./PurchasePriceDetailDialog";
 
 import { ERECORD_STATUS } from "@/types/typeGlobals";
-import { getId } from "@/utils/hooks/hookGlobals";
+import { getId, getNameOfObjectId } from "@/utils/hooks/hookGlobals";
 import { ActionMenu } from "../Globals/ActionMenu";
 import { exportPurchasePriceGroupToExcelFull } from "@/utils/hooks/hookPrice";
 import { IPurchasePriceGroup } from "@/types/typePurchasePrice";
@@ -91,6 +91,7 @@ export default function PurchasePriceManagerView() {
   const handleDeleteGroup = async (group: IPurchasePriceGroup) => {
     if (!window.confirm("Are you sure you want to delete this group?")) return;
     try {
+      console.log("Deleting purchase price group:", group);
       const carrierId = getId(group.carrierId);
       const supplierId = getId(group.supplierId);
       const serviceId = getId(group.serviceId);
@@ -163,21 +164,21 @@ export default function PurchasePriceManagerView() {
       headerName: "Supplier",
       minWidth: 120,
       flex: 1,
-      renderCell: ({ row }) => getId(row.supplierId),
+      renderCell: ({ row }) => getNameOfObjectId(row.supplierId),
     },
     {
       field: "carrierId",
       headerName: "Sub Carrier",
       minWidth: 120,
       flex: 1,
-      renderCell: ({ row }) => getId(row.carrierId),
+      renderCell: ({ row }) => getNameOfObjectId(row.carrierId),
     },
     {
       field: "serviceId",
       headerName: "Service",
       minWidth: 120,
       flex: 1,
-      renderCell: ({ row }) => getId(row.serviceId),
+      renderCell: ({ row }) => getNameOfObjectId(row.serviceId),
     },
     {
       field: "actions",
