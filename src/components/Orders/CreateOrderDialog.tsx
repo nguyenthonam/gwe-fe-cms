@@ -40,8 +40,8 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
   const [supplierId, setSupplierId] = useState("");
   const [surcharges, setSurcharges] = useState<ISurchargeDetail[]>([]);
   const [extraFeeIds, setExtraFeeIds] = useState<string[]>([]);
-  const [customVATPercentage, setCustomVATPercentage] = useState<number>(8);
-  const [fscFeePercentage, setFSCFeePercentage] = useState<number>(35);
+  const [customVATPercentage, setCustomVATPercentage] = useState<string>("8");
+  const [fscFeePercentage, setFSCFeePercentage] = useState<string>("35");
 
   // Billing Info
   const [note, setNote] = useState("");
@@ -109,7 +109,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
       getSuppliersApi().then((res) => setSuppliers(res?.data?.data?.data || []));
     }
     if (!open) {
-      resetForm();
+      // resetForm();
     }
   }, [open]);
 
@@ -168,8 +168,8 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
     setCurrency(ECURRENCY.USD);
     setDimensions([]);
     setExtraFeeIds([]);
-    setCustomVATPercentage(8);
-    setFSCFeePercentage(35);
+    setCustomVATPercentage("8");
+    setFSCFeePercentage("35");
     setSurcharges([]);
   };
 

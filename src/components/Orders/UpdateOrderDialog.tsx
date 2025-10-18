@@ -43,8 +43,8 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
   const [supplierId, setSupplierId] = useState("");
   const [surcharges, setSurcharges] = useState<ISurchargeDetail[]>([]);
   const [extraFeeIds, setExtraFeeIds] = useState<string[]>([]);
-  const [customVATPercentage, setCustomVATPercentage] = useState<number>(8);
-  const [fscFeePercentage, setFSCFeePercentage] = useState<number>(35);
+  const [customVATPercentage, setCustomVATPercentage] = useState<string>("8");
+  const [fscFeePercentage, setFSCFeePercentage] = useState<string>("35");
 
   // Billing Info
   const [note, setNote] = useState("");
@@ -128,7 +128,8 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
       setDimensions(order.packageDetail?.dimensions || []);
       setSurcharges(order.surcharges || []);
       setExtraFeeIds(order.extraFees?.extraFeeIds || []);
-      setCustomVATPercentage(order.vat?.customVATPercentage ?? 8);
+      setFSCFeePercentage(String(order.extraFees?.fscFeePercentage));
+      setCustomVATPercentage(String(order.vat?.customVATPercentage));
       setCarrierAirWaybillCode(order.carrierAirWaybillCode || "");
     }
   }, [order, open]);
