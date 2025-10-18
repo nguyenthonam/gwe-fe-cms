@@ -140,38 +140,38 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
     }
   }, [carrierId, serviceId]);
 
-  const resetForm = () => {
-    setCarrierAirWaybillCode("");
-    setPartnerId("");
-    setCarrierId("");
-    setServiceId("");
-    setSupplierId("");
-    setNote("");
-    setSender({ fullname: "", address1: "", address2: "", address3: "", phone: "" });
-    setRecipient({
-      fullname: "",
-      attention: "",
-      address1: "",
-      address2: "",
-      address3: "",
-      phone: "",
-      country: { code: ECountryCode.VN, name: "Vietnam" },
-      city: "",
-      state: "",
-      postCode: "",
-    });
-    setContent("");
-    setProductType(EPRODUCT_TYPE.DOCUMENT);
-    setDeclaredWeight("");
-    setQuantity("1");
-    setDeclaredValue("");
-    setCurrency(ECURRENCY.USD);
-    setDimensions([]);
-    setExtraFeeIds([]);
-    setCustomVATPercentage("8");
-    setFSCFeePercentage("35");
-    setSurcharges([]);
-  };
+  // const resetForm = () => {
+  //   setCarrierAirWaybillCode("");
+  //   setPartnerId("");
+  //   setCarrierId("");
+  //   setServiceId("");
+  //   setSupplierId("");
+  //   setNote("");
+  //   setSender({ fullname: "", address1: "", address2: "", address3: "", phone: "" });
+  //   setRecipient({
+  //     fullname: "",
+  //     attention: "",
+  //     address1: "",
+  //     address2: "",
+  //     address3: "",
+  //     phone: "",
+  //     country: { code: ECountryCode.VN, name: "Vietnam" },
+  //     city: "",
+  //     state: "",
+  //     postCode: "",
+  //   });
+  //   setContent("");
+  //   setProductType(EPRODUCT_TYPE.DOCUMENT);
+  //   setDeclaredWeight("");
+  //   setQuantity("1");
+  //   setDeclaredValue("");
+  //   setCurrency(ECURRENCY.USD);
+  //   setDimensions([]);
+  //   setExtraFeeIds([]);
+  //   setCustomVATPercentage("8");
+  //   setFSCFeePercentage("35");
+  //   setSurcharges([]);
+  // };
 
   // Validate & Submit
   const handleSubmit = async () => {
