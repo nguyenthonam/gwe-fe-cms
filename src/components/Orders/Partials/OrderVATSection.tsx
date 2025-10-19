@@ -14,7 +14,7 @@ export default function OrderVATSection({ customVATPercentage, setCustomVATPerce
       <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
         Custom VAT for Order (%)
       </Typography>
-      <NumericInput label="VAT" value={String(customVATPercentage)} onChange={setCustomVATPercentage} fullWidth size="small" />
+      <NumericInput disabled={disabled} label="VAT" value={String(customVATPercentage)} onChange={setCustomVATPercentage} fullWidth size="small" />
     </div>
   );
 }

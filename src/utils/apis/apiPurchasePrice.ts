@@ -62,9 +62,9 @@ export const searchPurchasePriceGroupsApi = async ({
 export const searchPurchasePriceListsApi = async (params: {
   page?: number;
   perPage?: number;
-  supplierId?: string;
-  carrierId?: string;
-  serviceId?: string;
+  supplierId?: string | null;
+  carrierId?: string | null;
+  serviceId?: string | null;
   productType?: string; // hoặc EPRODUCT_TYPE
   currency?: string;
   effectiveOn?: string; // YYYY-MM-DD

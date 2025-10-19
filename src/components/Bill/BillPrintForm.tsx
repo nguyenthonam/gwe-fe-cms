@@ -27,7 +27,7 @@ const BillPrint = React.forwardRef<IBillPrintRef, IProps>(({ data, billNumber = 
   // In hóa đơn
   const handlePrint = useReactToPrint({
     contentRef: billPrintRef,
-    documentTitle: data?.trackingCode,
+    documentTitle: data?.trackingCode || "GXxxxxxx",
     // removeAfterPrint: false,
   });
 

@@ -98,6 +98,7 @@ export default function CreateOrderDialog({ open, onClose, onCreated }: Props) {
     try {
       const res = await getServicesByCarrierApi(companyId);
       setServices(res?.data?.data?.data || []);
+      // eslint-disable-next-line
     } catch (err: any) {
       showNotification("Failed to load services!", "error");
     }

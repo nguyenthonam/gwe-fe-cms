@@ -36,6 +36,16 @@ function getId(val: any): string {
   return "";
 }
 
+/** Chuẩn hóa surcharges (array | object) -> object { items, total } */
+function normalizeSurchargesValue(s: IOrder["surcharges"] | ISurchargeDetail[] | undefined | null): { items: ISurchargeDetail[]; total: number } {
+  if (Array.isArray(s)) return { items: s, total: 0 };
+  if (s && typeof s === "object" && "items" in s) {
+    const obj = s as { items?: ISurchargeDetail[]; total?: number };
+    return { items: obj.items ?? [], total: obj.total ?? 0 };
+  }
+  return { items: [], total: 0 };
+}
+
 export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: Props) {
   // Dropdowns (type-safe)
   const [partners, setPartners] = useState<{ _id: string; name: string }[]>([]);
@@ -136,12 +146,16 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
       );
       setContent(order?.packageDetail?.content || "");
       setProductType(order?.productType || EPRODUCT_TYPE.DOCUMENT);
-      setDeclaredWeight(String(order?.packageDetail?.declaredWeight));
-      setQuantity(String(order?.packageDetail?.quantity));
-      setDeclaredValue(String(order?.packageDetail?.declaredValue));
+      setDeclaredWeight(String(order?.packageDetail?.declaredWeight ?? ""));
+      setQuantity(String(order?.packageDetail?.quantity ?? "1"));
+      setDeclaredValue(String(order?.packageDetail?.declaredValue ?? ""));
       setCurrency(order?.packageDetail?.currency || ECURRENCY.VND);
       setDimensions(order?.packageDetail?.dimensions || []);
-      setSurcharges(order?.surcharges?.items || []);
+
+      // ✅ FIX: luôn normalize trước khi set để tránh lỗi .items
+      const normalized = normalizeSurchargesValue(order?.surcharges as any);
+      setSurcharges(normalized.items);
+
       setExtraFeeIds(order?.pricing?.extraFeeInput?.extraFeeIds || []);
       setCustomVATPercentage(String(order?.pricing?.vatPercentage?.manual ?? order?.pricing?.vatPercentage?.system ?? 8));
       setFSCFeePercentage(String(order?.pricing?.fscPercentage?.manual ?? order?.pricing?.fscPercentage?.system ?? 35));
@@ -174,7 +188,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
     } else {
       setExtraFeeList([]);
     }
-  }, [carrierId, serviceId]);
+  }, [carrierId, serviceId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchServices = async (carrierId: string) => {
     const selected = carriers.find((c) => c._id === carrierId);
@@ -183,7 +197,9 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
     try {
       const res = await getServicesByCarrierApi(companyId);
       setServices(res?.data?.data?.data || []);
+      // eslint-disable-next-line
     } catch (err: any) {
+      console.error("Error fetching services:", err);
       showNotification("Failed to load services!", "error");
     }
   };
@@ -229,6 +245,9 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
         },
       };
 
+      // ✅ Tính tổng surcharge (nếu cần gửi BE)
+      const surchargeTotalComputed = (surcharges || []).reduce((sum, x) => sum + Number(x?.amount || 0), 0);
+
       // Build current & original payload
       const currentPayload = {
         carrierAirWaybillCode: carrierAirWaybillCode || null,
@@ -253,9 +272,13 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
         },
         note,
         productType,
-        surcharges: { items: surcharges, total: 0 }, // nếu có logic tính total thì set lại
+        // ✅ luôn gửi đúng object
+        surcharges: { items: surcharges, total: surchargeTotalComputed },
         pricing: pricingPayload,
       };
+
+      // ✅ normalize original để so sánh “đồng dạng”
+      const originalSurcharges = normalizeSurchargesValue(order?.surcharges as any);
 
       const originalPayload = {
         carrierAirWaybillCode: order?.carrierAirWaybillCode || null,
@@ -271,7 +294,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
         packageDetail: order?.packageDetail,
         note: order?.note,
         productType: order?.productType,
-        surcharges: order?.surcharges,
+        surcharges: originalSurcharges, // đã normalize
         pricing: order?.pricing,
       };
 
