@@ -58,6 +58,30 @@ export const searchPurchasePriceGroupsApi = async ({
   }
 };
 
+/** Search các dòng price (dùng cho màn Detail) */
+export const searchPurchasePriceListsApi = async (params: {
+  page?: number;
+  perPage?: number;
+  supplierId?: string | null;
+  carrierId?: string | null;
+  serviceId?: string | null;
+  productType?: string; // hoặc EPRODUCT_TYPE
+  currency?: string;
+  effectiveOn?: string; // YYYY-MM-DD
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD
+  keyword?: string;
+}) => {
+  try {
+    const res = await AxiosAPI.get(`/api/purchase-prices/search`, { params });
+    return res;
+  } catch (error: any) {
+    // an toàn hơn khi bắt lỗi
+    const msg = error?.response?.data?.message || error?.message || "Request failed";
+    throw new Error(msg);
+  }
+};
+
 /** Lock group */
 export const lockPurchasePriceGroupApi = async (payload: { carrierId: string; supplierId: string; serviceId: string }) => {
   try {

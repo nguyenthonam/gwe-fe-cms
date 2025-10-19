@@ -6,6 +6,31 @@ import { EnumChip } from "../Globals/EnumChip";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
 import { formatDate } from "@/utils/hooks/hookDate";
 
+/** Normalize any currency-like value to a string for formatCurrency */
+function asCurrencyString(cur: unknown): undefined {
+  if (!cur) return undefined;
+  // if (typeof cur === "string") return cur; // ECURRENCY is a string enum
+  if (typeof cur === "object" && (cur as any)?.code && typeof (cur as any).code === "string") {
+    return (cur as any).code;
+  }
+  return undefined;
+}
+
+/** Safely show name/code/_id if object, or the string itself */
+function displayRef(val: any): string {
+  if (!val) return "-";
+  if (typeof val === "object") return val?.name || val?.code || val?._id || "-";
+  return String(val);
+}
+
+/** Prefer partnerName; if partnerId is populated doc, show its name/_id as fallback */
+function displayPartner(val: IOrder["partner"]): string {
+  if (!val) return "-";
+  if (val.partnerName) return val.partnerName;
+  if (typeof val.partnerId === "object") return val.partnerId?.name || val.partnerId?._id || "-";
+  return "-";
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -15,7 +40,53 @@ interface Props {
 export default function OrderDetailDialog({ open, onClose, order }: Props) {
   if (!order) return null;
 
-  const currency = order.currency || undefined;
+  const orderCurrency = asCurrencyString(order.currency);
+  const pricing = order.pricing;
+
+  /** Render a system/manual number pair with currency */
+  const renderPriceField = (value?: { system: number; manual?: number | null }, currencyLike?: unknown) => {
+    if (!value) return "-";
+    const cur = asCurrencyString(currencyLike);
+    const systemStr = formatCurrency(value.system ?? 0, cur, true);
+
+    if (value.manual != null && value.manual !== value.system) {
+      const manualStr = formatCurrency(value.manual ?? 0, cur, true);
+      return (
+        <Stack direction="column" spacing={0}>
+          <span>
+            {systemStr} <span style={{ color: "#888" }}>(System)</span>
+          </span>
+          <span>
+            {manualStr} <span style={{ color: "#d32f2f", fontWeight: 500 }}>(Manual)</span>
+          </span>
+        </Stack>
+      );
+    }
+    return systemStr;
+  };
+
+  const DetailItem = ({ label, value }: { label: string; value?: React.ReactNode }) => (
+    <Grid size={6}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5, textTransform: "uppercase" }}>
+        {label}
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 1 }}>
+        {value ?? "-"}
+      </Typography>
+    </Grid>
+  );
+
+  function SectionPaper({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+      <Paper elevation={2} sx={{ px: 2, py: 2, bgcolor: "#fafbfc", mb: 1 }}>
+        <Typography variant="subtitle1" fontWeight={700} color="primary" sx={{ mb: 1, textTransform: "uppercase", letterSpacing: 1 }}>
+          {title}
+        </Typography>
+        <Divider sx={{ mb: 2 }} />
+        {children}
+      </Paper>
+    );
+  }
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -29,11 +100,11 @@ export default function OrderDetailDialog({ open, onClose, order }: Props) {
             <Grid container spacing={2}>
               <DetailItem label="HAWB" value={order.trackingCode} />
               <DetailItem label="AWB" value={order.carrierAirWaybillCode || "-"} />
-              <DetailItem label="Customer" value={order.partner?.partnerName || "-"} />
-              <DetailItem label="Supplier" value={typeof order.supplierId === "object" ? order.supplierId?.name : order.supplierId} />
-              <DetailItem label="Sub Carrier" value={typeof order.carrierId === "object" ? order.carrierId?.name : order.carrierId} />
-              <DetailItem label="Service" value={typeof order.serviceId === "object" ? order.serviceId?.code : order.serviceId} />
-              {/* <DetailItem label="Currency" value={currency} /> Currency added here */}
+              <DetailItem label="Customer" value={displayPartner(order.partner)} />
+              <DetailItem label="Supplier" value={displayRef(order.supplierId)} />
+              <DetailItem label="Sub Carrier" value={displayRef(order.carrierId)} />
+              <DetailItem label="Service" value={displayRef(order.serviceId)} />
+              <DetailItem label="Currency" value={orderCurrency || "-"} />
               <DetailItem label="Order Status" value={<EnumChip type="orderStatus" value={order.orderStatus} />} />
             </Grid>
           </SectionPaper>
@@ -66,22 +137,29 @@ export default function OrderDetailDialog({ open, onClose, order }: Props) {
               <DetailItem label="Contents" value={order.packageDetail?.content} />
               <DetailItem label="Declared Weight (kg)" value={order.packageDetail?.declaredWeight} />
               <DetailItem label="Pcs" value={order.packageDetail?.quantity} />
-              <DetailItem label="Declared Value" value={formatCurrency(order.packageDetail?.declaredValue || 0, order.packageDetail?.currency, true)} />
-              <DetailItem label="Dimensions (cm)" value={order.packageDetail?.dimensions?.length ? order.packageDetail?.dimensions.map((d) => `${d.length}x${d.width}x${d.height}`).join(", ") : "-"} />
+              <DetailItem label="Declared Value" value={formatCurrency(order.packageDetail?.declaredValue || 0, asCurrencyString(order.packageDetail?.currency), true)} />
+              <DetailItem label="Dimensions (cm)" value={order.packageDetail?.dimensions?.length ? order.packageDetail.dimensions.map((d) => `${d.length}x${d.width}x${d.height}`).join(", ") : "-"} />
             </Grid>
           </SectionPaper>
 
           {/* Pricing & Fees */}
           <SectionPaper title="Pricing & Fees">
             <Grid container spacing={2}>
-              <DetailItem label="Base Rate (Buying)" value={formatCurrency(order.basePrice?.purchasePrice?.value || 0, currency, true)} />
-              <DetailItem label="Base Rate (Selling)" value={formatCurrency(order.basePrice?.salePrice?.value || 0, currency, true)} />
-              <DetailItem label="VAT (Buying)" value={formatCurrency(order.vat?.purchaseVATTotal || 0, currency, true)} />
-              <DetailItem label="VAT (Selling)" value={formatCurrency(order.vat?.saleVATTotal || 0, currency, true)} />
-              <DetailItem label="Extra Fees" value={formatCurrency(order.extraFees?.extraFeesTotal || 0, currency, true)} />
-              <DetailItem label="Total (Buying)" value={formatCurrency(order.totalPrice?.purchaseTotal || 0, currency, true)} />
-              <DetailItem label="Total (Selling)" value={formatCurrency(order.totalPrice?.saleTotal || 0, currency, true)} />
-              <DetailItem label="Profit" value={formatCurrency((order.totalPrice?.saleTotal || 0) - (order.totalPrice?.purchaseTotal || 0), currency, true)} />
+              <DetailItem label="Base Rate (Buying)" value={renderPriceField(pricing?.basePrice?.purchase, pricing?.basePrice?.purchase?.currency)} />
+              <DetailItem label="Base Rate (Selling)" value={renderPriceField(pricing?.basePrice?.sale, pricing?.basePrice?.sale?.currency)} />
+              <DetailItem label="Extra Fees" value={renderPriceField(pricing?.extraFeeTotal, pricing?.currency)} />
+              <DetailItem label="FSC Fee" value={renderPriceField(pricing?.fscFee, pricing?.currency)} />
+              <DetailItem label="VAT" value={renderPriceField(pricing?.vat, pricing?.currency)} />
+              <DetailItem label="Total (Buying)" value={renderPriceField(pricing?.total?.purchase, pricing?.currency)} />
+              <DetailItem label="Total (Selling)" value={renderPriceField(pricing?.total?.sale, pricing?.currency)} />
+              <DetailItem
+                label="Profit"
+                value={
+                  pricing?.total?.sale?.system != null && pricing?.total?.purchase?.system != null
+                    ? formatCurrency((pricing.total.sale.system || 0) - (pricing.total.purchase.system || 0), asCurrencyString(pricing?.currency), true)
+                    : "-"
+                }
+              />
             </Grid>
           </SectionPaper>
 
@@ -92,6 +170,7 @@ export default function OrderDetailDialog({ open, onClose, order }: Props) {
             </Typography>
           </SectionPaper>
 
+          {/* Status */}
           <SectionPaper title="Status">
             <Grid container spacing={2}>
               <DetailItem label="Updated At" value={order.updatedAt ? formatDate(order.updatedAt) : "-"} />
@@ -107,30 +186,5 @@ export default function OrderDetailDialog({ open, onClose, order }: Props) {
         </Button>
       </DialogActions>
     </Dialog>
-  );
-}
-
-// Helper for each field
-const DetailItem = ({ label, value }: { label: string; value?: React.ReactNode }) => (
-  <Grid size={6}>
-    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5, textTransform: "uppercase" }}>
-      {label}
-    </Typography>
-    <Typography variant="body2" sx={{ mb: 1 }}>
-      {value ?? "-"}
-    </Typography>
-  </Grid>
-);
-
-// Helper for section with shadow, background, and divider
-function SectionPaper({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <Paper elevation={2} sx={{ px: 2, py: 2, bgcolor: "#fafbfc", mb: 1 }}>
-      <Typography variant="subtitle1" fontWeight={700} color="primary" sx={{ mb: 1, textTransform: "uppercase", letterSpacing: 1 }}>
-        {title}
-      </Typography>
-      <Divider sx={{ mb: 2 }} />
-      {children}
-    </Paper>
   );
 }

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Box, Button, Stack, TextField, Select, MenuItem, CircularProgress, Typography, Chip } from "@mui/material";
-import { Add, Download } from "@mui/icons-material";
-import { DataGrid, GridColDef } from "@mui/x-data-grid";
+import { Box, Button, Stack, TextField, Select, MenuItem, CircularProgress, Typography, Chip, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { Add, Download, Edit, Delete } from "@mui/icons-material";
+import { DataGrid, GridColDef, GridRowId } from "@mui/x-data-grid";
 import debounce from "lodash/debounce";
 import * as XLSX from "sheetjs-style";
-import { IOrder } from "@/types/typeOrder";
+
+import { IOrder, IFilterOrder } from "@/types/typeOrder";
 import { useNotification } from "@/contexts/NotificationProvider";
 import { EnumChip } from "@/components/Globals/EnumChip";
 import { ActionMenu } from "@/components/Globals/ActionMenu";
@@ -14,29 +15,221 @@ import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getPartnersApi } from "@/utils/apis/apiPartner";
 import { getSuppliersApi } from "@/utils/apis/apiSupplier";
 import { getServicesApi } from "@/utils/apis/apiService";
-import { searchOrdersApi, deleteOrderApi, lockOrderApi, unlockOrderApi } from "@/utils/apis/apiOrder";
+import { searchOrdersApi, deleteOrderApi, deleteOrdersApi, bulkUpdateOrdersApi } from "@/utils/apis/apiOrder";
 import CreateOrderDialog from "./CreateOrderDialog";
 import UpdateOrderDialog from "./UpdateOrderDialog";
 import OrderDetailDialog from "./OrderDetailDialog";
-import { ECURRENCY, EORDER_STATUS, ERECORD_STATUS } from "@/types/typeGlobals";
 import { formatDate } from "@/utils/hooks/hookDate";
 import { blue, green, grey, pink } from "@mui/material/colors";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
 import BillPrintDialog from "@/components/Bill/BillPrintDialog";
 import BillShippingMarkDialog from "@/components/Bill/BillShippingMarkDialog";
+import { ECURRENCY, EORDER_STATUS, EPRODUCT_TYPE } from "@/types/typeGlobals";
+import CountrySelect from "@/components/Globals/CountrySelect";
 
+/* ===========================================================
+   Legacy -> FE normalize (không đổi type FE, chỉ chuẩn hóa data)
+   =========================================================== */
+const normalizeOrderLegacyToFE = (raw: any): IOrder => {
+  const currency: ECURRENCY = raw?.currency ?? raw?.basePrice?.purchasePrice?.currency ?? raw?.basePrice?.salePrice?.currency ?? ECURRENCY.VND;
+
+  const surchargeItems = Array.isArray(raw?.surcharges) ? raw.surcharges : [];
+  const surchargeTotal = raw?.surchargeTotal ?? 0;
+
+  return {
+    // IBaseRecord
+    _id: raw?._id,
+    status: raw?.status,
+    createdAt: raw?.createdAt,
+    updatedAt: raw?.updatedAt,
+    _creator: raw?._creator,
+
+    trackingCode: raw?.trackingCode ?? null,
+    carrierAirWaybillCode: raw?.carrierAirWaybillCode ?? null,
+
+    partner: raw?.partner
+      ? {
+          partnerId: (raw.partner?.partnerId ? String(raw.partner.partnerId) : null) as any,
+          partnerName: raw.partner?.partnerName ?? "",
+        }
+      : null,
+
+    carrierId: raw?.carrierId ?? null,
+    serviceId: raw?.serviceId ?? null,
+    supplierId: raw?.supplierId ?? null,
+
+    productType: raw?.productType ?? null,
+
+    sender: raw?.sender ?? null,
+    recipient: raw?.recipient ?? null,
+
+    packageDetail: raw?.packageDetail ?? null,
+    note: raw?.note ?? null,
+    zone: raw?.zone ?? null,
+    chargeableWeight: raw?.chargeableWeight ?? null,
+    exportDate: raw?.exportDate ?? null,
+
+    // pricing?: để optional; UI hiển thị dùng fallback legacy helpers
+    pricing: undefined,
+
+    // Map đúng type FE hiện tại
+    surcharges: {
+      items: surchargeItems,
+      total: surchargeTotal,
+    },
+
+    // Giữ lại các block legacy để UI hiển thị qua helper
+    // (gắn tạm trên object, không đổi type FE)
+    basePrice: raw?.basePrice,
+    extraFees: {
+      ...(raw?.extraFees || {}),
+      extraFeeIds: Array.isArray(raw?.extraFees?.extraFeeIds) ? raw.extraFees.extraFeeIds.map((x: any) => String(x)) : [],
+    },
+    vat: raw?.vat,
+    totalPrice: raw?.totalPrice,
+
+    orderStatus: raw?.orderStatus ?? null,
+    currency: currency ?? null,
+
+    cancelReason: raw?.cancelReason ?? null,
+    cancelledBy: raw?.cancelledBy ?? null,
+    cancelledAt: raw?.cancelledAt ?? null,
+    timeline: raw?.timeline ?? [],
+  } as IOrder;
+};
+
+/* ===========================================================
+   Helpers hiển thị pricing (fallback legacy schema)
+   =========================================================== */
+const getCurrency = (o: IOrder) => o.pricing?.currency ?? o.currency ?? (o as any)?.basePrice?.purchasePrice?.currency ?? (o as any)?.basePrice?.salePrice?.currency ?? ECURRENCY.VND;
+
+const getPurchaseBase = (o: IOrder) => o.pricing?.basePrice?.purchase?.system ?? (o as any)?.basePrice?.purchasePrice?.value ?? 0;
+
+const getSaleBase = (o: IOrder) => o.pricing?.basePrice?.sale?.system ?? (o as any)?.basePrice?.salePrice?.value ?? 0;
+
+const getExtraFeesTotal = (o: IOrder) => o.pricing?.extraFeeTotal?.system ?? (o as any)?.extraFees?.extraFeesTotal ?? 0;
+
+// FSC tách BUY/SELL theo legacy
+const getFscPurchase = (o: IOrder) => o.pricing?.fscFee?.system ?? (o as any)?.extraFees?.fscFeeValue?.purchaseFSCFee ?? 0;
+
+const getFscSale = (o: IOrder) => o.pricing?.fscFee?.system ?? (o as any)?.extraFees?.fscFeeValue?.saleFSCFee ?? 0;
+
+// VAT tách BUY/SELL theo legacy
+const getVatPurchase = (o: IOrder) => o.pricing?.vat?.system ?? (o as any)?.vat?.purchaseVATTotal ?? 0;
+
+const getVatSale = (o: IOrder) => o.pricing?.vat?.system ?? (o as any)?.vat?.saleVATTotal ?? 0;
+
+const getTotalPurchase = (o: IOrder) => o.pricing?.total?.purchase?.system ?? (o as any)?.totalPrice?.purchaseTotal ?? 0;
+
+const getTotalSale = (o: IOrder) => o.pricing?.total?.sale?.system ?? (o as any)?.totalPrice?.saleTotal ?? 0;
+
+/* ===========================================================
+   Bulk Update Dialog (đơn giản: orderStatus, serviceId, supplierId)
+   =========================================================== */
+function BulkUpdateDialog({
+  open,
+  onClose,
+  onSubmit,
+  services,
+  suppliers,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (update: Record<string, any>) => void;
+  services: any[];
+  suppliers: any[];
+}) {
+  const [orderStatus, setOrderStatus] = useState<EORDER_STATUS | "">("");
+  const [serviceId, setServiceId] = useState<string>("");
+  const [supplierId, setSupplierId] = useState<string>("");
+
+  const handleSubmit = () => {
+    const update: Record<string, any> = {};
+    if (orderStatus) update.orderStatus = orderStatus;
+    if (serviceId) update.serviceId = serviceId;
+    if (supplierId) update.supplierId = supplierId;
+    onSubmit(update);
+  };
+
+  useEffect(() => {
+    if (!open) {
+      setOrderStatus("");
+      setServiceId("");
+      setSupplierId("");
+    }
+  }, [open]);
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Bulk Update Orders</DialogTitle>
+      <DialogContent dividers>
+        <Stack spacing={2} mt={1}>
+          <Select size="small" value={orderStatus} onChange={(e) => setOrderStatus(e.target.value as EORDER_STATUS | "")} displayEmpty>
+            <MenuItem value="">(Keep current)</MenuItem>
+            <MenuItem value={EORDER_STATUS.Pending}>Pending</MenuItem>
+            <MenuItem value={EORDER_STATUS.Confirmed}>Confirmed</MenuItem>
+            <MenuItem value={EORDER_STATUS.InTransit}>In Transit</MenuItem>
+            <MenuItem value={EORDER_STATUS.Delivered}>Delivered</MenuItem>
+            <MenuItem value={EORDER_STATUS.Cancelled}>Cancelled</MenuItem>
+          </Select>
+
+          <Select size="small" value={serviceId} onChange={(e) => setServiceId(e.target.value)} displayEmpty>
+            <MenuItem value="">(Keep current) Service</MenuItem>
+            {services?.map((s) => (
+              <MenuItem key={s._id} value={s._id}>
+                {s.code} — {s.name}
+              </MenuItem>
+            ))}
+          </Select>
+
+          <Select size="small" value={supplierId} onChange={(e) => setSupplierId(e.target.value)} displayEmpty>
+            <MenuItem value="">(Keep current) Supplier</MenuItem>
+            {suppliers?.map((s) => (
+              <MenuItem key={s._id} value={s._id}>
+                {s.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="inherit">
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} variant="contained" startIcon={<Edit />}>
+          Update
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+/* ===========================================================
+   Main component
+   =========================================================== */
 export default function OrderManagerView() {
   const [orders, setOrders] = useState<IOrder[]>([]);
+
+  // --- Filters ---
+  const [keyword, setKeyword] = useState("");
   const [carrierIdFilter, setCarrierIdFilter] = useState("");
   const [partnerIdFilter, setPartnerIdFilter] = useState("");
   const [serviceIdFilter, setServiceIdFilter] = useState("");
   const [supplierIdFilter, setSupplierIdFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"" | "all" | ERECORD_STATUS>("");
-  const [keyword, setKeyword] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState<"" | "all" | EORDER_STATUS>("");
+  const [productTypeFilter, setProductTypeFilter] = useState<"" | EPRODUCT_TYPE>("");
+  const [destCountryCode, setDestCountryCode] = useState<string>(""); // Nước đến (code)
+  const [hawbFilter, setHawbFilter] = useState<string>(""); // trackingCode
+  const [cawbFilter, setCawbFilter] = useState<string>(""); // carrierAirWaybillCode
+
+  // --- Pagination ---
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // --- Selections ---
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Bill
   const billPopupRef = useRef<any>(null);
@@ -53,23 +246,27 @@ export default function OrderManagerView() {
   const [openCreateDialog, setOpenCreateDialog] = useState(false);
   const [openUpdateDialog, setOpenUpdateDialog] = useState(false);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
+  const [openBulkUpdateDialog, setOpenBulkUpdateDialog] = useState(false);
   const [selected, setSelected] = useState<IOrder | null>(null);
 
   const { showNotification } = useNotification();
   const debouncedSearch = useMemo(() => debounce((v) => setKeyword(v), 500), []);
 
+  // preload dropdowns
   useEffect(() => {
     getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
     getPartnersApi().then((res) => setPartners(res?.data?.data?.data || []));
     getServicesApi().then((res) => setServices(res?.data?.data?.data || []));
     getSuppliersApi().then((res) => setSuppliers(res?.data?.data?.data || []));
   }, []);
+
   useEffect(() => {
     if (openBillDialog && selected && billPopupRef.current) {
       billPopupRef.current.open();
       setOpenBillDialog(false);
     }
   }, [openBillDialog, selected]);
+
   useEffect(() => {
     if (openShippingMarkDialog && selected && shippingMarkPopupRef.current) {
       shippingMarkPopupRef.current.open();
@@ -77,24 +274,33 @@ export default function OrderManagerView() {
     }
   }, [openShippingMarkDialog, selected]);
 
+  const buildOrderFilters = (all = false): IFilterOrder => ({
+    keyword,
+    page: all ? 1 : page + 1,
+    perPage: all ? 100000 : pageSize,
+    partnerId: partnerIdFilter || undefined,
+    carrierId: carrierIdFilter || undefined,
+    serviceId: serviceIdFilter || undefined,
+    supplierId: supplierIdFilter || undefined,
+    orderStatus: orderStatusFilter && orderStatusFilter !== "all" ? (orderStatusFilter as EORDER_STATUS) : undefined,
+    productType: (productTypeFilter as EPRODUCT_TYPE) || undefined,
+    countryCode: destCountryCode || undefined,
+    trackingCode: hawbFilter || undefined,
+    carrierAirWaybillCode: cawbFilter || undefined,
+  });
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await searchOrdersApi({
-        keyword,
-        page: page + 1,
-        perPage: pageSize,
-        carrierId: carrierIdFilter,
-        partnerId: partnerIdFilter,
-        serviceId: serviceIdFilter,
-        supplierId: supplierIdFilter,
-        status: statusFilter,
-      });
-      setOrders(res?.data?.data?.data || []);
-      setTotal(res?.data?.data?.meta?.total || 0);
-    } catch (err) {
+      const params: IFilterOrder = buildOrderFilters(false);
+      const body = await searchOrdersApi(params); // body = res.data
+      const raw = body?.data?.data || [];
+      const normalized: IOrder[] = raw.map((o: any) => normalizeOrderLegacyToFE(o));
+      setOrders(normalized);
+      setTotal(body?.data?.meta?.total || 0);
+    } catch (err: any) {
       console.error(err);
-      showNotification("Failed to load orders list", "error");
+      showNotification(err?.message || "Failed to load orders list", "error");
     } finally {
       setLoading(false);
     }
@@ -102,85 +308,139 @@ export default function OrderManagerView() {
 
   useEffect(() => {
     fetchData();
-  }, [keyword, page, pageSize, carrierIdFilter, partnerIdFilter, serviceIdFilter, supplierIdFilter, statusFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyword, page, pageSize, carrierIdFilter, partnerIdFilter, serviceIdFilter, supplierIdFilter, orderStatusFilter, productTypeFilter, hawbFilter, cawbFilter, destCountryCode]);
 
   const calculateGrossWeight = (row: IOrder) => {
     if (row?.packageDetail?.dimensions && row?.packageDetail?.dimensions.length > 0) {
-      const totalGrossWeight = row?.packageDetail?.dimensions.reduce((acc, item) => acc + item.grossWeight, 0);
+      const totalGrossWeight = row?.packageDetail?.dimensions.reduce((acc: number, item: any) => acc + (item.grossWeight || 0), 0);
       return totalGrossWeight;
     }
     return 0;
   };
   const calculateVolumeWeight = (row: IOrder) => {
     if (row?.packageDetail?.dimensions && row?.packageDetail?.dimensions.length > 0) {
-      const totalVolumeWeight = row?.packageDetail?.dimensions.reduce((acc, item) => acc + item.volumeWeight, 0);
+      const totalVolumeWeight = row?.packageDetail?.dimensions.reduce((acc: number, item: any) => acc + (item.volumeWeight || 0), 0);
       return totalVolumeWeight;
     }
     return 0;
   };
 
-  const handleExportExcel = () => {
-    const data = orders.map((c) => ({
-      HAWB: c.trackingCode,
-      AWB: c.carrierAirWaybillCode,
-      DATE: formatDate(c.createdAt || ""),
-      "CUSTOMER NAME": c.partner?.partnerName || "",
-      SUPPLIER: typeof c.supplierId === "object" ? c.supplierId?.name : c.supplierId,
-      "SUB CARRIER": typeof c.carrierId === "object" ? c.carrierId?.name : c.carrierId,
-      SERVICE: typeof c.serviceId === "object" ? c.serviceId?.code : c.serviceId,
-      DESTINATION: c.recipient?.country?.name || "",
-      TYPE: c.productType,
-      DIMENSIONS: c.packageDetail?.dimensions && c.packageDetail?.dimensions?.length > 0 ? c.packageDetail?.dimensions.map((d) => `${d.length}x${d.width}x${d.height}`).join(", ") : "",
-      "GROSS WEIGHT": calculateGrossWeight(c),
-      "VOLUME WEIGHT": calculateVolumeWeight(c),
-      "CHARGE WEIGHT": c.chargeableWeight,
-      NOTE: c.note || "",
-      "BASE RATE (BUYING RATE)": formatCurrency(c.basePrice?.purchasePrice?.value || 0, c.currency || ECURRENCY.VND),
-      "EXTRA FEE (BUYING)": formatCurrency(c.extraFees?.extraFeesTotal || 0, c.currency || ECURRENCY.VND),
-      "FSC (BUYING)": formatCurrency(c.extraFees?.fscFeeValue?.purchaseFSCFee || 0, c.currency || ECURRENCY.VND),
-      "VAT (BUYING)": formatCurrency(c.vat?.purchaseVATTotal || 0, c.currency || ECURRENCY.VND),
-      "TOTAL (BUYING)": formatCurrency(c.totalPrice?.purchaseTotal || 0, c.currency || ECURRENCY.VND),
-      "BASE RATE (SELLING RATE)": formatCurrency(c.basePrice?.salePrice?.value || 0, c.currency || ECURRENCY.VND),
-      "EXTRA FEE (SELLING)": formatCurrency(c.extraFees?.extraFeesTotal || 0, c.currency || ECURRENCY.VND),
-      "FSC (SELLING)": formatCurrency(c.extraFees?.fscFeeValue?.saleFSCFee || 0, c.currency || ECURRENCY.VND),
-      "VAT (SELLING)": formatCurrency(c.vat?.saleVATTotal || 0, c.currency || ECURRENCY.VND),
-      "TOTAL (SELLING)": formatCurrency(c.totalPrice?.saleTotal || 0, c.currency || ECURRENCY.VND),
-      PROFIT: formatCurrency((c.totalPrice?.saleTotal || 0) - (c.totalPrice?.purchaseTotal || 0), c.currency || ECURRENCY.VND),
-    }));
+  const handleExportExcel = async () => {
+    try {
+      const params: IFilterOrder = { ...buildOrderFilters(true), all: true };
+      const body = await searchOrdersApi(params);
+      const rawAll: any[] = body?.data?.data || [];
+      const all: IOrder[] = rawAll.map((o) => normalizeOrderLegacyToFE(o));
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 20 }));
+      const data = all.map((c) => ({
+        HAWB: c.trackingCode || "",
+        AWB: c.carrierAirWaybillCode || "",
+        DATE: formatDate(c.createdAt || ""),
+        "CUSTOMER NAME": c.partner?.partnerName || "",
+        SUPPLIER: typeof c.supplierId === "object" ? (c.supplierId as any)?.name : (c as any)?.supplierId || "",
+        "SUB CARRIER": typeof c.carrierId === "object" ? (c.carrierId as any)?.name : (c as any)?.carrierId || "",
+        SERVICE: typeof c.serviceId === "object" ? (c.serviceId as any)?.code : (c as any)?.serviceId || "",
+        DESTINATION: c.recipient?.country?.name || "",
+        TYPE: c.productType || "",
+        DIMENSIONS: c.packageDetail?.dimensions?.length ? c.packageDetail.dimensions.map((d: any) => `${d.length}x${d.width}x${d.height}`).join(", ") : "",
+        "GROSS WEIGHT": calculateGrossWeight(c),
+        "VOLUME WEIGHT": calculateVolumeWeight(c),
+        "CHARGE WEIGHT": c.chargeableWeight ?? 0,
+        NOTE: c.note || "",
 
-    // Styling header & cell
-    const range = XLSX.utils.decode_range(ws["!ref"] || "");
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cell = XLSX.utils.encode_cell({ r: R, c: C });
-        if (!ws[cell]) continue;
-        const isHeader = R === 0;
-        (ws[cell] as any).s = {
-          font: {
-            bold: isHeader,
-            sz: isHeader ? 12 : 11,
-          },
-          alignment: {
-            horizontal: isHeader ? "center" : "left",
-            vertical: "center",
-            wrapText: true,
-          },
-          border: {
-            top: { style: "thin", color: { auto: 1 } },
-            bottom: { style: "thin", color: { auto: 1 } },
-            left: { style: "thin", color: { auto: 1 } },
-            right: { style: "thin", color: { auto: 1 } },
-          },
-        };
+        // BUYING
+        "BASE RATE (BUYING RATE)": formatCurrency(getPurchaseBase(c), getCurrency(c)),
+        "EXTRA FEE (BUYING)": formatCurrency(getExtraFeesTotal(c), getCurrency(c)),
+        "FSC (BUYING)": formatCurrency(getFscPurchase(c), getCurrency(c)),
+        "VAT (BUYING)": formatCurrency(getVatPurchase(c), getCurrency(c)),
+        "TOTAL (BUYING)": formatCurrency(getTotalPurchase(c), getCurrency(c)),
+
+        // SELLING
+        "BASE RATE (SELLING RATE)": formatCurrency(getSaleBase(c), getCurrency(c)),
+        "EXTRA FEE (SELLING)": formatCurrency(getExtraFeesTotal(c), getCurrency(c)),
+        "FSC (SELLING)": formatCurrency(getFscSale(c), getCurrency(c)),
+        "VAT (SELLING)": formatCurrency(getVatSale(c), getCurrency(c)),
+        "TOTAL (SELLING)": formatCurrency(getTotalSale(c), getCurrency(c)),
+
+        PROFIT: formatCurrency(getTotalSale(c) - getTotalPurchase(c), getCurrency(c)),
+      }));
+
+      if (!data.length) {
+        showNotification("No data to export", "warning");
+        return;
       }
-    }
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "ORDERS");
-    XLSX.writeFile(wb, "ORDER_LIST.xlsx");
+      const ws = XLSX.utils.json_to_sheet(data);
+      ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 22 }));
+
+      const range = XLSX.utils.decode_range(ws["!ref"] || "");
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const cell = XLSX.utils.encode_cell({ r: R, c: C });
+          if (!ws[cell]) continue;
+          const isHeader = R === 0;
+          (ws[cell] as any).s = {
+            font: { bold: isHeader, sz: isHeader ? 12 : 11 },
+            alignment: { horizontal: isHeader ? "center" : "left", vertical: "center", wrapText: true },
+            border: {
+              top: { style: "thin", color: { auto: 1 } },
+              bottom: { style: "thin", color: { auto: 1 } },
+              left: { style: "thin", color: { auto: 1 } },
+              right: { style: "thin", color: { auto: 1 } },
+            },
+          };
+        }
+      }
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "ORDERS");
+      XLSX.writeFile(wb, "ORDER_LIST.xlsx");
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || "Export failed", "error");
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selectedIds.length) return;
+    if (!window.confirm(`Delete ${selectedIds.length} selected orders?`)) return;
+    try {
+      const res = await deleteOrdersApi(selectedIds);
+      showNotification(res?.data?.message || "Deleted successfully", "success");
+      setSelectedIds([]);
+      fetchData();
+    } catch (err: any) {
+      showNotification(err?.message || "Delete failed", "error");
+    }
+  };
+  const handleBulkUpdateSubmit = async (update: Record<string, any>) => {
+    if (!selectedIds.length) return;
+    if (!Object.keys(update).length) {
+      showNotification("No change to update", "warning");
+      return;
+    }
+    try {
+      const res = await bulkUpdateOrdersApi(selectedIds, update);
+      showNotification(res?.data?.message || "Updated successfully", "success");
+      setOpenBulkUpdateDialog(false);
+      setSelectedIds([]);
+      fetchData();
+    } catch (err: any) {
+      showNotification(err?.message || "Bulk update failed", "error");
+    }
+  };
+
+  const handleDelete = async (item: IOrder) => {
+    if (!item._id) return;
+    if (!window.confirm("Are you sure you want to delete this order?")) return;
+    try {
+      await deleteOrderApi(item._id);
+      showNotification("Order deleted successfully", "success");
+      fetchData();
+    } catch (err: any) {
+      showNotification(err?.message || "Failed to delete", "error");
+    }
   };
 
   // Table columns
@@ -240,7 +500,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 130,
       flex: 1,
-      renderCell: ({ row }) => (typeof row.supplierId === "object" ? row.supplierId?.name : row.supplierId),
+      renderCell: ({ row }) => (typeof row.supplierId === "object" ? (row.supplierId as any)?.name : row.supplierId),
     },
     {
       field: "carrierId",
@@ -249,7 +509,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 130,
       flex: 1,
-      renderCell: ({ row }) => (typeof row.carrierId === "object" ? row.carrierId?.name : row.carrierId),
+      renderCell: ({ row }) => (typeof row.carrierId === "object" ? (row.carrierId as any)?.name : row.carrierId),
     },
     {
       field: "serviceId",
@@ -258,9 +518,8 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 110,
       flex: 1,
-      renderCell: ({ row }) => (typeof row.serviceId === "object" ? row.serviceId?.code : row.serviceId),
+      renderCell: ({ row }) => (typeof row.serviceId === "object" ? (row.serviceId as any)?.code : row.serviceId),
     },
-    // ----- DESTINATION COLUMN ADDED HERE -----
     {
       field: "destination",
       headerName: "DESTINATION",
@@ -270,28 +529,11 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) =>
         row.recipient?.country?.code || row.recipient?.country?.name ? (
-          <Chip
-            label={`${row.recipient?.country?.name || ""} (${row.recipient?.country?.code || ""})`}
-            size="small"
-            sx={{
-              backgroundColor: blue[200],
-              color: "#fff",
-              fontWeight: 500,
-            }}
-          />
+          <Chip label={`${row.recipient?.country?.name || ""} (${row.recipient?.country?.code || ""})`} size="small" sx={{ backgroundColor: blue[200], color: "#fff", fontWeight: 500 }} />
         ) : (
-          <Chip
-            label="N/A"
-            size="small"
-            sx={{
-              backgroundColor: grey[500],
-              color: "#fff",
-              fontWeight: 500,
-            }}
-          />
+          <Chip label="N/A" size="small" sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }} />
         ),
     },
-    // ------------------------------------------
     {
       field: "productType",
       headerName: "TYPE",
@@ -313,22 +555,10 @@ export default function OrderManagerView() {
           <Chip
             label={row.packageDetail?.dimensions.map((d: any) => `${d.length}x${d.width}x${d.height}`).join(", ")}
             size="small"
-            sx={{
-              backgroundColor: grey[500],
-              color: "#fff",
-              fontWeight: 500,
-            }}
+            sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }}
           />
         ) : (
-          <Chip
-            label="N/A"
-            size="small"
-            sx={{
-              backgroundColor: grey[500],
-              color: "#fff",
-              fontWeight: 500,
-            }}
-          />
+          <Chip label="N/A" size="small" sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }} />
         ),
     },
     {
@@ -338,17 +568,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 160,
       flex: 0.7,
-      renderCell: ({ row }) => (
-        <Chip
-          label={calculateGrossWeight(row)}
-          size="small"
-          sx={{
-            backgroundColor: grey[300],
-            color: "#fff",
-            fontWeight: 500,
-          }}
-        />
-      ),
+      renderCell: ({ row }) => <Chip label={calculateGrossWeight(row)} size="small" sx={{ backgroundColor: grey[300], color: "#fff", fontWeight: 500 }} />,
     },
     {
       field: "volumeWeight",
@@ -357,17 +577,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 160,
       flex: 0.7,
-      renderCell: ({ row }) => (
-        <Chip
-          label={calculateVolumeWeight(row)}
-          size="small"
-          sx={{
-            backgroundColor: grey[500],
-            color: "#fff",
-            fontWeight: 500,
-          }}
-        />
-      ),
+      renderCell: ({ row }) => <Chip label={calculateVolumeWeight(row)} size="small" sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }} />,
     },
     {
       field: "chargeableWeight",
@@ -376,17 +586,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 140,
       flex: 0.7,
-      renderCell: ({ value }) => (
-        <Chip
-          label={value}
-          size="small"
-          sx={{
-            backgroundColor: grey[500],
-            color: "#fff",
-            fontWeight: 500,
-          }}
-        />
-      ),
+      renderCell: ({ value }) => <Chip label={value} size="small" sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }} />,
     },
     {
       field: "note",
@@ -405,7 +605,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(row.basePrice?.purchasePrice?.value, row.currency)}</Typography>
+          <Typography>{formatCurrency(getPurchaseBase(row), getCurrency(row))}</Typography>
         </Box>
       ),
     },
@@ -418,12 +618,12 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(row.extraFees?.extraFeesTotal, row.currency)}</Typography>
+          <Typography>{formatCurrency(getExtraFeesTotal(row), getCurrency(row))}</Typography>
         </Box>
       ),
     },
     {
-      field: "extraFees.fscFeeValue.purchaseFSCFee",
+      field: "pricing.fscFee.system",
       headerName: "FSC (BUYING)",
       align: "center",
       headerAlign: "center",
@@ -431,12 +631,12 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(row.extraFees?.fscFeeValue?.purchaseFSCFee, row.currency)}</Typography>
+          <Typography>{formatCurrency(getFscPurchase(row), getCurrency(row))}</Typography>
         </Box>
       ),
     },
     {
-      field: "vat.purchaseVATTotal",
+      field: "pricing.vat.system",
       headerName: "VAT (BUYING)",
       align: "center",
       headerAlign: "center",
@@ -444,7 +644,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(row.vat?.purchaseVATTotal, row.currency)}</Typography>
+          <Typography>{formatCurrency(getVatPurchase(row), getCurrency(row))}</Typography>
         </Box>
       ),
     },
@@ -457,7 +657,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(row.totalPrice?.purchaseTotal, row.currency)}</Typography>
+          <Typography>{formatCurrency(getTotalPurchase(row), getCurrency(row))}</Typography>
         </Box>
       ),
     },
@@ -470,7 +670,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(row.basePrice?.salePrice?.value, row.currency)}</Typography>
+          <Typography>{formatCurrency(getSaleBase(row), getCurrency(row))}</Typography>
         </Box>
       ),
     },
@@ -483,12 +683,12 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(row.extraFees?.extraFeesTotal, row.currency)}</Typography>
+          <Typography>{formatCurrency(getExtraFeesTotal(row), getCurrency(row))}</Typography>
         </Box>
       ),
     },
     {
-      field: "extraFees.fscFeeValue.saleFSCFee",
+      field: "pricing.fscFee.system#selling",
       headerName: "FSC (SELLING)",
       align: "center",
       headerAlign: "center",
@@ -496,12 +696,12 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(row.extraFees?.fscFeeValue?.saleFSCFee, row.currency)}</Typography>
+          <Typography>{formatCurrency(getFscSale(row), getCurrency(row))}</Typography>
         </Box>
       ),
     },
     {
-      field: "vat.saleVATTotal",
+      field: "pricing.vat.system#selling",
       headerName: "VAT (SELLING)",
       align: "center",
       headerAlign: "center",
@@ -509,7 +709,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(row.vat?.saleVATTotal, row.currency)}</Typography>
+          <Typography>{formatCurrency(getVatSale(row), getCurrency(row))}</Typography>
         </Box>
       ),
     },
@@ -522,7 +722,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(row.totalPrice?.saleTotal, row.currency)}</Typography>
+          <Typography>{formatCurrency(getTotalSale(row), getCurrency(row))}</Typography>
         </Box>
       ),
     },
@@ -535,7 +735,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: pink[100] }}>
-          <Typography>{formatCurrency(row.totalPrice?.saleTotal - row.totalPrice.purchaseTotal, row.currency)}</Typography>
+          <Typography>{formatCurrency(getTotalSale(row) - getTotalPurchase(row), getCurrency(row))}</Typography>
         </Box>
       ),
     },
@@ -548,7 +748,6 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ value }) => <EnumChip type="orderStatus" value={value} />,
     },
-
     {
       field: "actions",
       headerName: "",
@@ -582,7 +781,6 @@ export default function OrderManagerView() {
               setSelected(row);
               setOpenUpdateDialog(true);
             }}
-            onLockUnlock={() => handleLockToggle(row)}
             onDelete={() => handleDelete(row)}
             status={row.orderStatus}
           />
@@ -591,45 +789,45 @@ export default function OrderManagerView() {
     },
   ];
 
-  const handleLockToggle = async (item: IOrder) => {
-    try {
-      if (!item._id) return;
-      const confirm = window.confirm(item.status === ERECORD_STATUS.Active ? "Lock this order?" : "Unlock this order?");
-      if (!confirm) return;
-      const res = item.status === ERECORD_STATUS.Active ? await lockOrderApi(item._id) : await unlockOrderApi(item._id);
-      showNotification(res?.data?.message || "Update successful", "success");
-      fetchData();
-    } catch (err: any) {
-      showNotification(err.message || "Failed to update status", "error");
-    }
-  };
-
-  const handleDelete = async (item: IOrder) => {
-    if (!item._id) return;
-    if (!window.confirm("Are you sure you want to delete this order?")) return;
-    try {
-      await deleteOrderApi(item._id);
-      showNotification("Order deleted successfully", "success");
-      fetchData();
-    } catch (err: any) {
-      showNotification(err.message || "Failed to delete", "error");
-    }
-  };
-
   return (
     <Box className="space-y-4 p-6">
+      {/* Filters + actions */}
       <Box display="flex" flexWrap="wrap" gap={1} justifyContent="space-between" alignItems="center">
-        <TextField placeholder="Search, tracking..." size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 250 }} />
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          <TextField placeholder="Search keyword" size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 200 }} />
+          <TextField placeholder="HAWB (trackingCode)" size="small" value={hawbFilter} onChange={(e) => setHawbFilter(e.target.value)} sx={{ minWidth: 180 }} />
+          <TextField placeholder="CAWB (AWB)" size="small" value={cawbFilter} onChange={(e) => setCawbFilter(e.target.value)} sx={{ minWidth: 160 }} />
+
+          {/* Destination filter: CountrySelect (đẩy countryCode lên API) */}
+          <CountrySelect value={destCountryCode} onChange={(country) => setDestCountryCode(country?.code || "")} label="Destination" />
+        </Stack>
+
         <Stack direction="row" spacing={1} overflow={"auto"}>
           <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
             Export Excel
           </Button>
+
+          {/* Bulk actions đặt ngay cạnh để bạn thao tác nhanh — disable khi chưa chọn */}
+          {/* <Button variant="outlined" startIcon={<Edit />} disabled={!selectedIds.length} onClick={() => setOpenBulkUpdateDialog(true)}>
+            Bulk Update
+          </Button> */}
+          <Button variant="outlined" startIcon={<Delete />} color="error" disabled={!selectedIds.length} onClick={handleBulkDelete}>
+            Delete
+          </Button>
+
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
             Create Order
           </Button>
         </Stack>
+
         <Stack direction="row" spacing={1} overflow={"auto"}>
-          <Select size="small" value={partnerIdFilter} onChange={(e) => setPartnerIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 140 }}>
+          <Select size="small" value={productTypeFilter} onChange={(e) => setProductTypeFilter(e.target.value as "" | EPRODUCT_TYPE)} displayEmpty sx={{ minWidth: 140 }}>
+            <MenuItem value="">All Types</MenuItem>
+            <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>DOX</MenuItem>
+            <MenuItem value={EPRODUCT_TYPE.PARCEL}>WPX</MenuItem>
+          </Select>
+
+          <Select size="small" value={partnerIdFilter} onChange={(e) => setPartnerIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
             <MenuItem value="">All Customers</MenuItem>
             {partners?.map((s) => (
               <MenuItem key={s._id} value={s._id}>
@@ -637,7 +835,8 @@ export default function OrderManagerView() {
               </MenuItem>
             ))}
           </Select>
-          <Select size="small" value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 140 }}>
+
+          <Select size="small" value={carrierIdFilter} onChange={(e) => setCarrierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
             <MenuItem value="">All Sub Carriers</MenuItem>
             {carriers?.map((c) => (
               <MenuItem key={c._id} value={c._id}>
@@ -645,6 +844,7 @@ export default function OrderManagerView() {
               </MenuItem>
             ))}
           </Select>
+
           <Select size="small" value={serviceIdFilter} onChange={(e) => setServiceIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 140 }}>
             <MenuItem value="">All Services</MenuItem>
             {services?.map((s) => (
@@ -653,6 +853,7 @@ export default function OrderManagerView() {
               </MenuItem>
             ))}
           </Select>
+
           <Select size="small" value={supplierIdFilter} onChange={(e) => setSupplierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 140 }}>
             <MenuItem value="">All Suppliers</MenuItem>
             {suppliers?.map((s) => (
@@ -661,7 +862,8 @@ export default function OrderManagerView() {
               </MenuItem>
             ))}
           </Select>
-          <Select size="small" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} displayEmpty sx={{ minWidth: 120 }}>
+
+          <Select size="small" value={orderStatusFilter} onChange={(e) => setOrderStatusFilter(e.target.value as any)} displayEmpty sx={{ minWidth: 140 }}>
             <MenuItem value="">Default</MenuItem>
             <MenuItem value="all">All</MenuItem>
             <MenuItem value={EORDER_STATUS.Pending}>Pending</MenuItem>
@@ -672,6 +874,25 @@ export default function OrderManagerView() {
           </Select>
         </Stack>
       </Box>
+
+      {/* Bulk actions bar (chỉ hiện khi đã chọn) */}
+      {selectedIds.length > 0 && (
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Typography sx={{ fontWeight: 600 }}>{selectedIds.length} selected</Typography>
+          {/* <Button size="small" startIcon={<Edit />} onClick={() => setOpenBulkUpdateDialog(true)}>
+            Bulk Update
+          </Button> */}
+
+          {/* <Button size="small" color="error" startIcon={<Delete />} onClick={handleBulkDelete}>
+            Delete
+          </Button>
+          <Button size="small" onClick={() => setSelectedIds([])}>
+            Clear
+          </Button> */}
+        </Stack>
+      )}
+
+      {/* Table */}
       {loading ? (
         <Box textAlign="center">
           <CircularProgress />
@@ -680,6 +901,7 @@ export default function OrderManagerView() {
         <DataGrid
           rows={orders.map((r) => ({ ...r, id: r._id }))}
           columns={columns}
+          checkboxSelection
           paginationMode="server"
           rowCount={total}
           pageSizeOptions={[10, 20, 50, 100]}
@@ -688,10 +910,22 @@ export default function OrderManagerView() {
             setPage(page);
             setPageSize(pageSize);
           }}
+          // ✅ Bắt cả 2 dạng selection model (array ở v6, object {ids:Set} ở v7)
+          onRowSelectionModelChange={(model) => {
+            let ids: string[] = [];
+            if (Array.isArray(model)) {
+              ids = (model as any[]).map(String);
+            } else if (model && typeof model === "object" && "ids" in model) {
+              ids = Array.from((model as any).ids as Set<GridRowId>).map((x) => String(x));
+            }
+            setSelectedIds(ids);
+          }}
           disableRowSelectionOnClick
           autoHeight
         />
       )}
+
+      {/* Dialogs */}
       <CreateOrderDialog
         open={openCreateDialog}
         onClose={() => setOpenCreateDialog(false)}
@@ -704,6 +938,8 @@ export default function OrderManagerView() {
       <OrderDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} order={selected} />
       <BillPrintDialog ref={billPopupRef} data={selected} />
       <BillShippingMarkDialog ref={shippingMarkPopupRef} data={selected} />
+
+      <BulkUpdateDialog open={openBulkUpdateDialog} onClose={() => setOpenBulkUpdateDialog(false)} onSubmit={handleBulkUpdateSubmit} services={services} suppliers={suppliers} />
     </Box>
   );
 }

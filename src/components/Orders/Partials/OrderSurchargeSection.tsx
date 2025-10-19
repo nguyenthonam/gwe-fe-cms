@@ -7,9 +7,10 @@ import NumericInput from "@/components/Globals/NumericInput";
 interface Props {
   surcharges: ISurchargeDetail[];
   setSurcharges: (arr: ISurchargeDetail[]) => void;
+  disabled?: boolean;
 }
 
-export default function OrderSurchargeSection({ surcharges, setSurcharges }: Props) {
+export default function OrderSurchargeSection({ surcharges, setSurcharges, disabled = false }: Props) {
   return (
     <Box gap={2}>
       <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: "bold" }}>
@@ -27,6 +28,7 @@ export default function OrderSurchargeSection({ surcharges, setSurcharges }: Pro
             }}
             size="small"
             placeholder="Enter charge name"
+            disabled={disabled}
           />
           <NumericInput
             label="Amount"
@@ -40,6 +42,7 @@ export default function OrderSurchargeSection({ surcharges, setSurcharges }: Pro
             size="small"
             sx={{ width: "120px" }}
             placeholder="Enter amount"
+            disabled={disabled}
           />
           <Select
             label="Currency"
@@ -51,6 +54,7 @@ export default function OrderSurchargeSection({ surcharges, setSurcharges }: Pro
             }}
             size="small"
             sx={{ width: "80px" }}
+            disabled={disabled}
           >
             {Object.values(ECURRENCY).map((cur) => (
               <MenuItem value={cur} key={cur}>
@@ -58,12 +62,12 @@ export default function OrderSurchargeSection({ surcharges, setSurcharges }: Pro
               </MenuItem>
             ))}
           </Select>
-          <Button color="error" onClick={() => setSurcharges(surcharges.filter((_, i) => i !== idx))}>
+          <Button color="error" onClick={() => setSurcharges(surcharges.filter((_, i) => i !== idx))} disabled={disabled}>
             Delete
           </Button>
         </Stack>
       ))}
-      <Button variant="outlined" onClick={() => setSurcharges([...surcharges, { name: "", amount: 0, currency: ECURRENCY.VND }])} sx={{ mt: 1 }}>
+      <Button variant="outlined" onClick={() => setSurcharges([...surcharges, { name: "", amount: 0, currency: ECURRENCY.VND }])} sx={{ mt: 1 }} disabled={disabled}>
         Add Charge
       </Button>
     </Box>

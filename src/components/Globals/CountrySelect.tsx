@@ -50,6 +50,8 @@ export default function CountrySelect({ value, onChange, label = "Country", requ
       isOptionEqualToValue={(o, v) => o.code === v.code}
       noOptionsText="Không tìm thấy quốc gia"
       size="small"
+      sx={{ minWidth: "200px" }}
+      
     />
   );
 }
