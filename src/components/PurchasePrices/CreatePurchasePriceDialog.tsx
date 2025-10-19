@@ -32,6 +32,7 @@ import { getSuppliersApi } from "@/utils/apis/apiSupplier";
 import { ECURRENCY, EPRODUCT_TYPE } from "@/types/typeGlobals";
 import { IPurchasePrice } from "@/types/typePurchasePrice";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
+import dayjs from "dayjs";
 
 interface Props {
   open: boolean;
@@ -61,6 +62,10 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
   const [currency, setCurrency] = useState(ECURRENCY.VND);
   const [isPricePerKG, setIsPricePerKG] = useState(false);
 
+  const [startDate, setStartDate] = useState<string>(dayjs().format("YYYY-MM-DD"));
+  const [endDate, setEndDate] = useState<string>(dayjs().add(30, "day").format("YYYY-MM-DD"));
+  const [dateError, setDateError] = useState<string>("");
+
   const [excelInput, setExcelInput] = useState("");
   const [parsedTable, setParsedTable] = useState<ParsedTable | null>(null);
   const [loading, setLoading] = useState(false);
@@ -77,11 +82,17 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
       setProductType(EPRODUCT_TYPE.DOCUMENT);
       setCurrency(ECURRENCY.VND);
       setIsPricePerKG(false);
+      setStartDate(dayjs().format("YYYY-MM-DD"));
+      setEndDate(dayjs().add(30, "day").format("YYYY-MM-DD"));
+      setDateError("");
     }
 
     if (open) {
       fetchCarriers();
       fetchSuppliers();
+      setStartDate(dayjs().format("YYYY-MM-DD"));
+      setEndDate(dayjs().add(30, "day").format("YYYY-MM-DD"));
+      setDateError("");
     }
   }, [open]);
 
@@ -90,6 +101,16 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
       setProductType(EPRODUCT_TYPE.PARCEL);
     }
   }, [isPricePerKG]);
+
+  useEffect(() => {
+    if (startDate && endDate) {
+      if (new Date(startDate) > new Date(endDate)) {
+        setDateError("Start date must be before or equal to end date!");
+      } else {
+        setDateError("");
+      }
+    }
+  }, [startDate, endDate]);
 
   const fetchCarriers = async () => {
     try {
@@ -122,7 +143,13 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
   };
 
   useEffect(() => {
-    if (carrierId) fetchServices(carrierId);
+    if (carrierId) {
+      fetchServices(carrierId);
+    } else {
+      setServices([]);
+    }
+    setServiceId("");
+    // eslint-disable-next-line
   }, [carrierId]);
 
   const handlePasteExcel = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -211,6 +238,14 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
       showNotification("Please fill in all required fields and paste the rate table!", "warning");
       return;
     }
+    if (!startDate || !endDate) {
+      showNotification("Please choose start and end dates!", "warning");
+      return;
+    }
+    if (dateError) {
+      showNotification(dateError, "warning");
+      return;
+    }
     try {
       setLoading(true);
       const data: IPurchasePrice[] = [];
@@ -228,6 +263,8 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
             price: parsedTable.prices[wi][zi],
             currency,
             isPricePerKG,
+            startDate, // "YYYY-MM-DD"
+            endDate, // "YYYY-MM-DD"
           });
         }
       }
@@ -299,6 +336,34 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
                 </Select>
               </FormControl>
             </Grid>
+            <Grid size={12} container spacing={1}>
+              <Grid size={6}>
+                <TextField
+                  label="Start date"
+                  type="date"
+                  fullWidth
+                  size="small"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  error={!!dateError}
+                />
+              </Grid>
+              <Grid size={6}>
+                <TextField
+                  label="End date"
+                  type="date"
+                  fullWidth
+                  size="small"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  error={!!dateError}
+                  helperText={dateError}
+                />
+              </Grid>
+            </Grid>
+
             <Grid size={6}>
               <FormControl fullWidth size="small">
                 <InputLabel>Currency</InputLabel>
@@ -364,7 +429,7 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSubmitAll} variant="contained" disabled={loading || !parsedTable}>
+        <Button onClick={handleSubmitAll} variant="contained" disabled={loading || !parsedTable || !!dateError || !startDate || !endDate}>
           Create
         </Button>
       </DialogActions>

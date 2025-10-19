@@ -10,7 +10,7 @@ import { useNotification } from "@/contexts/NotificationProvider";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getSuppliersApi } from "@/utils/apis/apiSupplier";
 import { getServicesApi, getServicesByCarrierApi } from "@/utils/apis/apiService";
-import { searchPurchasePriceGroupsApi, deletePurchasePriceGroupApi, lockPurchasePriceGroupApi, unlockPurchasePriceGroupApi } from "@/utils/apis/apiPurchasePrice";
+import { searchPurchasePriceGroupsApi, deletePurchasePriceGroupApi, lockPurchasePriceGroupApi, unlockPurchasePriceGroupApi, searchPurchasePriceListsApi } from "@/utils/apis/apiPurchasePrice";
 
 import CreatePurchasePriceDialog from "./CreatePurchasePriceDialog";
 import UpdatePurchasePriceDialog from "./UpdatePurchasePriceDialog";
@@ -77,6 +77,7 @@ export default function PurchasePriceManagerView() {
       const arr: IPurchasePriceGroup[] = Array.isArray(res?.data?.data?.data) ? res.data.data.data.filter(Boolean) : [];
       setGroups(arr);
       setTotal(res?.data?.data?.meta?.total || 0);
+      console.log("Fetched groups:", arr);
     } catch (err) {
       console.error("Error fetching purchase price groups:", err);
       showNotification("Failed to load purchase price groups", "error");
@@ -87,6 +88,25 @@ export default function PurchasePriceManagerView() {
   useEffect(() => {
     fetchData();
   }, [keyword, page, pageSize, carrierIdFilter, serviceIdFilter, supplierIdFilter, statusFilter]);
+
+  const openDetail = async (row: IPurchasePriceGroup) => {
+    const carrierId = getId(row.carrierId);
+    const supplierId = getId(row.supplierId);
+    const serviceId = getId(row.serviceId);
+
+    // gọi API list items theo group; perPage đủ lớn để lấy hết
+    const res = await searchPurchasePriceListsApi({
+      carrierId,
+      supplierId,
+      serviceId,
+      page: 1,
+      perPage: 2000,
+    });
+    const datas = res?.data?.data?.data || [];
+
+    setSelectedGroup({ ...row, datas }); // gắn datas vào group
+    setOpenDetailDialog(true);
+  };
 
   const handleDeleteGroup = async (group: IPurchasePriceGroup) => {
     if (!window.confirm("Are you sure you want to delete this group?")) return;
@@ -150,8 +170,7 @@ export default function PurchasePriceManagerView() {
             sx={{ cursor: "pointer", textDecoration: "underline" }}
             color="primary"
             onClick={() => {
-              setSelectedGroup(row);
-              setOpenDetailDialog(true);
+              openDetail(row);
             }}
           >
             Detail
