@@ -333,69 +333,229 @@ export default function OrderManagerView() {
       const rawAll: any[] = body?.data?.data || [];
       const all: IOrder[] = rawAll.map((o) => normalizeOrderLegacyToFE(o));
 
-      const data = all.map((c) => ({
-        HAWB: c.trackingCode || "",
-        AWB: c.carrierAirWaybillCode || "",
-        DATE: formatDate(c.createdAt || ""),
-        "CUSTOMER NAME": c.partner?.partnerName || "",
-        SUPPLIER: typeof c.supplierId === "object" ? (c.supplierId as any)?.name : (c as any)?.supplierId || "",
-        "SUB CARRIER": typeof c.carrierId === "object" ? (c.carrierId as any)?.name : (c as any)?.carrierId || "",
-        SERVICE: typeof c.serviceId === "object" ? (c.serviceId as any)?.code : (c as any)?.serviceId || "",
-        DESTINATION: c.recipient?.country?.name || "",
-        TYPE: c.productType || "",
-        DIMENSIONS: c.packageDetail?.dimensions?.length ? c.packageDetail.dimensions.map((d: any) => `${d.length}x${d.width}x${d.height}`).join(", ") : "",
-        "GROSS WEIGHT": calculateGrossWeight(c),
-        "VOLUME WEIGHT": calculateVolumeWeight(c),
-        "CHARGE WEIGHT": c.chargeableWeight ?? 0,
-        NOTE: c.note || "",
-
-        // BUYING
-        "BASE RATE (BUYING RATE)": formatCurrency(getPurchaseBase(c), getCurrency(c)),
-        "EXTRA FEE (BUYING)": formatCurrency(getExtraFeesTotal(c), getCurrency(c)),
-        "FSC (BUYING)": formatCurrency(getFscPurchase(c), getCurrency(c)),
-        "VAT (BUYING)": formatCurrency(getVatPurchase(c), getCurrency(c)),
-        "TOTAL (BUYING)": formatCurrency(getTotalPurchase(c), getCurrency(c)),
-
-        // SELLING
-        "BASE RATE (SELLING RATE)": formatCurrency(getSaleBase(c), getCurrency(c)),
-        "EXTRA FEE (SELLING)": formatCurrency(getExtraFeesTotal(c), getCurrency(c)),
-        "FSC (SELLING)": formatCurrency(getFscSale(c), getCurrency(c)),
-        "VAT (SELLING)": formatCurrency(getVatSale(c), getCurrency(c)),
-        "TOTAL (SELLING)": formatCurrency(getTotalSale(c), getCurrency(c)),
-
-        PROFIT: formatCurrency(getTotalSale(c) - getTotalPurchase(c), getCurrency(c)),
-      }));
-
-      if (!data.length) {
+      if (!all.length) {
         showNotification("No data to export", "warning");
         return;
       }
 
-      const ws = XLSX.utils.json_to_sheet(data);
-      ws["!cols"] = Object.keys(data[0]).map(() => ({ wch: 22 }));
+      // Giữ nguyên tiêu đề & thứ tự cột như bản export cũ
+      const HEADERS = [
+        "HAWB",
+        "AWB",
+        "DATE",
+        "CUSTOMER NAME",
+        "SUPPLIER",
+        "SUB CARRIER",
+        "SERVICE",
+        "DESTINATION",
+        "TYPE",
+        "DIMENSIONS",
+        "GROSS WEIGHT",
+        "VOLUME WEIGHT",
+        "CHARGE WEIGHT",
+        "NOTE",
+        "BASE RATE (BUYING RATE)",
+        "EXTRA FEE (BUYING)",
+        "FSC (BUYING)",
+        "VAT (BUYING)",
+        "TOTAL (BUYING)",
+        "BASE RATE (SELLING RATE)",
+        "EXTRA FEE (SELLING)",
+        "FSC (SELLING)",
+        "VAT (SELLING)",
+        "TOTAL (SELLING)",
+        "PROFIT",
+      ];
+
+      // Dữ liệu số/Date thật (không format chuỗi)
+      const rowCurrencies: string[] = [];
+      const rows = all.map((c) => {
+        const cur = getCurrency(c) as unknown as string;
+        rowCurrencies.push(cur);
+        return {
+          HAWB: c.trackingCode || "",
+          AWB: c.carrierAirWaybillCode || "",
+          DATE: c.createdAt ? new Date(c.createdAt) : null, // Date object
+          "CUSTOMER NAME": c.partner?.partnerName || "",
+          SUPPLIER: typeof c.supplierId === "object" ? (c.supplierId as any)?.name : (c as any)?.supplierId || "",
+          "SUB CARRIER": typeof c.carrierId === "object" ? (c.carrierId as any)?.name : (c as any)?.carrierId || "",
+          SERVICE: typeof c.serviceId === "object" ? (c.serviceId as any)?.code : (c as any)?.serviceId || "",
+          DESTINATION: c.recipient?.country?.name || "",
+          TYPE: c.productType || "",
+          DIMENSIONS: c.packageDetail?.dimensions?.length ? c.packageDetail.dimensions.map((d: any) => `${d.length}x${d.width}x${d.height}`).join(", ") : "",
+          "GROSS WEIGHT": calculateGrossWeight(c), // number
+          "VOLUME WEIGHT": calculateVolumeWeight(c), // number
+          "CHARGE WEIGHT": c.chargeableWeight ?? 0, // number
+          NOTE: c.note || "",
+          // BUYING
+          "BASE RATE (BUYING RATE)": getPurchaseBase(c),
+          "EXTRA FEE (BUYING)": getExtraFeesTotal(c),
+          "FSC (BUYING)": getFscPurchase(c),
+          "VAT (BUYING)": getVatPurchase(c),
+          "TOTAL (BUYING)": getTotalPurchase(c),
+          // SELLING
+          "BASE RATE (SELLING RATE)": getSaleBase(c),
+          "EXTRA FEE (SELLING)": getExtraFeesTotal(c),
+          "FSC (SELLING)": getFscSale(c),
+          "VAT (SELLING)": getVatSale(c),
+          "TOTAL (SELLING)": getTotalSale(c),
+          // PROFIT
+          PROFIT: getTotalSale(c) - getTotalPurchase(c),
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows, { header: HEADERS, skipHeader: false, cellDates: true });
+      ws["!cols"] = HEADERS.map(() => ({ wch: 22 }));
 
       const range = XLSX.utils.decode_range(ws["!ref"] || "");
+      const headers = HEADERS;
+      const colIndexByHeader: Record<string, number> = {};
+      headers.forEach((h, i) => (colIndexByHeader[h] = i));
+
+      // Base border: thin cho toàn bảng
+      const THIN = { style: "thin", color: { auto: 1 } };
+      const BASE_BORDER = { top: THIN, bottom: THIN, left: THIN, right: THIN };
+
       for (let R = range.s.r; R <= range.e.r; ++R) {
         for (let C = range.s.c; C <= range.e.c; ++C) {
-          const cell = XLSX.utils.encode_cell({ r: R, c: C });
-          if (!ws[cell]) continue;
+          const addr = XLSX.utils.encode_cell({ r: R, c: C });
+          if (!ws[addr]) ws[addr] = { t: "s", v: "" } as any;
           const isHeader = R === 0;
-          (ws[cell] as any).s = {
+          (ws[addr] as any).s = {
+            ...(ws[addr] as any).s,
             font: { bold: isHeader, sz: isHeader ? 12 : 11 },
-            alignment: { horizontal: isHeader ? "center" : "left", vertical: "center", wrapText: true },
-            border: {
-              top: { style: "thin", color: { auto: 1 } },
-              bottom: { style: "thin", color: { auto: 1 } },
-              left: { style: "thin", color: { auto: 1 } },
-              right: { style: "thin", color: { auto: 1 } },
+            alignment: {
+              horizontal: isHeader ? "center" : "left",
+              vertical: "center",
+              wrapText: true,
+              ...(ws[addr] as any).s?.alignment,
             },
+            border: BASE_BORDER,
           };
         }
       }
 
+      // Định dạng kiểu dữ liệu: DATE/WEIGHT/MONEY
+      const WEIGHT_COLS = ["GROSS WEIGHT", "VOLUME WEIGHT", "CHARGE WEIGHT"];
+      const MONEY_COLS = [
+        "BASE RATE (BUYING RATE)",
+        "EXTRA FEE (BUYING)",
+        "FSC (BUYING)",
+        "VAT (BUYING)",
+        "TOTAL (BUYING)",
+        "BASE RATE (SELLING RATE)",
+        "EXTRA FEE (SELLING)",
+        "FSC (SELLING)",
+        "VAT (SELLING)",
+        "TOTAL (SELLING)",
+        "PROFIT",
+      ];
+      const moneyFormatFor = (currency: string) => {
+        if (currency === "VND") return '#,##0" ₫"';
+        if (currency === "USD") return '#,##0.00" $"';
+        return "#,##0.00";
+      };
+
+      for (let r = 1; r <= rows.length; r++) {
+        const cur = rowCurrencies[r - 1] || "VND";
+
+        // DATE
+        if (colIndexByHeader["DATE"] != null) {
+          const c = colIndexByHeader["DATE"];
+          const addr = XLSX.utils.encode_cell({ r, c });
+          const cell = ws[addr];
+          if (cell) {
+            cell.t = "d";
+            (cell as any).z = "dd/mm/yyyy";
+            (cell as any).s = {
+              ...(cell as any).s,
+              alignment: { ...(cell as any).s?.alignment, horizontal: "center" },
+            };
+          }
+        }
+
+        // WEIGHTS -> number 2 decimals
+        for (const h of WEIGHT_COLS) {
+          const c = colIndexByHeader[h];
+          if (c == null) continue;
+          const addr = XLSX.utils.encode_cell({ r, c });
+          const cell = ws[addr];
+          if (cell && cell.v !== "" && cell.v !== null && cell.v !== undefined) {
+            cell.t = "n";
+            (cell as any).z = "0.00";
+            (cell as any).s = {
+              ...(cell as any).s,
+              alignment: { ...(cell as any).s?.alignment, horizontal: "right" },
+            };
+          }
+        }
+
+        // MONEY -> number theo từng currency
+        const zMoney = moneyFormatFor(cur);
+        for (const h of MONEY_COLS) {
+          const c = colIndexByHeader[h];
+          if (c == null) continue;
+          const addr = XLSX.utils.encode_cell({ r, c });
+          const cell = ws[addr];
+          if (cell && cell.v !== "" && cell.v !== null && cell.v !== undefined) {
+            cell.t = "n";
+            (cell as any).z = zMoney;
+            (cell as any).s = {
+              ...(cell as any).s,
+              alignment: { ...(cell as any).s?.alignment, horizontal: "right" },
+            };
+          }
+        }
+      }
+
+      // Header border đậm + Outline đậm
+      const MED = { style: "medium", color: { auto: 1 } }; // đổi "thick" nếu muốn đậm hơn
+      const rTop = range.s.r;
+      const rBottom = range.e.r;
+      const cLeft = range.s.c;
+      const cRight = range.e.c;
+
+      // Header: border 4 cạnh medium
+      for (let c = cLeft; c <= cRight; c++) {
+        const addr = XLSX.utils.encode_cell({ r: rTop, c });
+        if (!ws[addr]) ws[addr] = { t: "s", v: "" } as any;
+        (ws[addr] as any).s = {
+          ...(ws[addr] as any).s,
+          border: { top: MED, right: MED, bottom: MED, left: MED },
+        };
+      }
+
+      // Outline: viền ngoài medium
+      // Top & Bottom
+      for (let c = cLeft; c <= cRight; c++) {
+        let addr = XLSX.utils.encode_cell({ r: rTop, c });
+        (ws[addr] as any).s = {
+          ...(ws[addr] as any).s,
+          border: { ...(ws[addr] as any).s?.border, top: MED },
+        };
+        addr = XLSX.utils.encode_cell({ r: rBottom, c });
+        (ws[addr] as any).s = {
+          ...(ws[addr] as any).s,
+          border: { ...(ws[addr] as any).s?.border, bottom: MED },
+        };
+      }
+      // Left & Right
+      for (let r = rTop; r <= rBottom; r++) {
+        let addr = XLSX.utils.encode_cell({ r, c: cLeft });
+        (ws[addr] as any).s = {
+          ...(ws[addr] as any).s,
+          border: { ...(ws[addr] as any).s?.border, left: MED },
+        };
+        addr = XLSX.utils.encode_cell({ r, c: cRight });
+        (ws[addr] as any).s = {
+          ...(ws[addr] as any).s,
+          border: { ...(ws[addr] as any).s?.border, right: MED },
+        };
+      }
+
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "ORDERS");
-      XLSX.writeFile(wb, "ORDER_LIST.xlsx");
+      XLSX.writeFile(wb, "ORDER_LIST.xlsx", { cellDates: true });
     } catch (err: any) {
       console.error(err);
       showNotification(err?.message || "Export failed", "error");
