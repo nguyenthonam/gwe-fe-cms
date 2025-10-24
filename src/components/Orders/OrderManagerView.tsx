@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Box, Button, Stack, TextField, Select, MenuItem, CircularProgress, Typography, Chip, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { Box, Button, Stack, TextField, Select, MenuItem, CircularProgress, Typography, Chip } from "@mui/material";
 import { Add, Download, Edit, Delete } from "@mui/icons-material";
 import { DataGrid, GridColDef, GridRowId } from "@mui/x-data-grid";
 import debounce from "lodash/debounce";
@@ -26,191 +26,123 @@ import BillPrintDialog from "@/components/Bill/BillPrintDialog";
 import BillShippingMarkDialog from "@/components/Bill/BillShippingMarkDialog";
 import { ECURRENCY, EORDER_STATUS, EPRODUCT_TYPE } from "@/types/typeGlobals";
 import CountrySelect from "@/components/Globals/CountrySelect";
+import BulkUpdateOrdersDialog, { TBulkUpdatePayload } from "./BulkUpdateOrdersDialog";
 
 /* ===========================================================
-   Legacy -> FE normalize (không đổi type FE, chỉ chuẩn hóa data)
+   Helpers
+   =========================================================== */
+const toIdOrObject = (v: any) => {
+  if (!v) return null;
+  if (typeof v === "object") return v;
+  return String(v);
+};
+
+const getCurrency = (o: IOrder): ECURRENCY | null =>
+  (o.currency as ECURRENCY | null) ?? ((o as any)?.basePrice?.purchasePrice?.currency as ECURRENCY | null) ?? ((o as any)?.basePrice?.salePrice?.currency as ECURRENCY | null) ?? ECURRENCY.VND;
+
+const getPurchaseBase = (o: IOrder) => Number((o as any)?.basePrice?.purchasePrice?.value ?? 0);
+const getSaleBase = (o: IOrder) => Number((o as any)?.basePrice?.salePrice?.value ?? 0);
+const getExtraFeesTotal = (o: IOrder) => Number((o as any)?.extraFees?.extraFeesTotal ?? 0);
+const getFscPurchase = (o: IOrder) => Number((o as any)?.extraFees?.fscFeeValue?.purchaseFSCFee ?? 0);
+const getFscSale = (o: IOrder) => Number((o as any)?.extraFees?.fscFeeValue?.saleFSCFee ?? 0);
+const getVatPurchase = (o: IOrder) => Number((o as any)?.vat?.purchaseVATTotal ?? 0);
+const getVatSale = (o: IOrder) => Number((o as any)?.vat?.saleVATTotal ?? 0);
+const getTotalPurchase = (o: IOrder) => Number((o as any)?.totalPrice?.purchaseTotal ?? 0);
+const getTotalSale = (o: IOrder) => Number((o as any)?.totalPrice?.saleTotal ?? 0);
+
+/* ===========================================================
+   Normalize raw -> IOrder v1.1 (giữ object nếu là object)
    =========================================================== */
 const normalizeOrderLegacyToFE = (raw: any): IOrder => {
   const currency: ECURRENCY = raw?.currency ?? raw?.basePrice?.purchasePrice?.currency ?? raw?.basePrice?.salePrice?.currency ?? ECURRENCY.VND;
 
-  const surchargeItems = Array.isArray(raw?.surcharges) ? raw.surcharges : [];
-  const surchargeTotal = raw?.surchargeTotal ?? 0;
-
   return {
-    // IBaseRecord
-    _id: raw?._id,
+    _id: String(raw?._id || ""),
     status: raw?.status,
-    createdAt: raw?.createdAt,
-    updatedAt: raw?.updatedAt,
-    _creator: raw?._creator,
+    createdAt: raw?.createdAt ?? null,
+    updatedAt: raw?.updatedAt ?? null,
+    _creator: raw?._creator ?? null,
 
-    trackingCode: raw?.trackingCode ?? null,
-    carrierAirWaybillCode: raw?.carrierAirWaybillCode ?? null,
+    trackingCode: String(raw?.trackingCode || ""),
+    carrierAirWaybillCode: raw?.carrierAirWaybillCode?.trim?.() || null,
 
     partner: raw?.partner
       ? {
-          partnerId: (raw.partner?.partnerId ? String(raw.partner.partnerId) : null) as any,
-          partnerName: raw.partner?.partnerName ?? "",
+          partnerId: typeof raw.partner?.partnerId === "object" ? raw.partner.partnerId?._id || raw.partner.partnerId?.id || null : raw?.partner?.partnerId ? String(raw.partner.partnerId) : null,
+          partnerName: raw?.partner?.partnerName ?? (typeof raw?.partner?.partnerId === "object" ? raw?.partner?.partnerId?.name || "" : ""),
         }
       : null,
 
-    carrierId: raw?.carrierId ?? null,
-    serviceId: raw?.serviceId ?? null,
-    supplierId: raw?.supplierId ?? null,
+    // giữ nguyên object nếu có; nếu không thì giữ string id
+    carrierId: toIdOrObject(raw?.carrierId) ?? "",
+    serviceId: toIdOrObject(raw?.serviceId),
+    supplierId: toIdOrObject(raw?.supplierId),
 
     productType: raw?.productType ?? null,
-
     sender: raw?.sender ?? null,
     recipient: raw?.recipient ?? null,
 
-    packageDetail: raw?.packageDetail ?? null,
+    packageDetail: {
+      content: raw?.packageDetail?.content ?? "",
+      declaredWeight: Number(raw?.packageDetail?.declaredWeight ?? 0),
+      quantity: Number(raw?.packageDetail?.quantity ?? 0),
+      declaredValue: Number(raw?.packageDetail?.declaredValue ?? 0),
+      currency: (raw?.packageDetail?.currency ?? currency) as ECURRENCY,
+      dimensions: Array.isArray(raw?.packageDetail?.dimensions) ? raw.packageDetail.dimensions : [],
+    },
+
     note: raw?.note ?? null,
-    zone: raw?.zone ?? null,
-    chargeableWeight: raw?.chargeableWeight ?? null,
-    exportDate: raw?.exportDate ?? null,
+    zone: typeof raw?.zone === "number" ? raw.zone : null,
+    chargeableWeight: Number(raw?.chargeableWeight ?? 0),
 
-    // pricing?: để optional; UI hiển thị dùng fallback legacy helpers
-    pricing: undefined,
-
-    // Map đúng type FE hiện tại
-    surcharges: {
-      items: surchargeItems,
-      total: surchargeTotal,
+    basePrice: {
+      purchasePrice: {
+        value: Number(raw?.basePrice?.purchasePrice?.value ?? 0),
+        currency: (raw?.basePrice?.purchasePrice?.currency ?? null) as ECURRENCY | null,
+      },
+      salePrice: {
+        value: Number(raw?.basePrice?.salePrice?.value ?? 0),
+        currency: (raw?.basePrice?.salePrice?.currency ?? null) as ECURRENCY | null,
+      },
     },
 
-    // Giữ lại các block legacy để UI hiển thị qua helper
-    // (gắn tạm trên object, không đổi type FE)
-    basePrice: raw?.basePrice,
     extraFees: {
-      ...(raw?.extraFees || {}),
-      extraFeeIds: Array.isArray(raw?.extraFees?.extraFeeIds) ? raw.extraFees.extraFeeIds.map((x: any) => String(x)) : [],
+      extraFeeIds: Array.isArray(raw?.extraFees?.extraFeeIds) ? raw.extraFees.extraFeeIds.map((x: any) => (typeof x === "object" ? x?._id || x?.id || String(x) : String(x))) : [],
+      fscFeePercentage: raw?.extraFees?.fscFeePercentage !== undefined ? Number(raw.extraFees.fscFeePercentage) : null,
+      fscFeeValue: {
+        purchaseFSCFee: raw?.extraFees?.fscFeeValue?.purchaseFSCFee !== undefined ? Number(raw.extraFees.fscFeeValue.purchaseFSCFee) : null,
+        saleFSCFee: raw?.extraFees?.fscFeeValue?.saleFSCFee !== undefined ? Number(raw.extraFees.fscFeeValue.saleFSCFee) : null,
+      },
+      extraFeesTotal: raw?.extraFees?.extraFeesTotal !== undefined ? Number(raw.extraFees.extraFeesTotal) : null,
     },
-    vat: raw?.vat,
-    totalPrice: raw?.totalPrice,
 
-    orderStatus: raw?.orderStatus ?? null,
-    currency: currency ?? null,
+    vat: {
+      systemVATPercentage: Number(raw?.vat?.systemVATPercentage ?? 0),
+      customVATPercentage: Number(raw?.vat?.customVATPercentage ?? -1),
+      purchaseVATTotal: Number(raw?.vat?.purchaseVATTotal ?? 0),
+      saleVATTotal: Number(raw?.vat?.saleVATTotal ?? 0),
+    },
 
-    cancelReason: raw?.cancelReason ?? null,
-    cancelledBy: raw?.cancelledBy ?? null,
-    cancelledAt: raw?.cancelledAt ?? null,
-    timeline: raw?.timeline ?? [],
+    surcharges: Array.isArray(raw?.surcharges) ? raw.surcharges : [],
+    surchargeTotal: Number(raw?.surchargeTotal ?? 0),
+
+    totalPrice: {
+      purchaseTotal: Number(raw?.totalPrice?.purchaseTotal ?? 0),
+      saleTotal: Number(raw?.totalPrice?.saleTotal ?? 0),
+    },
+
+    orderStatus: raw?.orderStatus ?? EORDER_STATUS.Pending,
+    currency: (currency as ECURRENCY) ?? null,
   } as IOrder;
 };
 
 /* ===========================================================
-   Helpers hiển thị pricing (fallback legacy schema)
-   =========================================================== */
-const getCurrency = (o: IOrder) => o.pricing?.currency ?? o.currency ?? (o as any)?.basePrice?.purchasePrice?.currency ?? (o as any)?.basePrice?.salePrice?.currency ?? ECURRENCY.VND;
-
-const getPurchaseBase = (o: IOrder) => o.pricing?.basePrice?.purchase?.system ?? (o as any)?.basePrice?.purchasePrice?.value ?? 0;
-
-const getSaleBase = (o: IOrder) => o.pricing?.basePrice?.sale?.system ?? (o as any)?.basePrice?.salePrice?.value ?? 0;
-
-const getExtraFeesTotal = (o: IOrder) => o.pricing?.extraFeeTotal?.system ?? (o as any)?.extraFees?.extraFeesTotal ?? 0;
-
-// FSC tách BUY/SELL theo legacy
-const getFscPurchase = (o: IOrder) => o.pricing?.fscFee?.system ?? (o as any)?.extraFees?.fscFeeValue?.purchaseFSCFee ?? 0;
-
-const getFscSale = (o: IOrder) => o.pricing?.fscFee?.system ?? (o as any)?.extraFees?.fscFeeValue?.saleFSCFee ?? 0;
-
-// VAT tách BUY/SELL theo legacy
-const getVatPurchase = (o: IOrder) => o.pricing?.vat?.system ?? (o as any)?.vat?.purchaseVATTotal ?? 0;
-
-const getVatSale = (o: IOrder) => o.pricing?.vat?.system ?? (o as any)?.vat?.saleVATTotal ?? 0;
-
-const getTotalPurchase = (o: IOrder) => o.pricing?.total?.purchase?.system ?? (o as any)?.totalPrice?.purchaseTotal ?? 0;
-
-const getTotalSale = (o: IOrder) => o.pricing?.total?.sale?.system ?? (o as any)?.totalPrice?.saleTotal ?? 0;
-
-/* ===========================================================
-   Bulk Update Dialog (đơn giản: orderStatus, serviceId, supplierId)
-   =========================================================== */
-function BulkUpdateDialog({
-  open,
-  onClose,
-  onSubmit,
-  services,
-  suppliers,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (update: Record<string, any>) => void;
-  services: any[];
-  suppliers: any[];
-}) {
-  const [orderStatus, setOrderStatus] = useState<EORDER_STATUS | "">("");
-  const [serviceId, setServiceId] = useState<string>("");
-  const [supplierId, setSupplierId] = useState<string>("");
-
-  const handleSubmit = () => {
-    const update: Record<string, any> = {};
-    if (orderStatus) update.orderStatus = orderStatus;
-    if (serviceId) update.serviceId = serviceId;
-    if (supplierId) update.supplierId = supplierId;
-    onSubmit(update);
-  };
-
-  useEffect(() => {
-    if (!open) {
-      setOrderStatus("");
-      setServiceId("");
-      setSupplierId("");
-    }
-  }, [open]);
-
-  return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Bulk Update Orders</DialogTitle>
-      <DialogContent dividers>
-        <Stack spacing={2} mt={1}>
-          <Select size="small" value={orderStatus} onChange={(e) => setOrderStatus(e.target.value as EORDER_STATUS | "")} displayEmpty>
-            <MenuItem value="">(Keep current)</MenuItem>
-            <MenuItem value={EORDER_STATUS.Pending}>Pending</MenuItem>
-            <MenuItem value={EORDER_STATUS.Confirmed}>Confirmed</MenuItem>
-            <MenuItem value={EORDER_STATUS.InTransit}>In Transit</MenuItem>
-            <MenuItem value={EORDER_STATUS.Delivered}>Delivered</MenuItem>
-            <MenuItem value={EORDER_STATUS.Cancelled}>Cancelled</MenuItem>
-          </Select>
-
-          <Select size="small" value={serviceId} onChange={(e) => setServiceId(e.target.value)} displayEmpty>
-            <MenuItem value="">(Keep current) Service</MenuItem>
-            {services?.map((s) => (
-              <MenuItem key={s._id} value={s._id}>
-                {s.code} — {s.name}
-              </MenuItem>
-            ))}
-          </Select>
-
-          <Select size="small" value={supplierId} onChange={(e) => setSupplierId(e.target.value)} displayEmpty>
-            <MenuItem value="">(Keep current) Supplier</MenuItem>
-            {suppliers?.map((s) => (
-              <MenuItem key={s._id} value={s._id}>
-                {s.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} color="inherit">
-          Cancel
-        </Button>
-        <Button onClick={handleSubmit} variant="contained" startIcon={<Edit />}>
-          Update
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-/* ===========================================================
-   Main component
+   View
    =========================================================== */
 export default function OrderManagerView() {
   const [orders, setOrders] = useState<IOrder[]>([]);
 
-  // --- Filters ---
+  // Filters
   const [keyword, setKeyword] = useState("");
   const [carrierIdFilter, setCarrierIdFilter] = useState("");
   const [partnerIdFilter, setPartnerIdFilter] = useState("");
@@ -218,20 +150,20 @@ export default function OrderManagerView() {
   const [supplierIdFilter, setSupplierIdFilter] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState<"" | "all" | EORDER_STATUS>("");
   const [productTypeFilter, setProductTypeFilter] = useState<"" | EPRODUCT_TYPE>("");
-  const [destCountryCode, setDestCountryCode] = useState<string>(""); // Nước đến (code)
-  const [hawbFilter, setHawbFilter] = useState<string>(""); // trackingCode
-  const [cawbFilter, setCawbFilter] = useState<string>(""); // carrierAirWaybillCode
+  const [destCountryCode, setDestCountryCode] = useState<string>("");
+  const [hawbFilter, setHawbFilter] = useState<string>("");
+  const [cawbFilter, setCawbFilter] = useState<string>("");
 
-  // --- Pagination ---
+  // Pagination
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // --- Selections ---
+  // Selections
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  // Bill
+  // Bill dialogs
   const billPopupRef = useRef<any>(null);
   const shippingMarkPopupRef = useRef<any>(null);
   const [openBillDialog, setOpenBillDialog] = useState(false);
@@ -293,7 +225,7 @@ export default function OrderManagerView() {
     setLoading(true);
     try {
       const params: IFilterOrder = buildOrderFilters(false);
-      const body = await searchOrdersApi(params); // body = res.data
+      const body = await searchOrdersApi(params); // res.data
       const raw = body?.data?.data || [];
       const normalized: IOrder[] = raw.map((o: any) => normalizeOrderLegacyToFE(o));
       setOrders(normalized);
@@ -313,17 +245,22 @@ export default function OrderManagerView() {
 
   const calculateGrossWeight = (row: IOrder) => {
     if (row?.packageDetail?.dimensions && row?.packageDetail?.dimensions.length > 0) {
-      const totalGrossWeight = row?.packageDetail?.dimensions.reduce((acc: number, item: any) => acc + (item.grossWeight || 0), 0);
-      return totalGrossWeight;
+      return row.packageDetail.dimensions.reduce((acc: number, item: any) => acc + (item.grossWeight || 0), 0);
     }
     return 0;
   };
+
   const calculateVolumeWeight = (row: IOrder) => {
     if (row?.packageDetail?.dimensions && row?.packageDetail?.dimensions.length > 0) {
-      const totalVolumeWeight = row?.packageDetail?.dimensions.reduce((acc: number, item: any) => acc + (item.volumeWeight || 0), 0);
-      return totalVolumeWeight;
+      return row.packageDetail.dimensions.reduce((acc: number, item: any) => acc + (item.volumeWeight || 0), 0);
     }
     return 0;
+  };
+
+  const moneyFormatFor = (currency: string) => {
+    if (currency === "VND") return '#,##0" ₫"';
+    if (currency === "USD") return '#,##0.00" $"';
+    return "#,##0.00";
   };
 
   const handleExportExcel = async () => {
@@ -338,7 +275,6 @@ export default function OrderManagerView() {
         return;
       }
 
-      // Giữ nguyên tiêu đề & thứ tự cột như bản export cũ
       const HEADERS = [
         "HAWB",
         "AWB",
@@ -367,39 +303,35 @@ export default function OrderManagerView() {
         "PROFIT",
       ];
 
-      // Dữ liệu số/Date thật (không format chuỗi)
       const rowCurrencies: string[] = [];
       const rows = all.map((c) => {
-        const cur = getCurrency(c) as unknown as string;
+        const cur = (getCurrency(c) as unknown as string) || "VND";
         rowCurrencies.push(cur);
         return {
           HAWB: c.trackingCode || "",
           AWB: c.carrierAirWaybillCode || "",
-          DATE: c.createdAt ? new Date(c.createdAt) : null, // Date object
+          DATE: c.createdAt ? new Date(c.createdAt) : null,
           "CUSTOMER NAME": c.partner?.partnerName || "",
-          SUPPLIER: typeof c.supplierId === "object" ? (c.supplierId as any)?.name : (c as any)?.supplierId || "",
-          "SUB CARRIER": typeof c.carrierId === "object" ? (c.carrierId as any)?.name : (c as any)?.carrierId || "",
-          SERVICE: typeof c.serviceId === "object" ? (c.serviceId as any)?.code : (c as any)?.serviceId || "",
+          SUPPLIER: typeof (c as any).supplierId === "object" ? (c as any).supplierId?.name : (c as any)?.supplierId || "",
+          "SUB CARRIER": typeof (c as any).carrierId === "object" ? (c as any).carrierId?.name : (c as any)?.carrierId || "",
+          SERVICE: typeof (c as any).serviceId === "object" ? (c as any).serviceId?.code : (c as any)?.serviceId || "",
           DESTINATION: c.recipient?.country?.name || "",
           TYPE: c.productType || "",
           DIMENSIONS: c.packageDetail?.dimensions?.length ? c.packageDetail.dimensions.map((d: any) => `${d.length}x${d.width}x${d.height}`).join(", ") : "",
-          "GROSS WEIGHT": calculateGrossWeight(c), // number
-          "VOLUME WEIGHT": calculateVolumeWeight(c), // number
-          "CHARGE WEIGHT": c.chargeableWeight ?? 0, // number
+          "GROSS WEIGHT": calculateGrossWeight(c),
+          "VOLUME WEIGHT": calculateVolumeWeight(c),
+          "CHARGE WEIGHT": c.chargeableWeight ?? 0,
           NOTE: c.note || "",
-          // BUYING
           "BASE RATE (BUYING RATE)": getPurchaseBase(c),
           "EXTRA FEE (BUYING)": getExtraFeesTotal(c),
           "FSC (BUYING)": getFscPurchase(c),
           "VAT (BUYING)": getVatPurchase(c),
           "TOTAL (BUYING)": getTotalPurchase(c),
-          // SELLING
           "BASE RATE (SELLING RATE)": getSaleBase(c),
           "EXTRA FEE (SELLING)": getExtraFeesTotal(c),
           "FSC (SELLING)": getFscSale(c),
           "VAT (SELLING)": getVatSale(c),
           "TOTAL (SELLING)": getTotalSale(c),
-          // PROFIT
           PROFIT: getTotalSale(c) - getTotalPurchase(c),
         };
       });
@@ -408,11 +340,9 @@ export default function OrderManagerView() {
       ws["!cols"] = HEADERS.map(() => ({ wch: 22 }));
 
       const range = XLSX.utils.decode_range(ws["!ref"] || "");
-      const headers = HEADERS;
       const colIndexByHeader: Record<string, number> = {};
-      headers.forEach((h, i) => (colIndexByHeader[h] = i));
+      HEADERS.forEach((h, i) => (colIndexByHeader[h] = i));
 
-      // Base border: thin cho toàn bảng
       const THIN = { style: "thin", color: { auto: 1 } };
       const BASE_BORDER = { top: THIN, bottom: THIN, left: THIN, right: THIN };
 
@@ -435,7 +365,7 @@ export default function OrderManagerView() {
         }
       }
 
-      // Định dạng kiểu dữ liệu: DATE/WEIGHT/MONEY
+      // format rows
       const WEIGHT_COLS = ["GROSS WEIGHT", "VOLUME WEIGHT", "CHARGE WEIGHT"];
       const MONEY_COLS = [
         "BASE RATE (BUYING RATE)",
@@ -450,37 +380,34 @@ export default function OrderManagerView() {
         "TOTAL (SELLING)",
         "PROFIT",
       ];
-      const moneyFormatFor = (currency: string) => {
-        if (currency === "VND") return '#,##0" ₫"';
-        if (currency === "USD") return '#,##0.00" $"';
-        return "#,##0.00";
-      };
 
       for (let r = 1; r <= rows.length; r++) {
         const cur = rowCurrencies[r - 1] || "VND";
 
         // DATE
-        if (colIndexByHeader["DATE"] != null) {
+        {
           const c = colIndexByHeader["DATE"];
-          const addr = XLSX.utils.encode_cell({ r, c });
-          const cell = ws[addr];
-          if (cell) {
-            cell.t = "d";
-            (cell as any).z = "dd/mm/yyyy";
-            (cell as any).s = {
-              ...(cell as any).s,
-              alignment: { ...(cell as any).s?.alignment, horizontal: "center" },
-            };
+          if (c != null) {
+            const addr = XLSX.utils.encode_cell({ r, c });
+            const cell = ws[addr];
+            if (cell) {
+              cell.t = "d";
+              (cell as any).z = "dd/mm/yyyy";
+              (cell as any).s = {
+                ...(cell as any).s,
+                alignment: { ...(cell as any).s?.alignment, horizontal: "center" },
+              };
+            }
           }
         }
 
-        // WEIGHTS -> number 2 decimals
+        // WEIGHTS
         for (const h of WEIGHT_COLS) {
           const c = colIndexByHeader[h];
           if (c == null) continue;
           const addr = XLSX.utils.encode_cell({ r, c });
           const cell = ws[addr];
-          if (cell && cell.v !== "" && cell.v !== null && cell.v !== undefined) {
+          if (cell && cell.v !== "" && cell.v != null) {
             cell.t = "n";
             (cell as any).z = "0.00";
             (cell as any).s = {
@@ -490,14 +417,14 @@ export default function OrderManagerView() {
           }
         }
 
-        // MONEY -> number theo từng currency
-        const zMoney = moneyFormatFor(cur);
+        // MONEY
+        const zMoney = (cur === "VND" && '#,##0" ₫"') || (cur === "USD" && '#,##0.00" $"') || "#,##0.00";
         for (const h of MONEY_COLS) {
           const c = colIndexByHeader[h];
           if (c == null) continue;
           const addr = XLSX.utils.encode_cell({ r, c });
           const cell = ws[addr];
-          if (cell && cell.v !== "" && cell.v !== null && cell.v !== undefined) {
+          if (cell && cell.v !== "" && cell.v != null) {
             cell.t = "n";
             (cell as any).z = zMoney;
             (cell as any).s = {
@@ -508,49 +435,29 @@ export default function OrderManagerView() {
         }
       }
 
-      // Header border đậm + Outline đậm
-      const MED = { style: "medium", color: { auto: 1 } }; // đổi "thick" nếu muốn đậm hơn
+      // header & outline medium
+      const MED = { style: "medium", color: { auto: 1 } };
       const rTop = range.s.r;
       const rBottom = range.e.r;
       const cLeft = range.s.c;
       const cRight = range.e.c;
 
-      // Header: border 4 cạnh medium
       for (let c = cLeft; c <= cRight; c++) {
         const addr = XLSX.utils.encode_cell({ r: rTop, c });
         if (!ws[addr]) ws[addr] = { t: "s", v: "" } as any;
-        (ws[addr] as any).s = {
-          ...(ws[addr] as any).s,
-          border: { top: MED, right: MED, bottom: MED, left: MED },
-        };
+        (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { top: MED, right: MED, bottom: MED, left: MED } };
       }
-
-      // Outline: viền ngoài medium
-      // Top & Bottom
       for (let c = cLeft; c <= cRight; c++) {
         let addr = XLSX.utils.encode_cell({ r: rTop, c });
-        (ws[addr] as any).s = {
-          ...(ws[addr] as any).s,
-          border: { ...(ws[addr] as any).s?.border, top: MED },
-        };
+        (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { ...(ws[addr] as any).s?.border, top: MED } };
         addr = XLSX.utils.encode_cell({ r: rBottom, c });
-        (ws[addr] as any).s = {
-          ...(ws[addr] as any).s,
-          border: { ...(ws[addr] as any).s?.border, bottom: MED },
-        };
+        (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { ...(ws[addr] as any).s?.border, bottom: MED } };
       }
-      // Left & Right
       for (let r = rTop; r <= rBottom; r++) {
         let addr = XLSX.utils.encode_cell({ r, c: cLeft });
-        (ws[addr] as any).s = {
-          ...(ws[addr] as any).s,
-          border: { ...(ws[addr] as any).s?.border, left: MED },
-        };
+        (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { ...(ws[addr] as any).s?.border, left: MED } };
         addr = XLSX.utils.encode_cell({ r, c: cRight });
-        (ws[addr] as any).s = {
-          ...(ws[addr] as any).s,
-          border: { ...(ws[addr] as any).s?.border, right: MED },
-        };
+        (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { ...(ws[addr] as any).s?.border, right: MED } };
       }
 
       const wb = XLSX.utils.book_new();
@@ -574,15 +481,16 @@ export default function OrderManagerView() {
       showNotification(err?.message || "Delete failed", "error");
     }
   };
-  const handleBulkUpdateSubmit = async (update: Record<string, any>) => {
+
+  const handleBulkUpdateSubmit = async (update: TBulkUpdatePayload) => {
     if (!selectedIds.length) return;
-    if (!Object.keys(update).length) {
+    if (!update.vat && !update.extraFees) {
       showNotification("No change to update", "warning");
       return;
     }
     try {
-      const res = await bulkUpdateOrdersApi(selectedIds, update);
-      showNotification(res?.data?.message || "Updated successfully", "success");
+      await bulkUpdateOrdersApi(selectedIds, update as any);
+      showNotification("Updated successfully", "success");
       setOpenBulkUpdateDialog(false);
       setSelectedIds([]);
       fetchData();
@@ -627,32 +535,9 @@ export default function OrderManagerView() {
         </Box>
       ),
     },
-    {
-      field: "carrierAirWaybillCode",
-      headerName: "AWB",
-      align: "center",
-      headerAlign: "center",
-      minWidth: 130,
-      flex: 0.7,
-    },
-    {
-      field: "createdAt",
-      headerName: "DATE",
-      align: "center",
-      headerAlign: "center",
-      minWidth: 130,
-      flex: 1,
-      renderCell: ({ row }) => formatDate(row.createdAt),
-    },
-    {
-      field: "partner",
-      headerName: "CUSTOMER NAME",
-      align: "center",
-      headerAlign: "center",
-      minWidth: 150,
-      flex: 1,
-      renderCell: ({ row }) => row.partner?.partnerName,
-    },
+    { field: "carrierAirWaybillCode", headerName: "AWB", align: "center", headerAlign: "center", minWidth: 130, flex: 0.7 },
+    { field: "createdAt", headerName: "DATE", align: "center", headerAlign: "center", minWidth: 130, flex: 1, renderCell: ({ row }) => formatDate(row.createdAt) },
+    { field: "partner", headerName: "CUSTOMER NAME", align: "center", headerAlign: "center", minWidth: 150, flex: 1, renderCell: ({ row }) => row.partner?.partnerName },
     {
       field: "supplierId",
       headerName: "SUPPLIER",
@@ -660,7 +545,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 130,
       flex: 1,
-      renderCell: ({ row }) => (typeof row.supplierId === "object" ? (row.supplierId as any)?.name : row.supplierId),
+      renderCell: ({ row }) => (typeof (row as any).supplierId === "object" ? (row as any).supplierId?.name : (row as any).supplierId),
     },
     {
       field: "carrierId",
@@ -669,7 +554,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 130,
       flex: 1,
-      renderCell: ({ row }) => (typeof row.carrierId === "object" ? (row.carrierId as any)?.name : row.carrierId),
+      renderCell: ({ row }) => (typeof (row as any).carrierId === "object" ? (row as any).carrierId?.name : (row as any).carrierId),
     },
     {
       field: "serviceId",
@@ -678,7 +563,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 110,
       flex: 1,
-      renderCell: ({ row }) => (typeof row.serviceId === "object" ? (row.serviceId as any)?.code : row.serviceId),
+      renderCell: ({ row }) => (typeof (row as any).serviceId === "object" ? (row as any).serviceId?.code : (row as any).serviceId),
     },
     {
       field: "destination",
@@ -694,15 +579,7 @@ export default function OrderManagerView() {
           <Chip label="N/A" size="small" sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }} />
         ),
     },
-    {
-      field: "productType",
-      headerName: "TYPE",
-      align: "center",
-      headerAlign: "center",
-      minWidth: 90,
-      flex: 1,
-      renderCell: ({ row }) => row.productType,
-    },
+    { field: "productType", headerName: "TYPE", align: "center", headerAlign: "center", minWidth: 90, flex: 1, renderCell: ({ row }) => row.productType },
     {
       field: "packageDetail.dimensions",
       headerName: "DIMENSIONS",
@@ -765,7 +642,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(getPurchaseBase(row), getCurrency(row))}</Typography>
+          <Typography>{formatCurrency(getPurchaseBase(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
@@ -778,7 +655,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(getExtraFeesTotal(row), getCurrency(row))}</Typography>
+          <Typography>{formatCurrency(getExtraFeesTotal(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
@@ -791,7 +668,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(getFscPurchase(row), getCurrency(row))}</Typography>
+          <Typography>{formatCurrency(getFscPurchase(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
@@ -804,7 +681,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(getVatPurchase(row), getCurrency(row))}</Typography>
+          <Typography>{formatCurrency(getVatPurchase(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
@@ -817,7 +694,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(getTotalPurchase(row), getCurrency(row))}</Typography>
+          <Typography>{formatCurrency(getTotalPurchase(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
@@ -830,7 +707,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(getSaleBase(row), getCurrency(row))}</Typography>
+          <Typography>{formatCurrency(getSaleBase(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
@@ -843,7 +720,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(getExtraFeesTotal(row), getCurrency(row))}</Typography>
+          <Typography>{formatCurrency(getExtraFeesTotal(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
@@ -856,7 +733,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(getFscSale(row), getCurrency(row))}</Typography>
+          <Typography>{formatCurrency(getFscSale(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
@@ -869,7 +746,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(getVatSale(row), getCurrency(row))}</Typography>
+          <Typography>{formatCurrency(getVatSale(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
@@ -882,7 +759,7 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(getTotalSale(row), getCurrency(row))}</Typography>
+          <Typography>{formatCurrency(getTotalSale(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
@@ -895,19 +772,11 @@ export default function OrderManagerView() {
       flex: 1,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: pink[100] }}>
-          <Typography>{formatCurrency(getTotalSale(row) - getTotalPurchase(row), getCurrency(row))}</Typography>
+          <Typography>{formatCurrency(getTotalSale(row) - getTotalPurchase(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
-    {
-      field: "orderStatus",
-      headerName: "STATUS",
-      align: "center",
-      headerAlign: "center",
-      minWidth: 110,
-      flex: 1,
-      renderCell: ({ value }) => <EnumChip type="orderStatus" value={value} />,
-    },
+    { field: "orderStatus", headerName: "STATUS", align: "center", headerAlign: "center", minWidth: 110, flex: 1, renderCell: ({ value }) => <EnumChip type="orderStatus" value={value} /> },
     {
       field: "actions",
       headerName: "",
@@ -957,8 +826,6 @@ export default function OrderManagerView() {
           <TextField placeholder="Search keyword" size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 200 }} />
           <TextField placeholder="HAWB (trackingCode)" size="small" value={hawbFilter} onChange={(e) => setHawbFilter(e.target.value)} sx={{ minWidth: 180 }} />
           <TextField placeholder="CAWB (AWB)" size="small" value={cawbFilter} onChange={(e) => setCawbFilter(e.target.value)} sx={{ minWidth: 160 }} />
-
-          {/* Destination filter: CountrySelect (đẩy countryCode lên API) */}
           <CountrySelect value={destCountryCode} onChange={(country) => setDestCountryCode(country?.code || "")} label="Destination" />
         </Stack>
 
@@ -967,10 +834,10 @@ export default function OrderManagerView() {
             Export Excel
           </Button>
 
-          {/* Bulk actions đặt ngay cạnh để bạn thao tác nhanh — disable khi chưa chọn */}
-          {/* <Button variant="outlined" startIcon={<Edit />} disabled={!selectedIds.length} onClick={() => setOpenBulkUpdateDialog(true)}>
+          <Button variant="outlined" startIcon={<Edit />} disabled={!selectedIds.length} onClick={() => setOpenBulkUpdateDialog(true)}>
             Bulk Update
-          </Button> */}
+          </Button>
+
           <Button variant="outlined" startIcon={<Delete />} color="error" disabled={!selectedIds.length} onClick={handleBulkDelete}>
             Delete
           </Button>
@@ -981,7 +848,7 @@ export default function OrderManagerView() {
         </Stack>
 
         <Stack direction="row" spacing={1} overflow={"auto"}>
-          <Select size="small" value={productTypeFilter} onChange={(e) => setProductTypeFilter(e.target.value as "" | EPRODUCT_TYPE)} displayEmpty sx={{ minWidth: 140 }}>
+          <Select size="small" value={productTypeFilter} onChange={(e) => setProductTypeFilter(e.target.value as any)} displayEmpty sx={{ minWidth: 140 }}>
             <MenuItem value="">All Types</MenuItem>
             <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>DOX</MenuItem>
             <MenuItem value={EPRODUCT_TYPE.PARCEL}>WPX</MenuItem>
@@ -1035,23 +902,6 @@ export default function OrderManagerView() {
         </Stack>
       </Box>
 
-      {/* Bulk actions bar (chỉ hiện khi đã chọn) */}
-      {selectedIds.length > 0 && (
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Typography sx={{ fontWeight: 600 }}>{selectedIds.length} selected</Typography>
-          {/* <Button size="small" startIcon={<Edit />} onClick={() => setOpenBulkUpdateDialog(true)}>
-            Bulk Update
-          </Button> */}
-
-          {/* <Button size="small" color="error" startIcon={<Delete />} onClick={handleBulkDelete}>
-            Delete
-          </Button>
-          <Button size="small" onClick={() => setSelectedIds([])}>
-            Clear
-          </Button> */}
-        </Stack>
-      )}
-
       {/* Table */}
       {loading ? (
         <Box textAlign="center">
@@ -1070,14 +920,10 @@ export default function OrderManagerView() {
             setPage(page);
             setPageSize(pageSize);
           }}
-          // ✅ Bắt cả 2 dạng selection model (array ở v6, object {ids:Set} ở v7)
           onRowSelectionModelChange={(model) => {
             let ids: string[] = [];
-            if (Array.isArray(model)) {
-              ids = (model as any[]).map(String);
-            } else if (model && typeof model === "object" && "ids" in model) {
-              ids = Array.from((model as any).ids as Set<GridRowId>).map((x) => String(x));
-            }
+            if (Array.isArray(model)) ids = (model as any[]).map(String);
+            else if (model && typeof model === "object" && "ids" in model) ids = Array.from((model as any).ids as Set<GridRowId>).map((x) => String(x));
             setSelectedIds(ids);
           }}
           disableRowSelectionOnClick
@@ -1099,7 +945,7 @@ export default function OrderManagerView() {
       <BillPrintDialog ref={billPopupRef} data={selected} />
       <BillShippingMarkDialog ref={shippingMarkPopupRef} data={selected} />
 
-      <BulkUpdateDialog open={openBulkUpdateDialog} onClose={() => setOpenBulkUpdateDialog(false)} onSubmit={handleBulkUpdateSubmit} services={services} suppliers={suppliers} />
+      <BulkUpdateOrdersDialog open={openBulkUpdateDialog} onClose={() => setOpenBulkUpdateDialog(false)} onSubmit={handleBulkUpdateSubmit} selectedCount={selectedIds.length} />
     </Box>
   );
 }

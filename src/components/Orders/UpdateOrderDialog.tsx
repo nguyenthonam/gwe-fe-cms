@@ -17,9 +17,8 @@ import OrderDimensionSection from "./Partials/OrderDimensionSection";
 import OrderExtraFeeSection from "./Partials/OrderExtraFeeSection";
 import OrderVATSection from "./Partials/OrderVATSection";
 import OrderSurchargeSection from "./Partials/OrderSurchargeSection";
-import { IOrder } from "@/types/typeOrder";
+import { IOrder, ISurchargeDetail } from "@/types/typeOrder";
 import { ECountryCode, ECURRENCY, EPRODUCT_TYPE, IBasicContactInfor, IDimension, ERECORD_STATUS } from "@/types/typeGlobals";
-import { ISurchargeDetail } from "@/types/typeOrder";
 
 interface Props {
   open: boolean;
@@ -28,26 +27,17 @@ interface Props {
   onUpdated: () => void;
 }
 
-// Helper: always get _id from string/object/null type
+// Helper: always get id from string/object
 function getId(val: any): string {
   if (!val) return "";
+  if (typeof val === "string") return val === "[object Object]" ? "" : val;
   if (typeof val === "object" && typeof val._id === "string") return val._id;
-  if (typeof val === "string") return val;
+  if (typeof val === "object" && typeof val.id === "string") return val.id;
   return "";
 }
 
-/** Chuẩn hóa surcharges (array | object) -> object { items, total } */
-function normalizeSurchargesValue(s: IOrder["surcharges"] | ISurchargeDetail[] | undefined | null): { items: ISurchargeDetail[]; total: number } {
-  if (Array.isArray(s)) return { items: s, total: 0 };
-  if (s && typeof s === "object" && "items" in s) {
-    const obj = s as { items?: ISurchargeDetail[]; total?: number };
-    return { items: obj.items ?? [], total: obj.total ?? 0 };
-  }
-  return { items: [], total: 0 };
-}
-
 export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: Props) {
-  // Dropdowns (type-safe)
+  // Dropdowns
   const [partners, setPartners] = useState<{ _id: string; name: string }[]>([]);
   const [carriers, setCarriers] = useState<{ _id: string; name: string; companyId?: any; volWeightRate?: number }[]>([]);
   const [services, setServices] = useState<{ _id: string; code: string; name: string }[]>([]);
@@ -59,10 +49,11 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
   const [carrierId, setCarrierId] = useState("");
   const [serviceId, setServiceId] = useState("");
   const [supplierId, setSupplierId] = useState("");
+
   const [surcharges, setSurcharges] = useState<ISurchargeDetail[]>([]);
   const [extraFeeIds, setExtraFeeIds] = useState<string[]>([]);
-  const [customVATPercentage, setCustomVATPercentage] = useState<string>("8");
-  const [fscFeePercentage, setFSCFeePercentage] = useState<string>("35");
+  const [customVATPercentage, setCustomVATPercentage] = useState<string>("-1"); // -1 = system VAT
+  const [fscFeePercentage, setFSCFeePercentage] = useState<string>(""); // "" = system FSC
 
   const [note, setNote] = useState("");
   const [carrierAirWaybillCode, setCarrierAirWaybillCode] = useState<string>("");
@@ -71,13 +62,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
   const [volWeightRate, setVolWeightRate] = useState<number | null>(null);
 
   // Sender/Recipient
-  const [sender, setSender] = useState<IBasicContactInfor>({
-    fullname: "",
-    address1: "",
-    address2: "",
-    address3: "",
-    phone: "",
-  });
+  const [sender, setSender] = useState<IBasicContactInfor>({ fullname: "", address1: "", address2: "", address3: "", phone: "" });
   const [recipient, setRecipient] = useState<{ attention?: string | null } & IBasicContactInfor>({
     fullname: "",
     attention: "",
@@ -109,78 +94,132 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
   const status = order?.status as ERECORD_STATUS | undefined;
   const isDisabled = status !== ERECORD_STATUS.Active;
 
-  // --- EFFECT: update Quantity, DeclaredWeight from dimension ---
+  // auto calc qty & declaredWeight
   useEffect(() => {
-    const qty = dimensions && Array.isArray(dimensions) ? dimensions.length : 0;
-    const dw = dimensions && Array.isArray(dimensions) ? dimensions.reduce((sum, d) => sum + Number(d.grossWeight || 0), 0) : 0;
+    const qty = Array.isArray(dimensions) ? dimensions.length : 0;
+    const dw = Array.isArray(dimensions) ? dimensions.reduce((sum, d) => sum + Number(d.grossWeight || 0), 0) : 0;
     setQuantity(qty.toString());
     setDeclaredWeight(dw > 0 ? dw.toString() : "");
   }, [dimensions]);
 
-  // --- EFFECT: fill form state on open/order change ---
+  // init theo đúng thứ tự
   useEffect(() => {
-    if (open && order) {
-      getPartnersApi().then((res) => setPartners(res?.data?.data?.data || []));
-      getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
-      getSuppliersApi().then((res) => setSuppliers(res?.data?.data?.data || []));
+    if (!(open && order)) return;
 
-      setPartnerId(getId(order?.partner?.partnerId));
-      setCarrierId(getId(order?.carrierId));
-      setSupplierId(getId(order?.supplierId));
-      setServiceId(getId(order?.serviceId));
-      setNote(order?.note || "");
-      setSender(order?.sender || { fullname: "", address1: "", address2: "", address3: "", phone: "" });
-      setRecipient(
-        order?.recipient || {
-          fullname: "",
-          attention: "",
-          address1: "",
-          address2: "",
-          address3: "",
-          phone: "",
-          country: { code: ECountryCode.VN, name: "Vietnam" },
-          city: "",
-          state: "",
-          postCode: "",
+    const init = async () => {
+      try {
+        // 1) fetch dropdowns song song
+        const [partnersRes, carriersRes, suppliersRes] = await Promise.all([getPartnersApi(), getCarriersApi(), getSuppliersApi()]);
+        const partnersData = partnersRes?.data?.data?.data || [];
+        const carriersData = carriersRes?.data?.data?.data || [];
+        const suppliersData = suppliersRes?.data?.data?.data || [];
+
+        setPartners(partnersData);
+        setCarriers(carriersData);
+        setSuppliers(suppliersData);
+
+        // 2) read ids từ order
+        const carrierIdFromOrder = getId(order?.carrierId);
+        const serviceIdFromOrder = getId(order?.serviceId);
+        const supplierIdFromOrder = getId(order?.supplierId);
+        const partnerIdFromOrder = getId(order?.partner?.partnerId);
+
+        // 3) tìm companyId từ carrier để fetch services
+        let companyId: string | undefined;
+        const selectedCarrier = carriersData.find((c: any) => String(c._id) === carrierIdFromOrder);
+        if (selectedCarrier) {
+          companyId = typeof selectedCarrier.companyId === "object" ? selectedCarrier.companyId?._id : selectedCarrier.companyId;
         }
-      );
-      setContent(order?.packageDetail?.content || "");
-      setProductType(order?.productType || EPRODUCT_TYPE.DOCUMENT);
-      setDeclaredWeight(String(order?.packageDetail?.declaredWeight ?? ""));
-      setQuantity(String(order?.packageDetail?.quantity ?? "1"));
-      setDeclaredValue(String(order?.packageDetail?.declaredValue ?? ""));
-      setCurrency(order?.packageDetail?.currency || ECURRENCY.VND);
-      setDimensions(order?.packageDetail?.dimensions || []);
 
-      // ✅ FIX: luôn normalize trước khi set để tránh lỗi .items
-      const normalized = normalizeSurchargesValue(order?.surcharges as any);
-      setSurcharges(normalized.items);
+        // 4) fetch services
+        let servicesData: any[] = [];
+        if (companyId) {
+          const servicesRes = await getServicesByCarrierApi(companyId);
+          servicesData = servicesRes?.data?.data?.data || [];
+        }
+        setServices(servicesData);
 
-      setExtraFeeIds(order?.pricing?.extraFeeInput?.extraFeeIds || []);
-      setCustomVATPercentage(String(order?.pricing?.vatPercentage?.manual ?? order?.pricing?.vatPercentage?.system ?? 8));
-      setFSCFeePercentage(String(order?.pricing?.fscPercentage?.manual ?? order?.pricing?.fscPercentage?.system ?? 35));
-      setCarrierAirWaybillCode(order?.carrierAirWaybillCode || "");
-    }
-  }, [order, open]);
+        // 5) set state sau khi có options
+        setPartnerId(partnerIdFromOrder);
+        setCarrierId(carrierIdFromOrder);
+        setSupplierId(supplierIdFromOrder);
+        setServiceId(serviceIdFromOrder);
 
-  // --- EFFECT: get services on carrier change ---
+        setNote(order?.note || "");
+        setSender(order?.sender || { fullname: "", address1: "", address2: "", address3: "", phone: "" });
+        setRecipient(
+          order?.recipient || {
+            fullname: "",
+            attention: "",
+            address1: "",
+            address2: "",
+            address3: "",
+            phone: "",
+            country: { code: ECountryCode.VN, name: "Vietnam" },
+            city: "",
+            state: "",
+            postCode: "",
+          }
+        );
+        setContent(order?.packageDetail?.content || "");
+        setProductType(order?.productType || EPRODUCT_TYPE.DOCUMENT);
+        setDeclaredWeight(String(order?.packageDetail?.declaredWeight ?? ""));
+        setQuantity(String(order?.packageDetail?.quantity ?? "1"));
+        setDeclaredValue(String(order?.packageDetail?.declaredValue ?? ""));
+        setCurrency(order?.packageDetail?.currency || ECURRENCY.VND);
+        setDimensions(order?.packageDetail?.dimensions || []);
+
+        setSurcharges(Array.isArray(order?.surcharges) ? order!.surcharges : []);
+        setExtraFeeIds(order?.extraFees?.extraFeeIds || []);
+        setCustomVATPercentage(String(order?.vat?.customVATPercentage ?? -1));
+        setFSCFeePercentage(String(order?.extraFees?.fscFeePercentage ?? ""));
+
+        setCarrierAirWaybillCode(order?.carrierAirWaybillCode || "");
+
+        const vwr = selectedCarrier?.volWeightRate;
+        setVolWeightRate(typeof vwr === "number" ? vwr : null);
+      } catch (e: any) {
+        console.error(e);
+        showNotification(e?.message || "Failed to load dropdowns", "error");
+      }
+    };
+
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, order]);
+
+  // change carrier -> fetch services & vwr (không reset serviceId ở đây)
   useEffect(() => {
+    const fetchServices = async (carrierId: string) => {
+      try {
+        const selected = carriers.find((c) => c._id === carrierId);
+        const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
+        if (!companyId) {
+          setServices([]);
+          return;
+        }
+        const res = await getServicesByCarrierApi(companyId);
+        setServices(res?.data?.data?.data || []);
+      } catch (err) {
+        console.error("Error fetching services:", err);
+        showNotification("Failed to load services!", "error");
+      }
+    };
     if (carrierId) {
       fetchServices(carrierId);
-      setVolWeightRate(carriers.find((c) => c._id === carrierId)?.volWeightRate || null);
+      const vwr = carriers.find((c) => c._id === carrierId)?.volWeightRate ?? null;
+      setVolWeightRate(typeof vwr === "number" ? vwr : null);
     } else {
       setServices([]);
       setVolWeightRate(null);
     }
-  }, [carrierId, carriers]);
+  }, [carrierId, carriers, showNotification]);
 
-  // --- EFFECT: get extra fee list on carrier/service change ---
+  // extra fee list by carrier & service
   useEffect(() => {
     if (carrierId && serviceId) {
       getExtraFeesByCarrierServiceApi(carrierId, serviceId)
-        .then((res) => {
-          setExtraFeeList(res?.data?.data?.data || []);
-        })
+        .then((res) => setExtraFeeList(res?.data?.data?.data || []))
         .catch((err) => {
           console.error("Error fetching extra fees:", err);
           showNotification("Failed to load extra fees!", "error");
@@ -188,78 +227,29 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
     } else {
       setExtraFeeList([]);
     }
-  }, [carrierId, serviceId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [carrierId, serviceId, showNotification]);
 
-  const fetchServices = async (carrierId: string) => {
-    const selected = carriers.find((c) => c._id === carrierId);
-    const companyId = typeof selected?.companyId === "object" ? selected?.companyId?._id : selected?.companyId;
-    if (!companyId) return;
-    try {
-      const res = await getServicesByCarrierApi(companyId);
-      setServices(res?.data?.data?.data || []);
-      // eslint-disable-next-line
-    } catch (err: any) {
-      console.error("Error fetching services:", err);
-      showNotification("Failed to load services!", "error");
-    }
-  };
-
-  // Compare deep only changed field for PATCH
   const getUpdatedFieldsDeep = (original: any, current: any) => {
     const updated: any = {};
-    for (const key in current) {
-      if (!deepEqual(current[key], original[key])) {
-        updated[key] = current[key];
-      }
-    }
+    for (const key in current) if (!deepEqual(current[key], original[key])) updated[key] = current[key];
     return updated;
   };
 
-  // --- SUBMIT ---
   const handleSubmit = async () => {
-    if (!order?._id || !recipient.country) {
-      showNotification("Please fill in all required fields!", "warning");
-      return;
-    }
-    if (isDisabled) {
-      showNotification("Cannot update order when it is locked or deleted.", "warning");
-      return;
-    }
+    if (!order?._id || !recipient.country) return void showNotification("Please fill in all required fields!", "warning");
+    if (isDisabled) return void showNotification("Cannot update order when it is locked or deleted.", "warning");
     try {
       setLoading(true);
 
-      // Build pricing payload
-      const pricingPayload = {
-        ...order?.pricing,
-        extraFeeInput: {
-          ...order?.pricing?.extraFeeInput,
-          extraFeeIds,
-        },
-        vatPercentage: {
-          ...order?.pricing?.vatPercentage,
-          manual: Number(customVATPercentage),
-        },
-        fscPercentage: {
-          ...order?.pricing?.fscPercentage,
-          manual: Number(fscFeePercentage),
-        },
-      };
-
-      // ✅ Tính tổng surcharge (nếu cần gửi BE)
       const surchargeTotalComputed = (surcharges || []).reduce((sum, x) => sum + Number(x?.amount || 0), 0);
 
-      // Build current & original payload
       const currentPayload = {
-        carrierAirWaybillCode: carrierAirWaybillCode || null,
+        carrierAirWaybillCode: carrierAirWaybillCode?.trim() || null,
         carrierId: carrierId || null,
         serviceId: serviceId || null,
         supplierId: supplierId || null,
-        partner: partnerId
-          ? {
-              partnerId,
-              partnerName: partners.find((p) => p._id === partnerId)?.name || "",
-            }
-          : null,
+        partner: { partnerId: partnerId || null, partnerName: partnerId ? partners.find((p) => p._id === partnerId)?.name || "" : "" },
+
         sender,
         recipient,
         packageDetail: {
@@ -272,39 +262,48 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
         },
         note,
         productType,
-        // ✅ luôn gửi đúng object
-        surcharges: { items: surcharges, total: surchargeTotalComputed },
-        pricing: pricingPayload,
-      };
 
-      // ✅ normalize original để so sánh “đồng dạng”
-      const originalSurcharges = normalizeSurchargesValue(order?.surcharges as any);
+        // BE cũ:
+        surcharges,
+        surchargeTotal: surchargeTotalComputed,
+        extraFees: {
+          extraFeeIds,
+          fscFeePercentage: Number.isFinite(Number(fscFeePercentage)) ? Number(fscFeePercentage) : null,
+        },
+        vat: {
+          customVATPercentage: Number.isFinite(Number(customVATPercentage)) ? Number(customVATPercentage) : -1,
+        },
+      };
 
       const originalPayload = {
         carrierAirWaybillCode: order?.carrierAirWaybillCode || null,
-        carrierId: getId(order?.carrierId),
-        serviceId: getId(order?.serviceId),
-        supplierId: getId(order?.supplierId),
-        partner: {
-          partnerId: getId(order?.partner?.partnerId),
-          partnerName: order?.partner?.partnerName || "",
-        },
+        carrierId: getId(order?.carrierId) || null,
+        serviceId: getId(order?.serviceId) || null,
+        supplierId: getId(order?.supplierId) || null,
+        partner: { partnerId: getId(order?.partner?.partnerId), partnerName: order?.partner?.partnerName || "" },
         sender: order?.sender,
         recipient: order?.recipient,
         packageDetail: order?.packageDetail,
         note: order?.note,
         productType: order?.productType,
-        surcharges: originalSurcharges, // đã normalize
-        pricing: order?.pricing,
+        surcharges: Array.isArray(order?.surcharges) ? order?.surcharges : [],
+        surchargeTotal: Number(order?.surchargeTotal ?? 0),
+        extraFees: {
+          extraFeeIds: order?.extraFees?.extraFeeIds || [],
+          fscFeePercentage: order?.extraFees?.fscFeePercentage !== undefined ? Number(order?.extraFees?.fscFeePercentage) : null,
+        },
+        vat: {
+          customVATPercentage: order?.vat?.customVATPercentage !== undefined ? Number(order?.vat?.customVATPercentage) : -1,
+        },
       };
 
       const diffPayload = getUpdatedFieldsDeep(originalPayload, currentPayload);
-
       if (Object.keys(diffPayload).length === 0) {
         showNotification("No changes to update!", "info");
         setLoading(false);
         return;
       }
+
       diffPayload._id = order._id;
       await updateOrderApi(order._id, diffPayload);
       showNotification("Order updated successfully", "success");
@@ -330,16 +329,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
           {/* Billing Info */}
           <Box className="mb-2">
             <Paper>
-              <Typography
-                variant="h6"
-                sx={{
-                  background: "#2196f3",
-                  color: "#fff",
-                  px: 2,
-                  py: 1,
-                  textTransform: "uppercase",
-                }}
-              >
+              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Billing Information
               </Typography>
               <OrderBillingInfoSection
@@ -365,16 +355,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
           {/* Sender */}
           <Box className="mb-2 ">
             <Paper>
-              <Typography
-                variant="h6"
-                sx={{
-                  background: "#2196f3",
-                  color: "#fff",
-                  px: 2,
-                  py: 1,
-                  textTransform: "uppercase",
-                }}
-              >
+              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Sender Information
               </Typography>
               <OrderAddressSection label="Sender" data={sender} setData={setSender} showCountry={false} disabled={isDisabled} />
@@ -384,16 +365,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
           {/* Recipient */}
           <Box className="mb-2 ">
             <Paper>
-              <Typography
-                variant="h6"
-                sx={{
-                  background: "#2196f3",
-                  color: "#fff",
-                  px: 2,
-                  py: 1,
-                  textTransform: "uppercase",
-                }}
-              >
+              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Recipient Information
               </Typography>
               <OrderAddressSection label="Recipient" data={recipient} setData={setRecipient} showCountry={true} disabled={isDisabled} />
@@ -403,16 +375,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
           {/* Product Info */}
           <Box className="mb-2">
             <Paper>
-              <Typography
-                variant="h6"
-                sx={{
-                  background: "#2196f3",
-                  color: "#fff",
-                  px: 2,
-                  py: 1,
-                  textTransform: "uppercase",
-                }}
-              >
+              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Product Information
               </Typography>
               <OrderProductSection
@@ -437,16 +400,7 @@ export default function UpdateOrderDialog({ open, order, onClose, onUpdated }: P
           {/* Note */}
           <Box className="mb-2 ">
             <Paper>
-              <Typography
-                variant="h6"
-                sx={{
-                  background: "#2196f3",
-                  color: "#fff",
-                  px: 2,
-                  py: 1,
-                  textTransform: "uppercase",
-                }}
-              >
+              <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
                 Note
               </Typography>
               <Box sx={{ p: 2 }}>
