@@ -32,7 +32,12 @@ export default function CustomersPage() {
 
   return (
     <Container maxWidth="xl" sx={{ padding: "0" }}>
-      <Box className="space-y-4 max-w-[100vw]">
+      <Box
+        className="space-y-4"
+        sx={{
+          maxWidth: "calc(100vw - 120px)",
+        }}
+      >
         <Typography variant="h5" mb={2} sx={{ fontWeight: "bold", color: lightBlue[500] }}>
           CUSTOMER MANAGEMENT
         </Typography>
