@@ -205,7 +205,7 @@ export default function ServiceManagerView() {
   ];
 
   return (
-    <Box className="space-y-4">
+    <Box className="space-y-4 max-w-[100vw]">
       <Box mb={2} display="flex" gap={2} alignItems="center" justifyContent="space-between">
         <TextField placeholder="Search service..." size="small" onChange={(e) => debouncedSearch(e.target.value)} className="max-w-[250px] w-full" />
         <Select size="small" displayEmpty value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)} sx={{ minWidth: 200 }}>

@@ -39,7 +39,7 @@ export default function PricesPage() {
 
   return (
     <Container maxWidth="xl" sx={{ padding: "0" }}>
-      <Box className="space-y-4">
+      <Box className="space-y-4 max-w-[100vw]">
         <Typography variant="h5" mb={2} fontWeight="bold" sx={{ color: lightBlue[500] }}>
           PRICE MANAGEMENT
         </Typography>
