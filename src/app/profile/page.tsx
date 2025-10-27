@@ -132,7 +132,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ padding: "0" }}>
+    <Container maxWidth="xl" sx={{ padding: "0" }}>
       <Box className="p-6 space-y-4">
         <Typography variant="h4" gutterBottom sx={{ textAlign: "center", fontWeight: "bold", mb: 3, color: lightBlue[700] }}>
           User Profile

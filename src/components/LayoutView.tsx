@@ -174,7 +174,7 @@ const LayoutView: React.FC<LayoutViewProps> = ({ children }) => {
   ];
 
   const View: React.FC<LayoutViewProps> = ({ children }) => {
-    const [showDrawer, setShowDrawer] = React.useState<boolean>(true);
+    const [showDrawer, setShowDrawer] = React.useState<boolean>(false);
     const [openGroup, setOpenGroup] = React.useState<string | null>(null);
     const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
     const showMenu: boolean = Boolean(anchorEl);

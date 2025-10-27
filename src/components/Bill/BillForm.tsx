@@ -430,7 +430,7 @@ export default function BillForm() {
   };
 
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="xl">
       <Typography variant="h4" fontWeight={700} color="#1565c0" sx={{ textTransform: "uppercase" }}>
         WAYBILL
       </Typography>
