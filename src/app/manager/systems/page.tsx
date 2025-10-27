@@ -29,13 +29,8 @@ export default function SystemsPage() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ padding: "0" }}>
-      <Box
-        className="p-6 space-y-4"
-        sx={{
-          maxWidth: "calc(100vw - 120px)",
-        }}
-      >
+    <Container maxWidth="xl" sx={{ padding: "0" }}>
+      <Box className="space-y-4">
         <Typography variant="h5" mb={2} fontWeight="bold" sx={{ color: lightBlue[500] }}>
           ACCOUNT MANAGEMENT
         </Typography>

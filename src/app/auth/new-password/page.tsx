@@ -79,7 +79,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ padding: "0" }}>
+    <Container maxWidth="xl" sx={{ padding: "0" }}>
       <div className="flex flex-col items-center justify-center min-h-screen">
         <form className="w-full max-w-[500px] p-6 flex flex-col items-center justify-center bg-white rounded shadow-md border border-blue-400">
           <div className="mb-4 flex flex-col justify-center items-center">

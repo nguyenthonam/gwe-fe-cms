@@ -3,7 +3,7 @@ import { Container } from "@mui/material";
 
 export default function Bill() {
   return (
-    <Container maxWidth="lg" sx={{ padding: "0" }}>
+    <Container maxWidth="xl" sx={{ padding: "0" }}>
       <BillForm />
     </Container>
   );
