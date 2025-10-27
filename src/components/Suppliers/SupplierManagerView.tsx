@@ -225,7 +225,12 @@ export default function SupplierManagerView() {
   ];
 
   return (
-    <Box className="space-y-4 max-w-[100vw]">
+    <Box
+      className="space-y-4"
+      sx={{
+        maxWidth: "calc(100vw - 120px)",
+      }}
+    >
       <Box mb={2} display="flex" gap={2} alignItems="center" justifyContent="space-between">
         <TextField placeholder="Search suppliers..." size="small" onChange={(e) => debouncedSearch(e.target.value)} className="max-w-[250px] w-full" />
         <Select size="small" displayEmpty value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 150 }}>
