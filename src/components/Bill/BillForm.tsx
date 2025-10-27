@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Box, Button, Container, Typography, Grid, Stack, MenuItem, TextField, Paper } from "@mui/material";
+import { Box, Button, Container, Typography, Stack, MenuItem, TextField, Paper } from "@mui/material";
 import { red } from "@mui/material/colors";
 import BillPrintDialog from "./BillPrintDialog";
 import BillShippingMarkDialog from "./BillShippingMarkDialog";
@@ -17,8 +17,23 @@ import OrderProductSection from "../Orders/Partials/OrderProductSection";
 import OrderAddressSection from "../Orders/Partials/OrderAddressSection";
 import OrderDimensionSection from "../Orders/Partials/OrderDimensionSection";
 
+/* ========= Helpers ========= */
+type IdLike = string | { _id?: string; id?: string } | null | undefined;
+const toIdString = (v: IdLike): string | null => (typeof v === "string" ? v : v && typeof v === "object" ? v._id ?? v.id ?? null : null);
+
+// Xóa nhiều key lỗi trong errors mà không tạo biến "unused"
+const useClearErrors = (setErrorsFn: React.Dispatch<React.SetStateAction<Record<string, string>>>) => {
+  return (...keys: string[]) =>
+    setErrorsFn((prev) => {
+      const next = { ...prev };
+      for (const k of keys) delete next[k];
+      return next;
+    });
+};
+
 export default function BillForm() {
   const { profile } = useSelector((state: AppState) => state.auth);
+  const { showNotification } = useNotification();
 
   // Dropdown Data
   const [billData, setBillData] = useState<IOrder | null>(null);
@@ -27,14 +42,11 @@ export default function BillForm() {
   const [carrierServiceOptions, setCarrierServiceOptions] = useState<{ label: string; value: string; carrier: any; service: any }[]>([]);
 
   // Form State
-  const [partner, setPartner] = useState({ partnerId: "", partnerName: "" });
-  const [carrierService, setCarrierService] = useState<{
-    carrierId: string;
-    serviceId: string;
-  } | null>(null);
+  const [partner, setPartner] = useState<{ partnerId: string; partnerName: string }>({ partnerId: "", partnerName: "" });
+  const [carrierService, setCarrierService] = useState<{ carrierId: string; serviceId: string } | null>(null);
 
   // Billing Info
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState<string>("");
   const [volWeightRate, setVolWeightRate] = useState<number | null>(null);
 
   // Sender
@@ -68,31 +80,28 @@ export default function BillForm() {
   const [declaredValue, setDeclaredValue] = useState("");
   const [currency, setCurrency] = useState(ECURRENCY.USD);
 
-  // Dimension (for multi-packages if needed)
-  const [dimensions, setDimensions] = useState<IDimension[] | []>();
+  // Dimensions: luôn là mảng rỗng mặc định
+  const [dimensions, setDimensions] = useState<IDimension[]>([]);
 
   const [loading, setLoading] = useState(false);
 
   const billPopupRef = useRef<any>(null);
   const billShippingMarkPopupRef = useRef<any>(null);
-  const { showNotification } = useNotification();
 
-  // --- NEW: Error State ---
+  // Error State
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const clearErrors = useClearErrors(setErrors);
 
   // --- Validate Function ---
   function validateFields() {
     const newErrors: { [key: string]: string } = {};
 
     // Carrier/Service
-    // if (!carrierService?.carrierId) newErrors.carrierService = "Service is required";
-    if (!carrierService?.carrierId || !carrierService?.serviceId) newErrors.service = "Service is required";
+    if (!carrierService?.carrierId || !carrierService?.serviceId) newErrors.carrierService = "Service is required";
 
     // Sender
-    // if (!sender.fullname) newErrors.sender_fullname = "Company name is required";
     if (!sender.address1) newErrors.sender_address1 = "Sender address 1 is required";
     if (!sender.address2) newErrors.sender_address2 = "Sender address 2 is required";
-    // if (!sender.phone) newErrors.sender_phone = "Contact number is required";
 
     // Recipient
     if (!recipient.fullname) newErrors.recipient_fullname = "Company name is required";
@@ -110,7 +119,7 @@ export default function BillForm() {
     return newErrors;
   }
 
-  // Load Carrier/Service and map
+  /* ===== Load Carrier/Service and map ===== */
   useEffect(() => {
     getCarriersApi().then((res) => setCarriers(res?.data?.data?.data || []));
     getServicesApi().then((res) => setServices(res?.data?.data?.data || []));
@@ -125,7 +134,9 @@ export default function BillForm() {
           if (!service || !service.companyId) return;
           const cId = carrier.companyId;
           const sId = service.companyId;
-          if ((typeof cId === "object" && typeof sId === "object" && cId._id && sId._id && cId._id === sId._id) || (typeof cId === "string" && typeof sId === "string" && cId === sId)) {
+          const sameCompany =
+            (typeof cId === "object" && typeof sId === "object" && cId?._id && sId?._id && cId._id === sId._id) || (typeof cId === "string" && typeof sId === "string" && cId === sId);
+          if (sameCompany) {
             options.push({
               label: `${carrier.code}-${service.code}`,
               value: `${carrier._id}_${service._id}`,
@@ -139,15 +150,17 @@ export default function BillForm() {
     }
   }, [carriers, services]);
 
+  // Prefill partner from profile
   useEffect(() => {
     if (profile?.companyId) {
-      setPartner((pre) => ({
-        ...pre,
-        partnerId: typeof profile.companyId === "object" ? profile.companyId?._id || "" : String(profile.companyId),
+      setPartner({
+        partnerId: toIdString(profile.companyId) || "",
         partnerName: typeof profile.companyId === "object" ? profile.companyId?.name || "" : String(profile.companyId) || "",
-      }));
+      });
     }
   }, [profile]);
+
+  // Default sender name from partner name
   useEffect(() => {
     if (partner?.partnerName && !sender.fullname) {
       setSender((prev) => ({ ...prev, fullname: partner.partnerName }));
@@ -155,6 +168,7 @@ export default function BillForm() {
     // eslint-disable-next-line
   }, [partner.partnerName]);
 
+  // Vol weight rate when carrier changes
   useEffect(() => {
     if (carrierService?.carrierId) {
       const carrier = carriers.find((c) => c._id === carrierService.carrierId);
@@ -164,45 +178,32 @@ export default function BillForm() {
     }
   }, [carrierService, carriers]);
 
+  // Auto quantity & declaredWeight from dimensions
   useEffect(() => {
-    const qty = dimensions && Array.isArray(dimensions) ? dimensions.length : 0;
-    const dw = dimensions && Array.isArray(dimensions) ? dimensions.reduce((sum, d) => sum + Number(d.grossWeight || 0), 0) : 0;
+    const qty = Array.isArray(dimensions) ? dimensions.length : 0;
+    const dw = Array.isArray(dimensions) ? dimensions.reduce((sum, d) => sum + Number(d.grossWeight || 0), 0) : 0;
     setQuantity(qty.toString());
     setDeclaredWeight(dw > 0 ? dw.toString() : "");
   }, [dimensions]);
 
-  // --- Section UI ---
-  const BillingSection = () => (
-    <Box mb={2}>
-      <Paper>
-        <Typography
-          variant="h6"
-          sx={{
-            bgcolor: "#2196f3",
-            color: "#fff",
-            px: 2,
-            py: 1,
-            mb: 2,
-            textTransform: "uppercase",
-          }}
-        >
-          BILLING INFORMATION
-        </Typography>
-        <Grid container spacing={2} alignItems="center" sx={{ px: 2, pb: 2 }}>
-          <Grid size={4}>
-            <Typography variant="body2" sx={{ textTransform: "uppercase" }}>
-              HAWB CODE
-            </Typography>
-          </Grid>
-          <Grid size={8}>
-            <TextField disabled value={billData?.trackingCode} size="small" fullWidth placeholder="Auto generate..." sx={{ fontWeight: "bold" }} />
-          </Grid>
-          <Grid size={4}>
-            <Typography variant="body2" sx={{ textTransform: "uppercase" }}>
-              SERVICE
-            </Typography>
-          </Grid>
-          <Grid size={8}>
+  /* ===== Sections ===== */
+  const BillingSection = () => {
+    // Value cho Select SERVICE (ưu tiên billData, fallback form state)
+    const selectValue = (() => {
+      const c = billData?.carrierId ?? carrierService?.carrierId ?? "";
+      const s = billData?.serviceId ?? carrierService?.serviceId ?? "";
+      return c && s ? `${c}_${s}` : "";
+    })();
+
+    return (
+      <Box mb={2}>
+        <Paper>
+          <Typography variant="h6" sx={{ bgcolor: "#2196f3", color: "#fff", px: 2, py: 1, mb: 2, textTransform: "uppercase" }}>
+            BILLING INFORMATION
+          </Typography>
+
+          <Stack spacing={2} sx={{ px: 2, pb: 2 }}>
+            <TextField disabled value={billData?.trackingCode || ""} size="small" fullWidth label="HAWB CODE" placeholder="Auto generate..." />
             <TextField
               disabled={!!billData}
               select
@@ -210,20 +211,12 @@ export default function BillForm() {
               fullWidth
               error={!!errors.carrierService}
               helperText={errors.carrierService}
-              value={
-                billData?.carrierId && billData?.serviceId
-                  ? `${typeof billData.carrierId === "object" ? billData.carrierId._id : billData.carrierId}_${typeof billData.serviceId === "object" ? billData.serviceId._id : billData.serviceId}`
-                  : carrierService
-                  ? `${carrierService.carrierId}_${carrierService.serviceId}`
-                  : ""
-              }
+              label="SERVICE"
+              value={selectValue}
               onChange={(e) => {
                 const [carrierId, serviceId] = e.target.value.split("_");
                 setCarrierService({ carrierId, serviceId });
-                setErrors((errs) => {
-                  const { ...rest } = errs;
-                  return rest;
-                });
+                clearErrors("carrierService");
               }}
             >
               {carrierServiceOptions.map((option) => (
@@ -232,25 +225,16 @@ export default function BillForm() {
                 </MenuItem>
               ))}
             </TextField>
-          </Grid>
-        </Grid>
-      </Paper>
-    </Box>
-  );
+          </Stack>
+        </Paper>
+      </Box>
+    );
+  };
 
   const SenderSection = () => (
     <Box className="mb-2 ">
       <Paper>
-        <Typography
-          variant="h6"
-          sx={{
-            background: "#2196f3",
-            color: "#fff",
-            px: 2,
-            py: 1,
-            textTransform: "uppercase",
-          }}
-        >
+        <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
           SENDER INFORMATION
         </Typography>
         <OrderAddressSection
@@ -259,10 +243,7 @@ export default function BillForm() {
           data={billData?.sender || sender}
           setData={(val) => {
             setSender(val);
-            setErrors((errs) => {
-              const { ...rest } = errs;
-              return rest;
-            });
+            clearErrors("sender_address1", "sender_address2");
           }}
           showCountry={false}
           disabled={!!billData}
@@ -276,16 +257,7 @@ export default function BillForm() {
   const RecipientSection = () => (
     <Box className="mb-2 ">
       <Paper>
-        <Typography
-          variant="h6"
-          sx={{
-            background: "#2196f3",
-            color: "#fff",
-            px: 2,
-            py: 1,
-            textTransform: "uppercase",
-          }}
-        >
+        <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
           RECIPIENT INFORMATION
         </Typography>
         <OrderAddressSection
@@ -293,10 +265,7 @@ export default function BillForm() {
           data={billData?.recipient || recipient}
           setData={(val) => {
             setRecipient(val);
-            setErrors((errs) => {
-              const { ...rest } = errs;
-              return rest;
-            });
+            clearErrors("recipient_fullname", "recipient_attention", "recipient_address1", "recipient_address2", "recipient_phone", "recipient_country");
           }}
           showCountry={true}
           disabled={!!billData}
@@ -311,26 +280,14 @@ export default function BillForm() {
   const ProductSection = () => (
     <Box className="mb-2">
       <Paper>
-        <Typography
-          variant="h6"
-          sx={{
-            background: "#2196f3",
-            color: "#fff",
-            px: 2,
-            py: 1,
-            textTransform: "uppercase",
-          }}
-        >
+        <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
           PRODUCT INFORMATION
         </Typography>
         <OrderProductSection
           content={billData?.packageDetail?.content ?? content}
           setContent={(val: string) => {
             setContent(val);
-            setErrors((errs) => {
-              const { ...rest } = errs;
-              return rest;
-            });
+            clearErrors("content");
           }}
           productType={billData?.productType ?? productType}
           setProductType={setProductType}
@@ -347,22 +304,13 @@ export default function BillForm() {
   );
 
   const DimensionSection = () => (
-    <OrderDimensionSection volWeightRate={volWeightRate} dimensions={billData?.packageDetail?.dimensions ?? (dimensions || [])} setDimensions={setDimensions} disabled={!!billData} />
+    <OrderDimensionSection volWeightRate={volWeightRate} dimensions={billData?.packageDetail?.dimensions ?? dimensions} setDimensions={setDimensions} disabled={!!billData} />
   );
 
   const NoteSection = () => (
     <Box className="mb-2 ">
       <Paper>
-        <Typography
-          variant="h6"
-          sx={{
-            background: "#2196f3",
-            color: "#fff",
-            px: 2,
-            py: 1,
-            textTransform: "uppercase",
-          }}
-        >
+        <Typography variant="h6" sx={{ background: "#2196f3", color: "#fff", px: 2, py: 1, textTransform: "uppercase" }}>
           NOTE
         </Typography>
         <Box sx={{ p: 2 }}>
@@ -372,7 +320,7 @@ export default function BillForm() {
     </Box>
   );
 
-  // --- Validate & Submit ---
+  /* ===== Validate & Submit ===== */
   const handleSubmit = async () => {
     const validationErrors = validateFields();
     setErrors(validationErrors);
@@ -384,16 +332,27 @@ export default function BillForm() {
 
     try {
       setLoading(true);
+
+      // BẮT BUỘC theo ICreateOrderRequest (đủ field)
       const payload: ICreateOrderRequest = {
-        carrierId: carrierService!.carrierId,
-        serviceId: carrierService!.serviceId,
+        carrierAirWaybillCode: null,
+        carrierId: carrierService!.carrierId, // string id
+        serviceId: carrierService!.serviceId, // string id
+        supplierId: null, // chưa chọn supplier -> null
+
+        partner: {
+          partnerId: partner.partnerId || null, // id-thuần (string) hoặc null
+          partnerName: partner.partnerName || "",
+        },
+
         sender: {
           fullname: sender.fullname,
           phone: sender.phone,
           address1: sender.address1 || "",
           address2: sender.address2 || "",
           address3: sender.address3 || "",
-        },
+        } as IBasicContactInfor,
+
         recipient: {
           fullname: recipient.fullname,
           phone: recipient.phone,
@@ -406,28 +365,34 @@ export default function BillForm() {
           state: recipient.state,
           postCode: recipient.postCode,
         },
+
         packageDetail: {
           content,
           declaredWeight: Number(declaredWeight),
           quantity: Number(quantity),
-          declaredValue: Number(declaredValue),
+          declaredValue: Number(declaredValue || 0),
           currency,
           dimensions: dimensions || [],
         },
-        note,
-        productType: productType,
+
+        note: note || null,
+        productType,
+
+        // BẮT BUỘC: mảng phụ thu
+        surcharges: [],
+
+        // BẮT BUỘC: extra fee input
+        extraFees: { extraFeeIds: [], fscFeePercentage: null },
+
+        // BẮT BUỘC: VAT custom, -1 để BE tự áp hệ thống
+        vat: { customVATPercentage: -1 },
       };
-      if (partner?.partnerId) {
-        payload.partner = {
-          partnerId: partner.partnerId,
-          partnerName: partner.partnerName,
-        };
-      }
+
       const res = await createOrderApi(payload);
       setBillData(res?.data?.data || null);
       showNotification("Order created successfully!", "success");
     } catch (err: any) {
-      showNotification(err.message || "Order creation failed", "error");
+      showNotification(err?.message || "Order creation failed", "error");
     } finally {
       setLoading(false);
     }
@@ -437,13 +402,7 @@ export default function BillForm() {
     setPartner({ partnerId: "", partnerName: "" });
     setCarrierService(null);
     setNote("");
-    setSender({
-      fullname: "",
-      address1: "",
-      address2: "",
-      address3: "",
-      phone: "",
-    });
+    setSender({ fullname: "", address1: "", address2: "", address3: "", phone: "" });
     setRecipient({
       fullname: "",
       attention: "",
@@ -465,8 +424,8 @@ export default function BillForm() {
     setDimensions([]);
     setBillData(null);
     setErrors({});
-    billPopupRef.current?.close();
-    billShippingMarkPopupRef.current?.close();
+    billPopupRef.current?.close?.();
+    billShippingMarkPopupRef.current?.close?.();
     showNotification("Order information cleared!", "info");
   };
 
@@ -475,34 +434,37 @@ export default function BillForm() {
       <Typography variant="h4" fontWeight={700} color="#1565c0" sx={{ textTransform: "uppercase" }}>
         WAYBILL
       </Typography>
-      <Box mb={1} className={`py-4 bg-white transition-all sticky top-[56px] md:top-[64px] z-50`}>
-        <Stack direction="row" spacing={2} justifyContent={"end"}>
-          <Button variant="contained" color="primary" onClick={handleSubmit} disabled={!!billData?._id} loading={loading}>
+
+      <Box mb={1} className={`py-4 bg-white sticky top-[56px] md:top-[64px] z-50`}>
+        <Stack direction="row" spacing={2} justifyContent="end">
+          <Button variant="contained" color="primary" onClick={handleSubmit} disabled={!!billData?._id || loading}>
             CREATE BILL
           </Button>
           <Button variant="outlined" sx={{ color: red[500], borderColor: red[500] }} onClick={handleClear}>
             CLEAR
           </Button>
-          <Button variant="outlined" color="info" disabled={!billData?._id} onClick={() => billPopupRef.current?.open()}>
+          <Button variant="outlined" color="info" disabled={!billData?._id} onClick={() => billPopupRef.current?.open?.()}>
             PRINT BILL
           </Button>
-          <Button variant="outlined" color="info" disabled={!billData?._id} onClick={() => billShippingMarkPopupRef.current?.open()}>
+          <Button variant="outlined" color="info" disabled={!billData?._id} onClick={() => billShippingMarkPopupRef.current?.open?.()}>
             PRINT SHIPPING MARK
           </Button>
         </Stack>
       </Box>
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, md: 6 }}>
+
+      <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+        <Stack flex={1} spacing={2}>
           {BillingSection()}
           {SenderSection()}
           {RecipientSection()}
-        </Grid>
-        <Grid size={{ xs: 12, md: 6 }}>
+        </Stack>
+        <Stack flex={1} spacing={2}>
           {ProductSection()}
           {DimensionSection()}
           {NoteSection()}
-        </Grid>
-      </Grid>
+        </Stack>
+      </Stack>
+
       {/* POPUP */}
       <BillPrintDialog ref={billPopupRef} data={billData} />
       <BillShippingMarkDialog ref={billShippingMarkPopupRef} data={billData} />
