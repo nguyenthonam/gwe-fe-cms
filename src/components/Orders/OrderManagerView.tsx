@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Box, Button, Stack, TextField, Select, MenuItem, CircularProgress, Typography, Chip } from "@mui/material";
-import { Add, Download, Edit, Delete } from "@mui/icons-material";
+import { Add, Download, Edit, Delete, UploadFile } from "@mui/icons-material";
 import { DataGrid, GridColDef, GridRowId } from "@mui/x-data-grid";
 import debounce from "lodash/debounce";
 import * as XLSX from "sheetjs-style";
@@ -19,6 +19,7 @@ import { searchOrdersApi, deleteOrderApi, deleteOrdersApi, bulkUpdateOrdersApi }
 import CreateOrderDialog from "./CreateOrderDialog";
 import UpdateOrderDialog from "./UpdateOrderDialog";
 import OrderDetailDialog from "./OrderDetailDialog";
+import ImportOrdersDialog from "./ImportOrdersDialog";
 import { formatDate } from "@/utils/hooks/hookDate";
 import { blue, green, grey, pink } from "@mui/material/colors";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
@@ -163,6 +164,9 @@ export default function OrderManagerView() {
   // Selections
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
+  // Import dialog
+  const [openImportDialog, setOpenImportDialog] = useState(false);
+
   // Bill dialogs
   const billPopupRef = useRef<any>(null);
   const shippingMarkPopupRef = useRef<any>(null);
@@ -257,10 +261,35 @@ export default function OrderManagerView() {
     return 0;
   };
 
-  const moneyFormatFor = (currency: string) => {
-    if (currency === "VND") return '#,##0" ₫"';
-    if (currency === "USD") return '#,##0.00" $"';
-    return "#,##0.00";
+  // Resolve name/code từ object populate hoặc danh mục preload (partners/carriers/services/suppliers)
+  const resolveNameCode = (list: any[], ref: any, fallbackName?: string): { name: string; code: string } => {
+    let id: string | null = null;
+    let name = fallbackName || "";
+    let code = "";
+
+    if (ref && typeof ref === "object") {
+      id = String(ref._id || ref.id || "");
+      name = ref.name ?? name;
+      code = ref.code ?? code;
+    } else if (ref) {
+      id = String(ref);
+    }
+
+    if (id) {
+      const hit = list.find((x) => String(x._id) === id);
+      if (hit) {
+        name = name || hit.name || "";
+        code = code || hit.code || "";
+      }
+    }
+
+    // cũng thử map theo name nếu chưa có code
+    if (!code && name) {
+      const byName = list.find((x) => (x.name || "").trim().toUpperCase() === name.trim().toUpperCase());
+      if (byName) code = byName.code || "";
+    }
+
+    return { name: name || "", code: code || "" };
   };
 
   const handleExportExcel = async () => {
@@ -268,22 +297,33 @@ export default function OrderManagerView() {
       const params: IFilterOrder = { ...buildOrderFilters(true), all: true };
       const body = await searchOrdersApi(params);
       const rawAll: any[] = body?.data?.data || [];
-      const all: IOrder[] = rawAll.map((o) => normalizeOrderLegacyToFE(o));
+      const all: IOrder[] = rawAll.map((o: any) => normalizeOrderLegacyToFE(o));
 
       if (!all.length) {
         showNotification("No data to export", "warning");
         return;
       }
 
+      // === HEADERS: BỎ "DESTINATION CODE" theo yêu cầu ===
       const HEADERS = [
         "HAWB",
         "AWB",
         "DATE",
+
         "CUSTOMER NAME",
+        "CUSTOMER CODE",
+
         "SUPPLIER",
+        "SUPPLIER CODE",
+
         "SUB CARRIER",
+        "SUB CARRIER CODE",
+
         "SERVICE",
+        "SERVICE CODE",
+
         "DESTINATION",
+
         "TYPE",
         "DIMENSIONS",
         "GROSS WEIGHT",
@@ -307,31 +347,62 @@ export default function OrderManagerView() {
       const rows = all.map((c) => {
         const cur = (getCurrency(c) as unknown as string) || "VND";
         rowCurrencies.push(cur);
+
+        const partnerNC = resolveNameCode(partners, c.partner?.partnerId, c.partner?.partnerName);
+        const supplierNC = resolveNameCode(suppliers, (c as any).supplierId, undefined);
+        const subcNC = resolveNameCode(carriers, (c as any).carrierId, undefined);
+        const serviceNC = resolveNameCode(services, (c as any).serviceId, undefined);
+
+        const destName = c.recipient?.country?.name || "";
+        const destCode = c.recipient?.country?.code || "";
+
         return {
           HAWB: c.trackingCode || "",
           AWB: c.carrierAirWaybillCode || "",
           DATE: c.createdAt ? new Date(c.createdAt) : null,
-          "CUSTOMER NAME": c.partner?.partnerName || "",
-          SUPPLIER: typeof (c as any).supplierId === "object" ? (c as any).supplierId?.name : (c as any)?.supplierId || "",
-          "SUB CARRIER": typeof (c as any).carrierId === "object" ? (c as any).carrierId?.name : (c as any)?.carrierId || "",
-          SERVICE: typeof (c as any).serviceId === "object" ? (c as any).serviceId?.code : (c as any)?.serviceId || "",
-          DESTINATION: c.recipient?.country?.name || "",
+
+          "CUSTOMER NAME": partnerNC.name,
+          "CUSTOMER CODE": partnerNC.code,
+
+          SUPPLIER: supplierNC.name || (typeof (c as any).supplierId === "object" ? (c as any).supplierId?.name : (c as any)?.supplierId || ""),
+          "SUPPLIER CODE": supplierNC.code,
+
+          "SUB CARRIER": subcNC.name || (typeof (c as any).carrierId === "object" ? (c as any).carrierId?.name : (c as any)?.carrierId || ""),
+          "SUB CARRIER CODE": subcNC.code,
+
+          SERVICE:
+            serviceNC.name ||
+            (typeof (c as any).serviceId === "object" ? (c as any).serviceId?.name : "") ||
+            serviceNC.code ||
+            (typeof (c as any).serviceId === "object" ? (c as any).serviceId?.code : (c as any)?.serviceId) ||
+            "",
+          "SERVICE CODE": serviceNC.code || (typeof (c as any).serviceId === "object" ? (c as any).serviceId?.code : (c as any)?.serviceId) || "",
+
+          // DESTINATION: "Name (CODE)" — KHÔNG có cột DESTINATION CODE
+          DESTINATION: destName && destCode ? `${destName} (${destCode})` : destName || destCode || "",
+
           TYPE: c.productType || "",
           DIMENSIONS: c.packageDetail?.dimensions?.length ? c.packageDetail.dimensions.map((d: any) => `${d.length}x${d.width}x${d.height}`).join(", ") : "",
-          "GROSS WEIGHT": calculateGrossWeight(c),
-          "VOLUME WEIGHT": calculateVolumeWeight(c),
-          "CHARGE WEIGHT": c.chargeableWeight ?? 0,
+          "GROSS WEIGHT": calculateGrossWeight(c), // number
+          "VOLUME WEIGHT": calculateVolumeWeight(c), // number
+          "CHARGE WEIGHT": c.chargeableWeight ?? 0, // number
           NOTE: c.note || "",
+
+          // BUYING (number)
           "BASE RATE (BUYING RATE)": getPurchaseBase(c),
           "EXTRA FEE (BUYING)": getExtraFeesTotal(c),
           "FSC (BUYING)": getFscPurchase(c),
           "VAT (BUYING)": getVatPurchase(c),
           "TOTAL (BUYING)": getTotalPurchase(c),
+
+          // SELLING (number)
           "BASE RATE (SELLING RATE)": getSaleBase(c),
           "EXTRA FEE (SELLING)": getExtraFeesTotal(c),
           "FSC (SELLING)": getFscSale(c),
           "VAT (SELLING)": getVatSale(c),
           "TOTAL (SELLING)": getTotalSale(c),
+
+          // PROFIT (number)
           PROFIT: getTotalSale(c) - getTotalPurchase(c),
         };
       });
@@ -343,7 +414,8 @@ export default function OrderManagerView() {
       const colIndexByHeader: Record<string, number> = {};
       HEADERS.forEach((h, i) => (colIndexByHeader[h] = i));
 
-      const THIN = { style: "thin", color: { auto: 1 } };
+      // Base border + header style
+      const THIN = { style: "thin", color: { auto: 1 } } as any;
       const BASE_BORDER = { top: THIN, bottom: THIN, left: THIN, right: THIN };
 
       for (let R = range.s.r; R <= range.e.r; ++R) {
@@ -365,7 +437,7 @@ export default function OrderManagerView() {
         }
       }
 
-      // format rows
+      // ==== Định dạng dữ liệu ====
       const WEIGHT_COLS = ["GROSS WEIGHT", "VOLUME WEIGHT", "CHARGE WEIGHT"];
       const MONEY_COLS = [
         "BASE RATE (BUYING RATE)",
@@ -380,6 +452,13 @@ export default function OrderManagerView() {
         "TOTAL (SELLING)",
         "PROFIT",
       ];
+
+      // KHÔNG gắn ký hiệu tiền — chỉ number format
+      const moneyFormatFor = (currency: string) => {
+        if (currency === "VND") return "#,##0";
+        if (currency === "USD") return "#,##0.00";
+        return "#,##0.00";
+      };
 
       for (let r = 1; r <= rows.length; r++) {
         const cur = rowCurrencies[r - 1] || "VND";
@@ -401,7 +480,7 @@ export default function OrderManagerView() {
           }
         }
 
-        // WEIGHTS
+        // WEIGHTS -> number 2 decimals
         for (const h of WEIGHT_COLS) {
           const c = colIndexByHeader[h];
           if (c == null) continue;
@@ -417,8 +496,8 @@ export default function OrderManagerView() {
           }
         }
 
-        // MONEY
-        const zMoney = (cur === "VND" && '#,##0" ₫"') || (cur === "USD" && '#,##0.00" $"') || "#,##0.00";
+        // MONEY -> number theo từng currency (không có ký hiệu)
+        const zMoney = moneyFormatFor(cur);
         for (const h of MONEY_COLS) {
           const c = colIndexByHeader[h];
           if (c == null) continue;
@@ -435,18 +514,20 @@ export default function OrderManagerView() {
         }
       }
 
-      // header & outline medium
-      const MED = { style: "medium", color: { auto: 1 } };
+      // Header border đậm + Outline đậm
+      const MED = { style: "medium", color: { auto: 1 } } as any;
       const rTop = range.s.r;
       const rBottom = range.e.r;
       const cLeft = range.s.c;
       const cRight = range.e.c;
 
+      // Header: border 4 cạnh medium
       for (let c = cLeft; c <= cRight; c++) {
         const addr = XLSX.utils.encode_cell({ r: rTop, c });
         if (!ws[addr]) ws[addr] = { t: "s", v: "" } as any;
         (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { top: MED, right: MED, bottom: MED, left: MED } };
       }
+      // Outline
       for (let c = cLeft; c <= cRight; c++) {
         let addr = XLSX.utils.encode_cell({ r: rTop, c });
         (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { ...(ws[addr] as any).s?.border, top: MED } };
@@ -830,6 +911,11 @@ export default function OrderManagerView() {
         </Stack>
 
         <Stack direction="row" spacing={1} overflow={"auto"}>
+          {/* Import Excel */}
+          <Button variant="outlined" startIcon={<UploadFile />} onClick={() => setOpenImportDialog(true)}>
+            Import Excel
+          </Button>
+
           <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
             Export Excel
           </Button>
@@ -944,6 +1030,14 @@ export default function OrderManagerView() {
       <OrderDetailDialog open={openDetailDialog} onClose={() => setOpenDetailDialog(false)} order={selected} />
       <BillPrintDialog ref={billPopupRef} data={selected} />
       <BillShippingMarkDialog ref={shippingMarkPopupRef} data={selected} />
+
+      <ImportOrdersDialog
+        open={openImportDialog}
+        onClose={() => {
+          setOpenImportDialog(false);
+          fetchData(); // reload sau khi import
+        }}
+      />
 
       <BulkUpdateOrdersDialog open={openBulkUpdateDialog} onClose={() => setOpenBulkUpdateDialog(false)} onSubmit={handleBulkUpdateSubmit} selectedCount={selectedIds.length} />
     </Box>

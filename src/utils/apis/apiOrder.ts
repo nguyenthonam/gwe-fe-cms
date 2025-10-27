@@ -7,6 +7,20 @@ export const createOrderApi = async (payload: ICreateOrderRequest) => {
   return res.data;
 };
 
+/** Create NHIỀU đơn (bulk) */
+export const bulkCreateOrdersApi = async (items: ICreateOrderRequest[]) => {
+  const res = await AxiosAPI.post("/api/orders/bulk", { items });
+
+  // BE dùng setResponseResult => res.data = { status, message, data }
+  const payload = res?.data?.data ?? res?.data ?? {};
+  return {
+    inserted: payload.inserted ?? payload.insertedCount ?? 0,
+    failed: payload.errors ?? payload.failed ?? [],
+    // giữ lại thô nếu cần debug
+    _raw: res.data,
+  };
+};
+
 /** Update NHIỀU đơn (bulk) */
 export const bulkUpdateOrdersApi = async (ids: string[], update: Partial<IOrder>) => {
   const res = await AxiosAPI.put("/api/orders/update", { ids, update });

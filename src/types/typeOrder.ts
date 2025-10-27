@@ -23,13 +23,13 @@ export interface IOrder extends IBaseRecord {
   carrierAirWaybillCode?: string | null;
 
   partner: {
-    partnerId: ObjectId | null; // id-thuần theo BE
+    partnerId: { _id?: string; name?: string } | string | null;
     partnerName: string;
-  };
+  } | null;
 
-  carrierId: ObjectId;
-  serviceId: ObjectId | null;
-  supplierId: ObjectId | null;
+  carrierId: { _id?: string; name?: string; code?: string; companyId?: string } | string | null;
+  serviceId: { _id?: string; name?: string; code?: string; companyId?: string } | string | null;
+  supplierId: { _id?: string; name?: string; code?: string } | string | null;
 
   productType: EPRODUCT_TYPE;
   sender: IBasicContactInfor;
