@@ -168,6 +168,10 @@ export default function ImportOrdersDialog({ open, onClose }: Props) {
   // View filter
   const [viewTab, setViewTab] = React.useState<0 | 1 | 2>(0);
 
+  // Success popup
+  const [successOpen, setSuccessOpen] = React.useState(false);
+  const [successInserted, setSuccessInserted] = React.useState(0);
+
   // ==== reset helpers ====
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -191,7 +195,24 @@ export default function ImportOrdersDialog({ open, onClose }: Props) {
     setValidating(false);
     setCreating(false);
 
+    // popup
+    setSuccessOpen(false);
+    setSuccessInserted(0);
+
     // clear file input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  /** Reset chỉ phần dữ liệu import (giữ lại master để import tiếp nhanh) */
+  const resetForNextImport = React.useCallback(() => {
+    setFile(null);
+    setRawRows([]);
+    setErrors([]);
+    setMappedRows([]);
+    setServerResult(null);
+    setViewTab(0);
+    setValidating(false);
+    setCreating(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
@@ -461,8 +482,18 @@ export default function ImportOrdersDialog({ open, onClose }: Props) {
       const inserted = apiRes.inserted ?? 0;
       const failedArr = apiRes.failed ?? [];
       setServerResult({ insertedCount: inserted, failed: failedArr });
-      if (failedArr.length) showNotification(`Tạo xong: OK ${inserted}, lỗi ${failedArr.length}`, "warning");
-      else showNotification(`Tạo thành công ${inserted} đơn`, "success");
+
+      // Popup: nếu thành công toàn bộ -> reset form để import tiếp
+      if (failedArr.length === 0 && inserted > 0) {
+        setSuccessInserted(inserted);
+        setSuccessOpen(true);
+        resetForNextImport(); // giữ master, chỉ reset file + bảng
+        showNotification(`Tạo thành công ${inserted} đơn`, "success");
+      } else if (failedArr.length) {
+        showNotification(`Tạo xong: OK ${inserted}, lỗi ${failedArr.length}`, "warning");
+      } else {
+        showNotification("Không có bản ghi nào được tạo.", "info");
+      }
     } catch (e: any) {
       showNotification(e?.message || "Tạo nhiều đơn thất bại", "error");
     } finally {
@@ -710,70 +741,101 @@ export default function ImportOrdersDialog({ open, onClose }: Props) {
   ];
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="xl" fullWidth>
-      <DialogTitle>Import Orders — Tự động kiểm tra & phân loại</DialogTitle>
-      <DialogContent dividers>
-        <Stack gap={2}>
-          <Stack direction="row" alignItems="center" gap={2} flexWrap="wrap">
-            <Button variant="outlined" onClick={handleDownloadTemplate}>
-              Download Template
-            </Button>
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handlePickFile} />
-            <Box flex={1} />
-            <Button variant="outlined" color="warning" disabled={!errors.length} onClick={handleRemoveErrorRows}>
-              Remove error rows
-            </Button>
-            <Button variant="outlined" onClick={resetAll}>
-              Clear
-            </Button>
+    <>
+      <Dialog open={open} onClose={handleClose} maxWidth="xl" fullWidth>
+        <DialogTitle>Import Orders — Tự động kiểm tra & phân loại</DialogTitle>
+        <DialogContent dividers>
+          <Stack gap={2}>
+            <Stack direction="row" alignItems="center" gap={2} flexWrap="wrap">
+              <Button variant="outlined" onClick={handleDownloadTemplate}>
+                Download Template
+              </Button>
+              <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handlePickFile} />
+              <Box flex={1} />
+              <Button variant="outlined" color="warning" disabled={!errors.length} onClick={handleRemoveErrorRows}>
+                Remove error rows
+              </Button>
+              <Button variant="outlined" onClick={resetForNextImport}>
+                Clear
+              </Button>
+            </Stack>
+
+            {(validating || creating) && <LinearProgress />}
+
+            {!!rawRows.length && (
+              <Alert severity={totalErrors ? "warning" : "success"} variant="outlined">
+                Total rows <b>{rawRows.length}</b> — OK <b>{totalOK}</b> — Errors <b>{totalErrors}</b>
+              </Alert>
+            )}
+
+            {serverResult && (
+              <Alert severity={serverResult.failed?.length ? "warning" : "success"} variant="outlined">
+                Inserted: <b>{serverResult.insertedCount}</b> — Failed: <b>{serverResult.failed?.length || 0}</b>
+              </Alert>
+            )}
+
+            <Tabs value={viewTab} onChange={(_, v) => setViewTab(v)}>
+              <Tab label={`All (${rawRows.length})`} />
+              <Tab label={`Errors (${totalErrors})`} />
+              <Tab label={`OK (${totalOK})`} />
+            </Tabs>
+
+            <Box sx={{ height: 560, width: "100%" }}>
+              <DataGrid
+                rows={filteredRows}
+                columns={columns}
+                getRowId={(r) => r.id}
+                disableRowSelectionOnClick
+                pageSizeOptions={[10, 25, 50, 100]}
+                initialState={{ pagination: { paginationModel: { page: 0, pageSize: 25 } } }}
+                sortingMode="client"
+                disableColumnMenu
+              />
+            </Box>
+
+            {!masterReady && <Alert severity="info">Đang tải danh mục (customers, subcarriers, suppliers, services)...</Alert>}
+            {file && masterReady && !rawRows.length && <Alert severity="error">File không có dữ liệu hợp lệ.</Alert>}
           </Stack>
+        </DialogContent>
 
-          {(validating || creating) && <LinearProgress />}
+        <DialogActions>
+          <Button onClick={handleClose} color="inherit">
+            Close
+          </Button>
+          <Button onClick={handleCreate} variant="contained" disabled={creating || mappedRows.length === 0}>
+            {creating ? "Creating..." : `Create Orders (${mappedRows.length} OK)`}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-          {!!rawRows.length && (
-            <Alert severity={totalErrors ? "warning" : "success"} variant="outlined">
-              Total rows <b>{rawRows.length}</b> — OK <b>{totalOK}</b> — Errors <b>{totalErrors}</b>
-            </Alert>
-          )}
-
-          {serverResult && (
-            <Alert severity={serverResult.failed?.length ? "warning" : "success"} variant="outlined">
-              Inserted: <b>{serverResult.insertedCount}</b> — Failed: <b>{serverResult.failed?.length || 0}</b>
-            </Alert>
-          )}
-
-          <Tabs value={viewTab} onChange={(_, v) => setViewTab(v)}>
-            <Tab label={`All (${rawRows.length})`} />
-            <Tab label={`Errors (${totalErrors})`} />
-            <Tab label={`OK (${totalOK})`} />
-          </Tabs>
-
-          <Box sx={{ height: 560, width: "100%" }}>
-            <DataGrid
-              rows={filteredRows}
-              columns={columns}
-              getRowId={(r) => r.id}
-              disableRowSelectionOnClick
-              pageSizeOptions={[10, 25, 50, 100]}
-              initialState={{ pagination: { paginationModel: { page: 0, pageSize: 25 } } }}
-              sortingMode="client"
-              disableColumnMenu
-            />
-          </Box>
-
-          {!masterReady && <Alert severity="info">Đang tải danh mục (customers, subcarriers, suppliers, services)...</Alert>}
-          {file && masterReady && !rawRows.length && <Alert severity="error">File không có dữ liệu hợp lệ.</Alert>}
-        </Stack>
-      </DialogContent>
-
-      <DialogActions>
-        <Button onClick={handleClose} color="inherit">
-          Close
-        </Button>
-        <Button onClick={handleCreate} variant="contained" disabled={creating || mappedRows.length === 0}>
-          {creating ? "Creating..." : `Create Orders (${mappedRows.length} OK)`}
-        </Button>
-      </DialogActions>
-    </Dialog>
+      {/* ===== Popup thông báo thành công & reset form để import lại ===== */}
+      <Dialog open={successOpen} onClose={() => setSuccessOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Tạo đơn thành công</DialogTitle>
+        <DialogContent dividers>
+          <Alert severity="success" variant="outlined">
+            Đã tạo thành công <b>{successInserted}</b> đơn. Form đã được reset — bạn có thể chọn file mới để import.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setSuccessOpen(false); // ở lại dialog chính để import tiếp
+            }}
+          >
+            Import another file
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setSuccessOpen(false);
+              handleClose(); // đóng luôn dialog import
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }

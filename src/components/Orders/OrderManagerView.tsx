@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
-import { Box, Button, Stack, TextField, Select, MenuItem, CircularProgress, Typography, Chip } from "@mui/material";
-import { Add, Download, Edit, Delete, UploadFile } from "@mui/icons-material";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { Box, Button, Stack, TextField, Select, MenuItem, CircularProgress, Typography, Chip, Tooltip, IconButton } from "@mui/material";
+import { Add, Download, Edit, Delete, UploadFile, Print as PrintBillIcon, Receipt as PrintMarkIcon } from "@mui/icons-material";
 import { DataGrid, GridColDef, GridRowId } from "@mui/x-data-grid";
 import debounce from "lodash/debounce";
 import * as XLSX from "sheetjs-style";
+import { useTheme } from "@mui/material/styles";
 
 import { IOrder, IFilterOrder } from "@/types/typeOrder";
 import { useNotification } from "@/contexts/NotificationProvider";
@@ -21,13 +22,16 @@ import UpdateOrderDialog from "./UpdateOrderDialog";
 import OrderDetailDialog from "./OrderDetailDialog";
 import ImportOrdersDialog from "./ImportOrdersDialog";
 import { formatDate } from "@/utils/hooks/hookDate";
-import { blue, green, grey, pink } from "@mui/material/colors";
+import { blue, green, grey, orange, pink } from "@mui/material/colors";
 import { formatCurrency } from "@/utils/hooks/hookCurrency";
 import BillPrintDialog from "@/components/Bill/BillPrintDialog";
 import BillShippingMarkDialog from "@/components/Bill/BillShippingMarkDialog";
 import { ECURRENCY, EORDER_STATUS, EPRODUCT_TYPE } from "@/types/typeGlobals";
 import CountrySelect from "@/components/Globals/CountrySelect";
 import BulkUpdateOrdersDialog, { TBulkUpdatePayload } from "./BulkUpdateOrdersDialog";
+
+// ⭐ Drawer Context
+import { useLayout } from "@/contexts/LayoutContext";
 
 /* ===========================================================
    Helpers
@@ -52,7 +56,7 @@ const getTotalPurchase = (o: IOrder) => Number((o as any)?.totalPrice?.purchaseT
 const getTotalSale = (o: IOrder) => Number((o as any)?.totalPrice?.saleTotal ?? 0);
 
 /* ===========================================================
-   Normalize raw -> IOrder v1.1 (giữ object nếu là object)
+   Normalize raw -> IOrder v1.1
    =========================================================== */
 const normalizeOrderLegacyToFE = (raw: any): IOrder => {
   const currency: ECURRENCY = raw?.currency ?? raw?.basePrice?.purchasePrice?.currency ?? raw?.basePrice?.salePrice?.currency ?? ECURRENCY.VND;
@@ -74,7 +78,6 @@ const normalizeOrderLegacyToFE = (raw: any): IOrder => {
         }
       : null,
 
-    // giữ nguyên object nếu có; nếu không thì giữ string id
     carrierId: toIdOrObject(raw?.carrierId) ?? "",
     serviceId: toIdOrObject(raw?.serviceId),
     supplierId: toIdOrObject(raw?.supplierId),
@@ -141,7 +144,25 @@ const normalizeOrderLegacyToFE = (raw: any): IOrder => {
    View
    =========================================================== */
 export default function OrderManagerView() {
+  const theme = useTheme();
+  const { drawerOpen } = useLayout();
+
+  // === Width cột ACTION cố định theo Drawer ===
+  const ACTION_COL_WIDTH = 120;
+
   const [orders, setOrders] = useState<IOrder[]>([]);
+  const displayedRows = orders; // trang hiện tại
+
+  // ==== Measurements to align Action Rail with DataGrid ====
+  const [headerH, setHeaderH] = useState<number>(56);
+  const [rowH, setRowH] = useState<number>(52);
+  const [rowBorderColor, setRowBorderColor] = useState<string>(theme.palette.divider);
+  const [hScrollSize, setHScrollSize] = useState<number>(0); // horizontal scrollbar thickness
+
+  const gridRootRef = useRef<HTMLDivElement | null>(null);
+  const gridScrollerRef = useRef<HTMLDivElement | null>(null);
+  const railScrollRef = useRef<HTMLDivElement | null>(null);
+  const syncingRef = useRef<{ from?: "grid" | "rail" }>({});
 
   // Filters
   const [keyword, setKeyword] = useState("");
@@ -229,7 +250,7 @@ export default function OrderManagerView() {
     setLoading(true);
     try {
       const params: IFilterOrder = buildOrderFilters(false);
-      const body = await searchOrdersApi(params); // res.data
+      const body = await searchOrdersApi(params);
       const raw = body?.data?.data || [];
       const normalized: IOrder[] = raw.map((o: any) => normalizeOrderLegacyToFE(o));
       setOrders(normalized);
@@ -261,7 +282,6 @@ export default function OrderManagerView() {
     return 0;
   };
 
-  // Resolve name/code từ object populate hoặc danh mục preload (partners/carriers/services/suppliers)
   const resolveNameCode = (list: any[], ref: any, fallbackName?: string): { name: string; code: string } => {
     let id: string | null = null;
     let name = fallbackName || "";
@@ -283,7 +303,6 @@ export default function OrderManagerView() {
       }
     }
 
-    // cũng thử map theo name nếu chưa có code
     if (!code && name) {
       const byName = list.find((x) => (x.name || "").trim().toUpperCase() === name.trim().toUpperCase());
       if (byName) code = byName.code || "";
@@ -292,6 +311,7 @@ export default function OrderManagerView() {
     return { name: name || "", code: code || "" };
   };
 
+  // ========================= Export Excel (giữ logic của bạn) =========================
   const handleExportExcel = async () => {
     try {
       const params: IFilterOrder = { ...buildOrderFilters(true), all: true };
@@ -304,26 +324,19 @@ export default function OrderManagerView() {
         return;
       }
 
-      // === HEADERS: BỎ "DESTINATION CODE" theo yêu cầu ===
       const HEADERS = [
         "HAWB",
         "AWB",
         "DATE",
-
         "CUSTOMER NAME",
         "CUSTOMER CODE",
-
         "SUPPLIER",
         "SUPPLIER CODE",
-
         "SUB CARRIER",
         "SUB CARRIER CODE",
-
         "SERVICE",
         "SERVICE CODE",
-
         "DESTINATION",
-
         "TYPE",
         "DIMENSIONS",
         "GROSS WEIGHT",
@@ -364,10 +377,10 @@ export default function OrderManagerView() {
           "CUSTOMER NAME": partnerNC.name,
           "CUSTOMER CODE": partnerNC.code,
 
-          SUPPLIER: supplierNC.name || (typeof (c as any).supplierId === "object" ? (c as any).supplierId?.name : (c as any)?.supplierId || ""),
+          SUPPLIER: supplierNC.name || (typeof (c as any).supplierId === "object" ? (c as any).supplierId?.name : (c as any).supplierId || ""),
           "SUPPLIER CODE": supplierNC.code,
 
-          "SUB CARRIER": subcNC.name || (typeof (c as any).carrierId === "object" ? (c as any).carrierId?.name : (c as any)?.carrierId || ""),
+          "SUB CARRIER": subcNC.name || (typeof (c as any).carrierId === "object" ? (c as any).carrierId?.name : (c as any).carrierId || ""),
           "SUB CARRIER CODE": subcNC.code,
 
           SERVICE:
@@ -378,31 +391,27 @@ export default function OrderManagerView() {
             "",
           "SERVICE CODE": serviceNC.code || (typeof (c as any).serviceId === "object" ? (c as any).serviceId?.code : (c as any)?.serviceId) || "",
 
-          // DESTINATION: "Name (CODE)" — KHÔNG có cột DESTINATION CODE
           DESTINATION: destName && destCode ? `${destName} (${destCode})` : destName || destCode || "",
 
           TYPE: c.productType || "",
           DIMENSIONS: c.packageDetail?.dimensions?.length ? c.packageDetail.dimensions.map((d: any) => `${d.length}x${d.width}x${d.height}`).join(", ") : "",
-          "GROSS WEIGHT": calculateGrossWeight(c), // number
-          "VOLUME WEIGHT": calculateVolumeWeight(c), // number
-          "CHARGE WEIGHT": c.chargeableWeight ?? 0, // number
+          "GROSS WEIGHT": calculateGrossWeight(c),
+          "VOLUME WEIGHT": calculateVolumeWeight(c),
+          "CHARGE WEIGHT": c.chargeableWeight ?? 0,
           NOTE: c.note || "",
 
-          // BUYING (number)
           "BASE RATE (BUYING RATE)": getPurchaseBase(c),
           "EXTRA FEE (BUYING)": getExtraFeesTotal(c),
           "FSC (BUYING)": getFscPurchase(c),
           "VAT (BUYING)": getVatPurchase(c),
           "TOTAL (BUYING)": getTotalPurchase(c),
 
-          // SELLING (number)
           "BASE RATE (SELLING RATE)": getSaleBase(c),
           "EXTRA FEE (SELLING)": getExtraFeesTotal(c),
           "FSC (SELLING)": getFscSale(c),
           "VAT (SELLING)": getVatSale(c),
           "TOTAL (SELLING)": getTotalSale(c),
 
-          // PROFIT (number)
           PROFIT: getTotalSale(c) - getTotalPurchase(c),
         };
       });
@@ -414,7 +423,6 @@ export default function OrderManagerView() {
       const colIndexByHeader: Record<string, number> = {};
       HEADERS.forEach((h, i) => (colIndexByHeader[h] = i));
 
-      // Base border + header style
       const THIN = { style: "thin", color: { auto: 1 } } as any;
       const BASE_BORDER = { top: THIN, bottom: THIN, left: THIN, right: THIN };
 
@@ -437,7 +445,6 @@ export default function OrderManagerView() {
         }
       }
 
-      // ==== Định dạng dữ liệu ====
       const WEIGHT_COLS = ["GROSS WEIGHT", "VOLUME WEIGHT", "CHARGE WEIGHT"];
       const MONEY_COLS = [
         "BASE RATE (BUYING RATE)",
@@ -453,7 +460,6 @@ export default function OrderManagerView() {
         "PROFIT",
       ];
 
-      // KHÔNG gắn ký hiệu tiền — chỉ number format
       const moneyFormatFor = (currency: string) => {
         if (currency === "VND") return "#,##0";
         if (currency === "USD") return "#,##0.00";
@@ -472,10 +478,7 @@ export default function OrderManagerView() {
             if (cell) {
               cell.t = "d";
               (cell as any).z = "dd/mm/yyyy";
-              (cell as any).s = {
-                ...(cell as any).s,
-                alignment: { ...(cell as any).s?.alignment, horizontal: "center" },
-              };
+              (cell as any).s = { ...(cell as any).s, alignment: { ...(cell as any).s?.alignment, horizontal: "center" } };
             }
           }
         }
@@ -489,14 +492,11 @@ export default function OrderManagerView() {
           if (cell && cell.v !== "" && cell.v != null) {
             cell.t = "n";
             (cell as any).z = "0.00";
-            (cell as any).s = {
-              ...(cell as any).s,
-              alignment: { ...(cell as any).s?.alignment, horizontal: "right" },
-            };
+            (cell as any).s = { ...(cell as any).s, alignment: { ...(cell as any).s?.alignment, horizontal: "right" } };
           }
         }
 
-        // MONEY -> number theo từng currency (không có ký hiệu)
+        // MONEY -> number
         const zMoney = moneyFormatFor(cur);
         for (const h of MONEY_COLS) {
           const c = colIndexByHeader[h];
@@ -506,28 +506,22 @@ export default function OrderManagerView() {
           if (cell && cell.v !== "" && cell.v != null) {
             cell.t = "n";
             (cell as any).z = zMoney;
-            (cell as any).s = {
-              ...(cell as any).s,
-              alignment: { ...(cell as any).s?.alignment, horizontal: "right" },
-            };
+            (cell as any).s = { ...(cell as any).s, alignment: { ...(cell as any).s?.alignment, horizontal: "right" } };
           }
         }
       }
 
-      // Header border đậm + Outline đậm
       const MED = { style: "medium", color: { auto: 1 } } as any;
       const rTop = range.s.r;
       const rBottom = range.e.r;
       const cLeft = range.s.c;
       const cRight = range.e.c;
 
-      // Header: border 4 cạnh medium
       for (let c = cLeft; c <= cRight; c++) {
         const addr = XLSX.utils.encode_cell({ r: rTop, c });
         if (!ws[addr]) ws[addr] = { t: "s", v: "" } as any;
         (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { top: MED, right: MED, bottom: MED, left: MED } };
       }
-      // Outline
       for (let c = cLeft; c <= cRight; c++) {
         let addr = XLSX.utils.encode_cell({ r: rTop, c });
         (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { ...(ws[addr] as any).s?.border, top: MED } };
@@ -555,8 +549,8 @@ export default function OrderManagerView() {
     if (!window.confirm(`Delete ${selectedIds.length} selected orders?`)) return;
     try {
       const res = await deleteOrdersApi(selectedIds);
-      showNotification(res?.data?.message || "Deleted successfully", "success");
       setSelectedIds([]);
+      showNotification(res?.data?.message || "Deleted successfully", "success");
       fetchData();
     } catch (err: any) {
       showNotification(err?.message || "Delete failed", "error");
@@ -592,7 +586,7 @@ export default function OrderManagerView() {
     }
   };
 
-  // Table columns
+  // ==================== COLUMNS (KHÔNG gồm ACTIONS) ====================
   const columns: GridColDef[] = [
     {
       field: "trackingCode",
@@ -601,6 +595,7 @@ export default function OrderManagerView() {
       align: "center",
       headerAlign: "center",
       minWidth: 130,
+      sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" width="100%" height="100%">
           <Typography
@@ -616,9 +611,9 @@ export default function OrderManagerView() {
         </Box>
       ),
     },
-    { field: "carrierAirWaybillCode", headerName: "AWB", align: "center", headerAlign: "center", minWidth: 130, flex: 0.7 },
-    { field: "createdAt", headerName: "DATE", align: "center", headerAlign: "center", minWidth: 130, flex: 1, renderCell: ({ row }) => formatDate(row.createdAt) },
-    { field: "partner", headerName: "CUSTOMER NAME", align: "center", headerAlign: "center", minWidth: 150, flex: 1, renderCell: ({ row }) => row.partner?.partnerName },
+    { field: "carrierAirWaybillCode", headerName: "AWB", align: "center", headerAlign: "center", minWidth: 130, flex: 0.7, sortable: false },
+    { field: "createdAt", headerName: "DATE", align: "center", headerAlign: "center", minWidth: 130, flex: 1, sortable: false, renderCell: ({ row }) => formatDate(row.createdAt) },
+    { field: "partner", headerName: "CUSTOMER NAME", align: "center", headerAlign: "center", minWidth: 150, flex: 1, sortable: false, renderCell: ({ row }) => row.partner?.partnerName },
     {
       field: "supplierId",
       headerName: "SUPPLIER",
@@ -626,6 +621,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 130,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (typeof (row as any).supplierId === "object" ? (row as any).supplierId?.name : (row as any).supplierId),
     },
     {
@@ -635,6 +631,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 130,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (typeof (row as any).carrierId === "object" ? (row as any).carrierId?.name : (row as any).carrierId),
     },
     {
@@ -644,6 +641,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 110,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (typeof (row as any).serviceId === "object" ? (row as any).serviceId?.code : (row as any).serviceId),
     },
     {
@@ -653,6 +651,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 220,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) =>
         row.recipient?.country?.code || row.recipient?.country?.name ? (
           <Chip label={`${row.recipient?.country?.name || ""} (${row.recipient?.country?.code || ""})`} size="small" sx={{ backgroundColor: blue[200], color: "#fff", fontWeight: 500 }} />
@@ -660,7 +659,7 @@ export default function OrderManagerView() {
           <Chip label="N/A" size="small" sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }} />
         ),
     },
-    { field: "productType", headerName: "TYPE", align: "center", headerAlign: "center", minWidth: 90, flex: 1, renderCell: ({ row }) => row.productType },
+    { field: "productType", headerName: "TYPE", align: "center", headerAlign: "center", minWidth: 90, flex: 1, sortable: false, renderCell: ({ row }) => row.productType },
     {
       field: "packageDetail.dimensions",
       headerName: "DIMENSIONS",
@@ -668,6 +667,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 120,
       flex: 0.7,
+      sortable: false,
       renderCell: ({ row }) =>
         row.packageDetail?.dimensions?.length > 0 ? (
           <Chip
@@ -686,6 +686,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 160,
       flex: 0.7,
+      sortable: false,
       renderCell: ({ row }) => <Chip label={calculateGrossWeight(row)} size="small" sx={{ backgroundColor: grey[300], color: "#fff", fontWeight: 500 }} />,
     },
     {
@@ -695,6 +696,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 160,
       flex: 0.7,
+      sortable: false,
       renderCell: ({ row }) => <Chip label={calculateVolumeWeight(row)} size="small" sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }} />,
     },
     {
@@ -704,16 +706,12 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 140,
       flex: 0.7,
+      sortable: false,
       renderCell: ({ value }) => <Chip label={value} size="small" sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }} />,
     },
-    {
-      field: "note",
-      headerName: "NOTE",
-      align: "center",
-      headerAlign: "center",
-      minWidth: 110,
-      flex: 1,
-    },
+    { field: "note", headerName: "NOTE", align: "center", headerAlign: "center", minWidth: 110, flex: 1, sortable: false },
+
+    // BUYING
     {
       field: "basePrice.purchasePrice.value",
       headerName: "BASE RATE (BUYING)",
@@ -721,6 +719,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 180,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
           <Typography>{formatCurrency(getPurchaseBase(row), getCurrency(row) || undefined)}</Typography>
@@ -734,6 +733,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 150,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
           <Typography>{formatCurrency(getExtraFeesTotal(row), getCurrency(row) || undefined)}</Typography>
@@ -747,6 +747,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 150,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
           <Typography>{formatCurrency(getFscPurchase(row), getCurrency(row) || undefined)}</Typography>
@@ -760,6 +761,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 150,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
           <Typography>{formatCurrency(getVatPurchase(row), getCurrency(row) || undefined)}</Typography>
@@ -773,12 +775,15 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 150,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
           <Typography>{formatCurrency(getTotalPurchase(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
+
+    // SELLING
     {
       field: "basePrice.salePrice.value",
       headerName: "BASE RATE (SELLING)",
@@ -786,6 +791,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 180,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
           <Typography>{formatCurrency(getSaleBase(row), getCurrency(row) || undefined)}</Typography>
@@ -799,6 +805,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 180,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
           <Typography>{formatCurrency(getExtraFeesTotal(row), getCurrency(row) || undefined)}</Typography>
@@ -812,6 +819,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 150,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
           <Typography>{formatCurrency(getFscSale(row), getCurrency(row) || undefined)}</Typography>
@@ -825,6 +833,7 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 150,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
           <Typography>{formatCurrency(getVatSale(row), getCurrency(row) || undefined)}</Typography>
@@ -838,12 +847,14 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 150,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
           <Typography>{formatCurrency(getTotalSale(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
+
     {
       field: "profit",
       headerName: "PROFIT",
@@ -851,58 +862,105 @@ export default function OrderManagerView() {
       headerAlign: "center",
       minWidth: 160,
       flex: 1,
+      sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: pink[100] }}>
           <Typography>{formatCurrency(getTotalSale(row) - getTotalPurchase(row), getCurrency(row) || undefined)}</Typography>
         </Box>
       ),
     },
-    { field: "orderStatus", headerName: "STATUS", align: "center", headerAlign: "center", minWidth: 110, flex: 1, renderCell: ({ value }) => <EnumChip type="orderStatus" value={value} /> },
     {
-      field: "actions",
-      headerName: "",
-      width: 260,
-      renderCell: ({ row }) => (
-        <Stack direction="row" height={"100%"} spacing={1} gap={1} justifyContent="center" alignItems="center">
-          <Button
-            size="small"
-            variant="outlined"
-            color="primary"
-            onClick={() => {
-              setSelected(row);
-              setOpenBillDialog(true);
-            }}
-          >
-            Print Bill
-          </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            color="secondary"
-            onClick={() => {
-              setSelected(row);
-              setOpenShippingMarkDialog(true);
-            }}
-          >
-            Print Mark
-          </Button>
-          <ActionMenu
-            onEdit={() => {
-              setSelected(row);
-              setOpenUpdateDialog(true);
-            }}
-            onDelete={() => handleDelete(row)}
-            status={row.orderStatus}
-          />
-        </Stack>
-      ),
+      field: "orderStatus",
+      headerName: "STATUS",
+      align: "center",
+      headerAlign: "center",
+      minWidth: 110,
+      flex: 1,
+      sortable: false,
+      renderCell: ({ value }) => <EnumChip type="orderStatus" value={value} />,
     },
   ];
 
+  // ==== đo lường & đồng bộ scroll (để rail khớp 100%) ====
+  const attachGridScroller = useCallback(() => {
+    if (!gridRootRef.current) return;
+
+    const scroller = gridRootRef.current.querySelector<HTMLDivElement>(".MuiDataGrid-virtualScroller");
+    gridScrollerRef.current = scroller || null;
+
+    const headerEl = gridRootRef.current.querySelector<HTMLDivElement>(".MuiDataGrid-columnHeaders");
+    if (headerEl) setHeaderH(headerEl.clientHeight);
+
+    const firstRow = gridRootRef.current.querySelector<HTMLDivElement>(".MuiDataGrid-row");
+    if (firstRow) setRowH(firstRow.clientHeight);
+
+    const firstCell = gridRootRef.current.querySelector<HTMLElement>(".MuiDataGrid-cell");
+    if (firstCell) {
+      const cs = getComputedStyle(firstCell);
+      setRowBorderColor(cs.borderBottomColor || theme.palette.divider);
+    }
+
+    if (scroller) {
+      const hScroll = scroller.offsetHeight - scroller.clientHeight; // horizontal scrollbar thickness (if any)
+      setHScrollSize(hScroll > 0 ? hScroll : 0);
+    }
+  }, [theme.palette.divider]);
+
+  useEffect(() => {
+    attachGridScroller();
+    const ro = gridRootRef.current ? new ResizeObserver(() => attachGridScroller()) : null;
+    if (gridRootRef.current && ro) ro.observe(gridRootRef.current);
+    return () => ro?.disconnect();
+  }, [attachGridScroller, orders, page, pageSize, drawerOpen]);
+
+  useEffect(() => {
+    const gridEl = gridScrollerRef.current;
+    const railEl = railScrollRef.current;
+    if (!gridEl || !railEl) return;
+
+    const onGridScroll = () => {
+      if (syncingRef.current.from === "rail") {
+        syncingRef.current.from = undefined;
+        return;
+      }
+      syncingRef.current.from = "grid";
+      railEl.scrollTop = gridEl.scrollTop;
+    };
+
+    const onRailScroll = () => {
+      if (syncingRef.current.from === "grid") {
+        syncingRef.current.from = undefined;
+        return;
+      }
+      syncingRef.current.from = "rail";
+      gridEl.scrollTop = railEl.scrollTop;
+    };
+
+    gridEl.addEventListener("scroll", onGridScroll, { passive: true });
+    railEl.addEventListener("scroll", onRailScroll, { passive: true });
+    railEl.scrollTop = gridEl.scrollTop;
+
+    return () => {
+      gridEl.removeEventListener("scroll", onGridScroll);
+      railEl.removeEventListener("scroll", onRailScroll);
+    };
+  }, [orders, page, pageSize]);
+
   return (
-    <Box className="space-y-4 p-6">
+    // ===== Root wrapper: chiếm toàn bộ chiều cao vùng main, không tràn trang
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, overflow: "hidden", p: 2 }}>
       {/* Filters + actions */}
-      <Box display="flex" flexWrap="wrap" gap={1} justifyContent="space-between" alignItems="center">
+      <Box
+        sx={{
+          flex: "0 0 auto",
+          mb: 1.5,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 1,
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Stack direction="row" spacing={1} flexWrap="wrap">
           <TextField placeholder="Search keyword" size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 200 }} />
           <TextField placeholder="HAWB (trackingCode)" size="small" value={hawbFilter} onChange={(e) => setHawbFilter(e.target.value)} sx={{ minWidth: 180 }} />
@@ -911,23 +969,18 @@ export default function OrderManagerView() {
         </Stack>
 
         <Stack direction="row" spacing={1} overflow={"auto"}>
-          {/* Import Excel */}
           <Button variant="outlined" startIcon={<UploadFile />} onClick={() => setOpenImportDialog(true)}>
             Import Excel
           </Button>
-
           <Button variant="outlined" startIcon={<Download />} onClick={handleExportExcel}>
             Export Excel
           </Button>
-
           <Button variant="outlined" startIcon={<Edit />} disabled={!selectedIds.length} onClick={() => setOpenBulkUpdateDialog(true)}>
             Bulk Update
           </Button>
-
           <Button variant="outlined" startIcon={<Delete />} color="error" disabled={!selectedIds.length} onClick={handleBulkDelete}>
             Delete
           </Button>
-
           <Button variant="contained" startIcon={<Add />} onClick={() => setOpenCreateDialog(true)}>
             Create Order
           </Button>
@@ -988,34 +1041,182 @@ export default function OrderManagerView() {
         </Stack>
       </Box>
 
-      {/* Table */}
-      {loading ? (
-        <Box textAlign="center">
-          <CircularProgress />
+      {/* ===== Grid + Action Rail (side-by-side) ===== */}
+      <Box sx={{ flex: "1 1 auto", minHeight: 0, display: "flex", alignItems: "stretch" }}>
+        {/* LEFT: DataGrid container */}
+        <Box ref={gridRootRef} sx={{ flex: 1, minWidth: 0 }}>
+          {loading ? (
+            <Box textAlign="center" sx={{ pt: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataGrid
+              rows={orders.map((r) => ({ ...r, id: r._id }))}
+              columns={columns}
+              checkboxSelection
+              paginationMode="server"
+              rowCount={total}
+              pageSizeOptions={[10, 20, 50, 100]}
+              paginationModel={{ page, pageSize }}
+              onPaginationModelChange={({ page, pageSize }) => {
+                setPage(page);
+                setPageSize(pageSize);
+              }}
+              onRowSelectionModelChange={(model) => {
+                let ids: string[] = [];
+                if (Array.isArray(model)) ids = (model as any[]).map(String);
+                else if (model && typeof model === "object" && "ids" in model) ids = Array.from((model as any).ids as Set<GridRowId>).map((x) => String(x));
+                setSelectedIds(ids);
+              }}
+              disableRowSelectionOnClick
+              autoHeight={false}
+              sx={{
+                height: "100%",
+
+                "& .MuiDataGrid-virtualScroller": {
+                  overflowX: "auto",
+                  overflowY: "auto",
+                  position: "relative",
+                },
+
+                // đảm bảo border màu nhất quán (v6 có biến này)
+                "--DataGrid-rowBorderColor": theme.palette.divider,
+              }}
+            />
+          )}
         </Box>
-      ) : (
-        <DataGrid
-          rows={orders.map((r) => ({ ...r, id: r._id }))}
-          columns={columns}
-          checkboxSelection
-          paginationMode="server"
-          rowCount={total}
-          pageSizeOptions={[10, 20, 50, 100]}
-          paginationModel={{ page, pageSize }}
-          onPaginationModelChange={({ page, pageSize }) => {
-            setPage(page);
-            setPageSize(pageSize);
+
+        {/* RIGHT: Action Rail (cố định ngoài table) */}
+        <Box
+          sx={{
+            width: ACTION_COL_WIDTH,
+            borderLeft: `1px solid ${theme.palette.divider}`,
+            borderTop: `1px solid ${theme.palette.divider}`,
+            display: "flex",
+            flexDirection: "column",
+            minWidth: ACTION_COL_WIDTH,
           }}
-          onRowSelectionModelChange={(model) => {
-            let ids: string[] = [];
-            if (Array.isArray(model)) ids = (model as any[]).map(String);
-            else if (model && typeof model === "object" && "ids" in model) ids = Array.from((model as any).ids as Set<GridRowId>).map((x) => String(x));
-            setSelectedIds(ids);
-          }}
-          disableRowSelectionOnClick
-          autoHeight
-        />
-      )}
+        >
+          {/* Header rail — lấy đúng chiều cao header thực tế */}
+          <Box
+            sx={{
+              height: `${headerH}px`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700,
+              borderRight: `1px solid ${rowBorderColor}`,
+              borderBottom: `1px solid ${rowBorderColor}`,
+              overflow: "hidden",
+              bgcolor: theme.palette.background.paper,
+              color: green[600],
+              boxSizing: "border-box",
+            }}
+          >
+            ACTIONS
+          </Box>
+
+          {/* Scroll body rail (sync với DataGrid) */}
+          <Box
+            ref={railScrollRef}
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              overflowX: "hidden",
+              bgcolor: theme.palette.background.default,
+              pb: `${hScrollSize}px`, // đệm nếu grid có scrollbar ngang
+            }}
+          >
+            {displayedRows.length === 0 ? (
+              <Box sx={{ p: 2, color: theme.palette.text.secondary }}>No rows</Box>
+            ) : (
+              <>
+                {displayedRows.map((row) => {
+                  return (
+                    <Box
+                      key={row._id}
+                      sx={{
+                        height: `${rowH}px`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        p: 1,
+                        boxSizing: "border-box",
+                        borderRight: `1px solid ${rowBorderColor}`,
+                        borderBottom: `1px solid ${rowBorderColor}`,
+                        bgcolor: theme.palette.background.default,
+                      }}
+                    >
+                      <Stack direction="row" spacing={0.5} alignItems="center">
+                        {/* ICON: Print Bill */}
+                        <Tooltip title="Print Bill" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setSelected(row);
+                              setOpenBillDialog(true);
+                            }}
+                            aria-label="Print Bill"
+                            sx={{ color: orange[600], "&:hover": { color: orange[800], bgcolor: "rgba(255,152,0,0.08)" } }}
+                          >
+                            <PrintBillIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Print Mark" arrow>
+                          <IconButton
+                            size="small"
+                            onClick={() => {
+                              setSelected(row);
+                              setOpenShippingMarkDialog(true);
+                            }}
+                            aria-label="Print Mark"
+                            sx={{ color: blue[500], "&:hover": { color: blue[700], bgcolor: "rgba(63,81,181,0.08)" } }}
+                          >
+                            <PrintMarkIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        {/* Menu các thao tác khác */}
+                        <ActionMenu
+                          onEdit={() => {
+                            setSelected(row);
+                            setOpenUpdateDialog(true);
+                          }}
+                          onDelete={() => handleDelete(row)}
+                          // Bạn có thể bật menu print nếu thích (hiện đang dùng icon riêng phía trên):
+                          onPrintBill={() => {
+                            setSelected(row);
+                            setOpenBillDialog(true);
+                          }}
+                          onPrintMark={() => {
+                            setSelected(row);
+                            setOpenShippingMarkDialog(true);
+                          }}
+                          status={row.orderStatus as any}
+                        />
+                      </Stack>
+                    </Box>
+                  );
+                })}
+                <Box
+                  sx={{
+                    height: `${rowH + 16}px`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    p: 1,
+                    boxSizing: "border-box",
+                    borderRight: `1px solid ${rowBorderColor}`,
+                    borderBottom: `1px solid ${rowBorderColor}`,
+                    bgcolor: theme.palette.background.default,
+                  }}
+                ></Box>
+              </>
+            )}
+          </Box>
+        </Box>
+      </Box>
 
       {/* Dialogs */}
       <CreateOrderDialog
@@ -1035,7 +1236,7 @@ export default function OrderManagerView() {
         open={openImportDialog}
         onClose={() => {
           setOpenImportDialog(false);
-          fetchData(); // reload sau khi import
+          fetchData();
         }}
       />
 
