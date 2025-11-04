@@ -1,354 +1,267 @@
+// utils/hooks/hookPrice.ts
 import * as XLSX from "sheetjs-style";
-import { IPurchasePriceGroup } from "@/types/typePurchasePrice";
 import { EPRODUCT_TYPE, ECURRENCY } from "@/types/typeGlobals";
+import { IPurchasePriceGroup } from "@/types/typePurchasePrice";
 import { ISalePriceGroup } from "@/types/typeSalePrice";
 
-function formatWeight(w: number) {
-  return Number(w).toFixed(1);
-}
-function formatCurrency(value: number, currency: ECURRENCY) {
-  if (currency === ECURRENCY.VND) return value.toLocaleString("vi-VN");
-  return value.toLocaleString("vi-VN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ` ${currency}`;
-}
+/* ----------------- Helpers ----------------- */
+type RowCell = string | number | null;
 
-export function exportPurchasePriceGroupToExcelFull(group: IPurchasePriceGroup) {
-  // --- Data split ---
-  const docDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.DOCUMENT);
-  const parcelDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && !d.isPricePerKG);
-  const perKgDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && d.isPricePerKG);
+const NUM_FORMAT_ALL = "[$-42A]#,##0.##"; // "[$-42A]#,##0.##;[Red]-#,##0.##"; // "[$-42A]#,##0.00";
 
-  // Helper
-  const getZones = (datas: typeof group.datas) => [...new Set(datas.map((d) => d.zone))].sort((a, b) => a - b);
+const formatWeight = (w: number): string => {
+  const str = Number(w).toFixed(1);
+  return str.endsWith(".0") ? str.slice(0, -2) : str;
+};
 
-  // --- Document Rates ---
-  const docZones = getZones(docDatas);
-  const docWeight = [...new Set(docDatas.map((d) => formatWeight(d.weightMax)))].sort((a, b) => Number(a) - Number(b));
-  const docHeader = ["Weight (kg)", ...docZones.map((z) => z.toString())];
-  const docRows = docWeight.map((w) => [
-    w,
-    ...docZones.map((z) => {
-      const d = docDatas.find((d) => formatWeight(d.weightMax) === w && d.zone === z);
-      return d ? formatCurrency(d.price, d.currency) : "";
-    }),
-  ]);
+const getZones = (datas: Array<{ zone: number }>) => [...new Set(datas.map((d) => d.zone))].sort((a, b) => a - b);
 
-  // --- Non-Document Rates ---
-  const parcelZones = getZones(parcelDatas);
-  const parcelWeight = [...new Set(parcelDatas.map((d) => formatWeight(d.weightMax)))].sort((a, b) => Number(a) - Number(b));
-  const parcelHeader = ["Weight (kg)", ...parcelZones.map((z) => z.toString())];
-  const parcelRows = parcelWeight.map((w) => [
-    w,
-    ...parcelZones.map((z) => {
-      const d = parcelDatas.find((d) => formatWeight(d.weightMax) === w && d.zone === z);
-      return d ? formatCurrency(d.price, d.currency) : "";
-    }),
-  ]);
+const getGroupCurrency = (datas: Array<{ currency: ECURRENCY }>): ECURRENCY => {
+  const arr = [...new Set(datas.map((d) => d.currency))];
+  return (arr[0] || ECURRENCY.VND) as ECURRENCY;
+};
 
-  // --- Per KG Rates ---
-  const perKgZones = getZones(perKgDatas);
-  const perKgRanges = [...new Set(perKgDatas.map((d) => `${formatWeight(d.weightMin)}–${formatWeight(d.weightMax)}`))].sort((a, b) => {
-    const [aMin] = a.split("–").map(Number);
-    const [bMin] = b.split("–").map(Number);
-    return aMin - bMin;
-  });
-  const perKgHeader = ["Weight (kg)", ...perKgZones.map((z) => z.toString())];
-  const perKgRows = perKgRanges.map((range) => {
-    const [min, max] = range.split("–").map(Number);
-    return [
-      range,
-      ...perKgZones.map((z) => {
-        const d = perKgDatas.find((d) => d.zone === z && Number(formatWeight(d.weightMin)) === Number(formatWeight(min)) && Number(formatWeight(d.weightMax)) === Number(formatWeight(max)));
-        return d ? formatCurrency(d.price, d.currency) : "";
-      }),
-    ];
-  });
+const getCode = (val: any): string => {
+  if (!val) return "";
+  if (typeof val === "object") return val.code ?? val._id ?? "";
+  return String(val);
+};
 
-  // Title/Meta
-  const carrierName = typeof group.carrierId === "object" ? group.carrierId?.code : group.carrierId || "";
-  const supplierName = typeof group.supplierId === "object" ? group.supplierId?.code : group.supplierId || "";
-  const mainTitle = [`BẢNG  GIÁ DỊCH VỤ CHUYỂN PHÁT NHANH QUỐC TẾ`];
-  const subTitle = [`GIÁ MUA: ${carrierName} - ${supplierName}`];
+// Build header + rows cho section
+const buildSection = (datas: any[], opts: { perKg?: boolean }) => {
+  if (!datas.length) return { header: [] as string[], rows: [] as RowCell[][] };
 
-  // --- Build Sheet ---
-  const sheetAOA: (string | number)[][] = [];
-  // Add Title
-  sheetAOA.push(mainTitle);
-  sheetAOA.push(subTitle);
-  sheetAOA.push([]); // Blank
+  const zones = getZones(datas);
+  const header = [opts.perKg ? "Weight (kg-range)" : "Weight (kg)", ...zones.map(String)];
 
-  // Section 1: Document Rates
-  const docTitleRow = sheetAOA.length;
-  sheetAOA.push(["Document Rates:"]);
-  const docHeaderRow = sheetAOA.length;
-  sheetAOA.push(docHeader);
-  const docTableRow = sheetAOA.length;
-  sheetAOA.push(...docRows);
-  sheetAOA.push([]);
-
-  // Section 2: Non-Document Rates
-  const parcelTitleRow = sheetAOA.length;
-  sheetAOA.push(["Non-Document Rates:"]);
-  const parcelHeaderRow = sheetAOA.length;
-  sheetAOA.push(parcelHeader);
-  const parcelTableRow = sheetAOA.length;
-  sheetAOA.push(...parcelRows);
-  sheetAOA.push([]);
-
-  // Section 3: Per KG Rates (if any)
-  let perKgTitleRow = null,
-    perKgHeaderRow = null,
-    perKgTableRow = null;
-  if (perKgRows.length > 0) {
-    perKgTitleRow = sheetAOA.length;
-    sheetAOA.push(["Giá cước mỗi kg với lô hàng từ 30.1kg trở lên"]);
-    perKgHeaderRow = sheetAOA.length;
-    sheetAOA.push(perKgHeader);
-    perKgTableRow = sheetAOA.length;
-    sheetAOA.push(...perKgRows);
-    sheetAOA.push([]);
+  if (opts.perKg) {
+    const ranges = [...new Set(datas.map((d) => `${formatWeight(d.weightMin)}–${formatWeight(d.weightMax)}`))].sort((a, b) => Number(a.split("–")[0]) - Number(b.split("–")[0]));
+    const rows = ranges.map((range) => {
+      const [min, max] = range.split("–").map(Number);
+      return [
+        range,
+        ...zones.map((z) => {
+          const d = datas.find((x: any) => x.zone === z && Number(formatWeight(x.weightMin)) === Number(formatWeight(min)) && Number(formatWeight(x.weightMax)) === Number(formatWeight(max)));
+          return d ? Number(d.price) : null;
+        }),
+      ] as RowCell[];
+    });
+    return { header, rows };
   }
 
-  // Setup Sheet
-  const ws = XLSX.utils.aoa_to_sheet(sheetAOA);
+  const weights = [...new Set(datas.map((d) => formatWeight(d.weightMax)))].sort((a, b) => Number(a) - Number(b));
+  const rows = weights.map(
+    (w) =>
+      [
+        w,
+        ...zones.map((z) => {
+          const d = datas.find((x: any) => formatWeight(x.weightMax) === w && x.zone === z);
+          return d ? Number(d.price) : null;
+        }),
+      ] as RowCell[]
+  );
+  return { header, rows };
+};
 
-  // --- Calculate column count for merging ---
-  const lastCol = Math.max(docHeader.length, parcelHeader.length, perKgHeader.length) - 1;
+/* ----- Styling helpers (KHÔNG ghi đè v/t) ----- */
+const setCellStyle = (ws: XLSX.WorkSheet, r: number, c: number, style: any) => {
+  const addr = XLSX.utils.encode_cell({ r, c });
+  const cell = (ws as any)[addr] || ((ws as any)[addr] = {});
+  cell.s = style; // chỉ gán style, giữ nguyên v/t hiện có
+};
 
-  // --- Merge ---
-  ws["!merges"] = [
-    { s: { r: 0, c: 0 }, e: { r: 0, c: lastCol } }, // Title
-    { s: { r: 1, c: 0 }, e: { r: 1, c: lastCol } }, // Subtitle
-    { s: { r: docTitleRow, c: 0 }, e: { r: docTitleRow, c: lastCol } }, // Doc title
-    { s: { r: parcelTitleRow, c: 0 }, e: { r: parcelTitleRow, c: lastCol } }, // Parcel title
-    ...(perKgTitleRow !== null ? [{ s: { r: perKgTitleRow, c: 0 }, e: { r: perKgTitleRow, c: lastCol } }] : []),
-  ];
+const applyHeaderStyle = (ws: XLSX.WorkSheet, row: number, colLen: number, style: any) => {
+  for (let c = 0; c < colLen; c++) setCellStyle(ws, row, c, style);
+};
 
-  // --- Styles ---
-  const border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
-  const titleStyle = {
-    font: { bold: true, sz: 18, color: { rgb: "C65911" }, name: "Arial" },
-    alignment: { horizontal: "center", vertical: "center" },
-  };
-  const subTitleStyle = { font: { bold: true, sz: 14, name: "Arial" }, alignment: { horizontal: "center" } };
-  const sectionTitleStyle = {
-    font: { bold: true, sz: 13, color: { rgb: "1b4786" }, name: "Arial" },
-    alignment: { horizontal: "center", vertical: "center" },
-  };
-  const headerStyle = {
-    font: { bold: true, color: { rgb: "C65911" }, name: "Arial", sz: 11 },
-    fill: { fgColor: { rgb: "FFFACD" } },
-    alignment: { horizontal: "center", vertical: "center" },
-    border,
-  };
-  const cellStyle = (isWeight = false) => ({
-    font: { name: "Arial", sz: 10 },
-    alignment: { horizontal: isWeight ? "center" : "right", vertical: "center" },
-    border,
-  });
+// ép NUMBER + set format + xoá cache text `w` để tránh hiển thị "…,"
+const coerceNumberCell = (cell: any, numFmt: string) => {
+  const v = cell?.v;
+  // ép string kiểu "2,968,919." / "1.234,56" -> number
+  const n =
+    typeof v === "number" && Number.isFinite(v)
+      ? v
+      : ((): number | null => {
+          if (typeof v !== "string") return null;
+          let s = v.trim();
+          if (!s) return null;
+          s = s.replace(/[.,]$/, ""); // bỏ dấu . hoặc , ở cuối
+          const lastComma = s.lastIndexOf(",");
+          const lastDot = s.lastIndexOf(".");
+          let dec = "";
+          if (lastComma > lastDot) dec = ",";
+          else if (lastDot > lastComma) dec = ".";
+          if (dec) {
+            const thou = dec === "," ? "." : ",";
+            s = s.split(thou).join("");
+            s = s.replace(dec, ".");
+          } else {
+            s = s.replace(/[.,]/g, "");
+          }
+          const num = Number(s);
+          return Number.isFinite(num) ? num : null;
+        })();
 
-  function safeSetCellStyle(cell: string, style: any) {
-    if (!ws[cell]) ws[cell] = { t: "s", v: "" };
-    ws[cell].s = style;
+  if (n !== null) {
+    cell.v = n; // <-- number thật
+    cell.t = "n";
+    cell.z = numFmt;
+    delete cell.w; // <-- QUAN TRỌNG: xoá cache text
+  } else {
+    cell.v = null;
+    delete cell.t;
+    cell.z = numFmt;
+    delete cell.w;
   }
+};
 
-  // Style Title
-  safeSetCellStyle("A1", titleStyle);
-  safeSetCellStyle("A2", subTitleStyle);
+const applyTableStyle = (ws: XLSX.WorkSheet, startRow: number, rows: (string | number | null)[][], colLen: number, numFmt: string, mkCellStyle: (isWeight: boolean) => any) => {
+  for (let r = 0; r < rows.length; r++) {
+    for (let c = 0; c < colLen; c++) {
+      const addr = XLSX.utils.encode_cell({ r: startRow + r, c });
+      const cell = (ws as any)[addr] || ((ws as any)[addr] = {});
 
-  // Section titles
-  safeSetCellStyle(XLSX.utils.encode_cell({ r: docTitleRow, c: 0 }), sectionTitleStyle);
-  safeSetCellStyle(XLSX.utils.encode_cell({ r: parcelTitleRow, c: 0 }), sectionTitleStyle);
-  if (perKgTitleRow !== null) safeSetCellStyle(XLSX.utils.encode_cell({ r: perKgTitleRow, c: 0 }), sectionTitleStyle);
-
-  // Header rows
-  function styleHeaderRow(row: number, colLen: number) {
-    for (let i = 0; i < colLen; ++i) {
-      const cell = XLSX.utils.encode_cell({ r: row, c: i });
-      safeSetCellStyle(cell, headerStyle);
-    }
-  }
-  styleHeaderRow(docHeaderRow, docHeader.length);
-  styleHeaderRow(parcelHeaderRow, parcelHeader.length);
-  if (perKgHeaderRow !== null) styleHeaderRow(perKgHeaderRow, perKgHeader.length);
-
-  // Table cells
-  function styleTable(startRow: number, rows: any[][], colLen: number) {
-    for (let r = 0; r < rows.length; ++r) {
-      for (let c = 0; c < colLen; ++c) {
-        const cell = XLSX.utils.encode_cell({ r: startRow + r, c });
-        safeSetCellStyle(cell, cellStyle(c === 0));
+      // Cột 0 (Weight): nếu là range "a–b" giữ text; còn lại ép number
+      if (c === 0 && typeof cell.v === "string" && cell.v.includes("–")) {
+        delete cell.t;
+        delete cell.z;
+        delete cell.w;
+      } else {
+        coerceNumberCell(cell, numFmt);
       }
+
+      // chỉ gán style, không đụng v/t
+      const style = mkCellStyle(c === 0);
+      cell.s = style;
     }
   }
-  styleTable(docTableRow, docRows, docHeader.length);
-  styleTable(parcelTableRow, parcelRows, parcelHeader.length);
-  if (perKgTableRow !== null) styleTable(perKgTableRow, perKgRows, perKgHeader.length);
+};
 
-  // Column widths
-  ws["!cols"] = Array(lastCol + 1).fill({ wch: 18 });
+const lastColFromHeaders = (...lens: number[]) => Math.max(...lens.map((n) => (Number.isFinite(n) && n! > 0 ? n! : 1))) - 1;
 
-  // Workbook & Save
-  const wb = XLSX.utils.book_new();
-  const sheetName = `GiaMua_${carrierName}_${supplierName}`.slice(0, 31);
-  XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  XLSX.writeFile(wb, `${sheetName}.xlsx`);
-}
+/* ----------------- Core generic exporter ----------------- */
+const exportPriceGroupToExcelFull = (kind: "purchase" | "sale", group: any) => {
+  const allDatas = Array.isArray(group?.datas) ? group.datas : [];
 
-export function exportSalePriceGroupToExcelFull(group: ISalePriceGroup) {
-  const docDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.DOCUMENT);
-  const parcelDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && !d.isPricePerKG);
-  const perKgDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && d.isPricePerKG);
+  const docDatas = allDatas.filter((d: any) => d.productType === EPRODUCT_TYPE.DOCUMENT);
+  const parcelDatas = allDatas.filter((d: any) => d.productType === EPRODUCT_TYPE.PARCEL && !d.isPricePerKG);
+  const perKgDatas = allDatas.filter((d: any) => d.productType === EPRODUCT_TYPE.PARCEL && d.isPricePerKG);
 
-  const getZones = (datas: typeof group.datas) => [...new Set(datas.map((d) => d.zone))].sort((a, b) => a - b);
+  const currency = getGroupCurrency(allDatas);
+  const doc = buildSection(docDatas, { perKg: false });
+  const par = buildSection(parcelDatas, { perKg: false });
+  const per = buildSection(perKgDatas, { perKg: true });
 
-  const docZones = getZones(docDatas);
-  const docWeight = [...new Set(docDatas.map((d) => formatWeight(d.weightMax)))].sort((a, b) => Number(a) - Number(b));
-  const docHeader = ["Weight (kg)", ...docZones.map((z) => z.toString())];
-  const docRows = docWeight.map((w) => [
-    w,
-    ...docZones.map((z) => {
-      const d = docDatas.find((d) => formatWeight(d.weightMax) === w && d.zone === z);
-      return d ? formatCurrency(d.price, d.currency) : "";
-    }),
-  ]);
+  const carrierCode = getCode(group.carrierId);
+  const partnerOrSupplierCode = kind === "sale" ? getCode(group.partnerId) : getCode(group.supplierId);
+  const serviceCode = getCode(group.serviceId);
 
-  const parcelZones = getZones(parcelDatas);
-  const parcelWeight = [...new Set(parcelDatas.map((d) => formatWeight(d.weightMax)))].sort((a, b) => Number(a) - Number(b));
-  const parcelHeader = ["Weight (kg)", ...parcelZones.map((z) => z.toString())];
-  const parcelRows = parcelWeight.map((w) => [
-    w,
-    ...parcelZones.map((z) => {
-      const d = parcelDatas.find((d) => formatWeight(d.weightMax) === w && d.zone === z);
-      return d ? formatCurrency(d.price, d.currency) : "";
-    }),
-  ]);
-
-  const perKgZones = getZones(perKgDatas);
-  const perKgRanges = [...new Set(perKgDatas.map((d) => `${formatWeight(d.weightMin)}–${formatWeight(d.weightMax)}`))].sort((a, b) => {
-    const [aMin] = a.split("–").map(Number);
-    const [bMin] = b.split("–").map(Number);
-    return aMin - bMin;
-  });
-  const perKgHeader = ["Weight (kg)", ...perKgZones.map((z) => z.toString())];
-  const perKgRows = perKgRanges.map((range) => {
-    const [min, max] = range.split("–").map(Number);
-    return [
-      range,
-      ...perKgZones.map((z) => {
-        const d = perKgDatas.find((d) => d.zone === z && Number(formatWeight(d.weightMin)) === Number(formatWeight(min)) && Number(formatWeight(d.weightMax)) === Number(formatWeight(max)));
-        return d ? formatCurrency(d.price, d.currency) : "";
-      }),
-    ];
-  });
-
-  const carrierName = typeof group.carrierId === "object" ? group.carrierId?.code : group.carrierId || "";
-  const partnerName = typeof group.partnerId === "object" ? group.partnerId?.code : group.partnerId || "";
   const mainTitle = ["BẢNG GIÁ DỊCH VỤ CHUYỂN PHÁT NHANH QUỐC TẾ"];
-  const subTitle = [`GIÁ BÁN: ${carrierName} - ${partnerName}`];
+  const subTitle = [(kind === "sale" ? "GIÁ BÁN" : "GIÁ MUA") + `: ${carrierCode} - ${partnerOrSupplierCode}   |   Service: ${serviceCode}   |   Currency: ${currency}`];
 
-  const sheetAOA: (string | number)[][] = [];
-  sheetAOA.push(mainTitle);
-  sheetAOA.push(subTitle);
-  sheetAOA.push([]);
+  const AOA: RowCell[][] = [];
+  AOA.push(mainTitle, subTitle, []);
 
-  const docTitleRow = sheetAOA.length;
-  sheetAOA.push(["Document Rates:"]);
-  const docHeaderRow = sheetAOA.length;
-  sheetAOA.push(docHeader);
-  const docTableRow = sheetAOA.length;
-  sheetAOA.push(...docRows);
-  sheetAOA.push([]);
-
-  const parcelTitleRow = sheetAOA.length;
-  sheetAOA.push(["Non-Document Rates:"]);
-  const parcelHeaderRow = sheetAOA.length;
-  sheetAOA.push(parcelHeader);
-  const parcelTableRow = sheetAOA.length;
-  sheetAOA.push(...parcelRows);
-  sheetAOA.push([]);
-
-  let perKgTitleRow = null,
-    perKgHeaderRow = null,
-    perKgTableRow = null;
-  if (perKgRows.length > 0) {
-    perKgTitleRow = sheetAOA.length;
-    sheetAOA.push(["Giá cước mỗi kg với lô hàng từ 30.1kg trở lên"]);
-    perKgHeaderRow = sheetAOA.length;
-    sheetAOA.push(perKgHeader);
-    perKgTableRow = sheetAOA.length;
-    sheetAOA.push(...perKgRows);
-    sheetAOA.push([]);
+  // Document
+  const docTitleRow = AOA.length;
+  let docHeaderRow: number | null = null;
+  let docTableRow: number | null = null;
+  if (doc.rows.length) {
+    AOA.push(["Document Rates:"]);
+    docHeaderRow = AOA.length;
+    AOA.push(doc.header);
+    docTableRow = AOA.length;
+    AOA.push(...doc.rows);
+    AOA.push([]);
   }
 
-  const ws = XLSX.utils.aoa_to_sheet(sheetAOA);
-  const lastCol = Math.max(docHeader.length, parcelHeader.length, perKgHeader.length) - 1;
+  // Non-Document
+  const parTitleRow = AOA.length;
+  let parHeaderRow: number | null = null;
+  let parTableRow: number | null = null;
+  if (par.rows.length) {
+    AOA.push(["Non-Document Rates:"]);
+    parHeaderRow = AOA.length;
+    AOA.push(par.header);
+    parTableRow = AOA.length;
+    AOA.push(...par.rows);
+    AOA.push([]);
+  }
 
-  ws["!merges"] = [
+  // Per-KG
+  let perTitleRow: number | null = null;
+  let perHeaderRow: number | null = null;
+  let perTableRow: number | null = null;
+  if (per.rows.length) {
+    perTitleRow = AOA.length;
+    AOA.push(["Rates per KG (for shipments from 30.1 kg and up)"]);
+    perHeaderRow = AOA.length;
+    AOA.push(per.header);
+    perTableRow = AOA.length;
+    AOA.push(...per.rows);
+    AOA.push([]);
+  }
+
+  // Sheet
+  const ws = XLSX.utils.aoa_to_sheet(AOA);
+  const lastCol = lastColFromHeaders(doc.header.length, par.header.length, per.header.length);
+
+  // Merge
+  const merges: Array<{ s: { r: number; c: number }; e: { r: number; c: number } }> = [
     { s: { r: 0, c: 0 }, e: { r: 0, c: lastCol } },
     { s: { r: 1, c: 0 }, e: { r: 1, c: lastCol } },
-    { s: { r: docTitleRow, c: 0 }, e: { r: docTitleRow, c: lastCol } },
-    { s: { r: parcelTitleRow, c: 0 }, e: { r: parcelTitleRow, c: lastCol } },
-    ...(perKgTitleRow !== null ? [{ s: { r: perKgTitleRow, c: 0 }, e: { r: perKgTitleRow, c: lastCol } }] : []),
   ];
+  if (doc.rows.length) merges.push({ s: { r: docTitleRow, c: 0 }, e: { r: docTitleRow, c: lastCol } });
+  if (par.rows.length) merges.push({ s: { r: parTitleRow, c: 0 }, e: { r: parTitleRow, c: lastCol } });
+  if (per.rows.length && perTitleRow !== null) merges.push({ s: { r: perTitleRow, c: 0 }, e: { r: perTitleRow, c: lastCol } });
+  ws["!merges"] = [...(ws["!merges"] || []), ...merges];
 
-  const border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
-  const titleStyle = {
-    font: { bold: true, sz: 18, color: { rgb: "C65911" }, name: "Arial" },
-    alignment: { horizontal: "center", vertical: "center" },
-  };
+  // Styles
+  const borderThin = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+  const titleStyle = { font: { bold: true, sz: 18, color: { rgb: "C65911" }, name: "Arial" }, alignment: { horizontal: "center", vertical: "center" } };
   const subTitleStyle = { font: { bold: true, sz: 14, name: "Arial" }, alignment: { horizontal: "center" } };
-  const sectionTitleStyle = {
-    font: { bold: true, sz: 13, color: { rgb: "1b4786" }, name: "Arial" },
-    alignment: { horizontal: "center", vertical: "center" },
-  };
+  const sectionTitleStyle = { font: { bold: true, sz: 13, color: { rgb: "1b4786" }, name: "Arial" }, alignment: { horizontal: "center", vertical: "center" } };
   const headerStyle = {
     font: { bold: true, color: { rgb: "C65911" }, name: "Arial", sz: 11 },
     fill: { fgColor: { rgb: "FFFACD" } },
     alignment: { horizontal: "center", vertical: "center" },
-    border,
+    border: borderThin,
   };
-  const cellStyle = (isWeight = false) => ({
+  const mkCellStyle = (isWeight: boolean) => ({
     font: { name: "Arial", sz: 10 },
     alignment: { horizontal: isWeight ? "center" : "right", vertical: "center" },
-    border,
+    border: borderThin,
   });
 
-  function safeSetCellStyle(cell: string, style: any) {
-    if (!ws[cell]) ws[cell] = { t: "s", v: "" };
-    ws[cell].s = style;
-  }
+  // Titles & headers
+  setCellStyle(ws, 0, 0, titleStyle);
+  setCellStyle(ws, 1, 0, subTitleStyle);
+  if (doc.rows.length) setCellStyle(ws, docTitleRow, 0, sectionTitleStyle);
+  if (par.rows.length) setCellStyle(ws, parTitleRow, 0, sectionTitleStyle);
+  if (per.rows.length && perTitleRow !== null) setCellStyle(ws, perTitleRow, 0, sectionTitleStyle);
 
-  safeSetCellStyle("A1", titleStyle);
-  safeSetCellStyle("A2", subTitleStyle);
-  safeSetCellStyle(XLSX.utils.encode_cell({ r: docTitleRow, c: 0 }), sectionTitleStyle);
-  safeSetCellStyle(XLSX.utils.encode_cell({ r: parcelTitleRow, c: 0 }), sectionTitleStyle);
-  if (perKgTitleRow !== null) safeSetCellStyle(XLSX.utils.encode_cell({ r: perKgTitleRow, c: 0 }), sectionTitleStyle);
+  if (docHeaderRow !== null) applyHeaderStyle(ws, docHeaderRow, doc.header.length, headerStyle);
+  if (parHeaderRow !== null) applyHeaderStyle(ws, parHeaderRow, par.header.length, headerStyle);
+  if (perHeaderRow !== null) applyHeaderStyle(ws, perHeaderRow, per.header.length, headerStyle);
 
-  function styleHeaderRow(row: number, colLen: number) {
-    for (let i = 0; i < colLen; ++i) {
-      const cell = XLSX.utils.encode_cell({ r: row, c: i });
-      safeSetCellStyle(cell, headerStyle);
-    }
-  }
-  styleHeaderRow(docHeaderRow, docHeader.length);
-  styleHeaderRow(parcelHeaderRow, parcelHeader.length);
-  if (perKgHeaderRow !== null) styleHeaderRow(perKgHeaderRow, perKgHeader.length);
+  // Bảng dữ liệu: ÉP NUMBER + 1 format (xoá cache `w`)
+  if (docTableRow !== null) applyTableStyle(ws, docTableRow, doc.rows, doc.header.length, NUM_FORMAT_ALL, mkCellStyle);
+  if (parTableRow !== null) applyTableStyle(ws, parTableRow, par.rows, par.header.length, NUM_FORMAT_ALL, mkCellStyle);
+  if (perTableRow !== null) applyTableStyle(ws, perTableRow, per.rows, per.header.length, NUM_FORMAT_ALL, mkCellStyle);
 
-  function styleTable(startRow: number, rows: any[][], colLen: number) {
-    for (let r = 0; r < rows.length; ++r) {
-      for (let c = 0; c < colLen; ++c) {
-        const cell = XLSX.utils.encode_cell({ r: startRow + r, c });
-        safeSetCellStyle(cell, cellStyle(c === 0));
-      }
-    }
-  }
-  styleTable(docTableRow, docRows, docHeader.length);
-  styleTable(parcelTableRow, parcelRows, parcelHeader.length);
-  if (perKgTableRow !== null) styleTable(perKgTableRow, perKgRows, perKgHeader.length);
+  (ws as any)["!cols"] = Array(lastCol + 1).fill({ wch: 18 });
 
-  ws["!cols"] = Array(lastCol + 1).fill({ wch: 18 });
+  // Save
   const wb = XLSX.utils.book_new();
-  const sheetName = `GiaBan_${carrierName}_${partnerName}`.slice(0, 31);
+  const sheetName = (kind === "sale" ? `GiaBan_${carrierCode}_${partnerOrSupplierCode}` : `GiaMua_${carrierCode}_${partnerOrSupplierCode}`).slice(0, 31);
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   XLSX.writeFile(wb, `${sheetName}.xlsx`);
-}
+};
+
+/* ----------------- Public APIs ----------------- */
+export const exportPurchasePriceGroupToExcelFull = (group: IPurchasePriceGroup) => {
+  exportPriceGroupToExcelFull("purchase", group as any);
+};
+export const exportSalePriceGroupToExcelFull = (group: ISalePriceGroup) => {
+  exportPriceGroupToExcelFull("sale", group as any);
+};

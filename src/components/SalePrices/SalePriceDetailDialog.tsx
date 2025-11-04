@@ -5,22 +5,23 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, 
 import { ISalePriceGroup } from "@/types/typeSalePrice";
 import { EPRODUCT_TYPE, ECURRENCY } from "@/types/typeGlobals";
 import { lightBlue } from "@mui/material/colors";
+import { getId } from "@/utils/hooks/hookGlobals";
 
-// Format functions
+// -------- helpers ----------
 function formatWeight(w: number) {
   return Number(w).toFixed(1);
 }
 function formatCurrency(value: number, currency: ECURRENCY) {
   if (currency === ECURRENCY.VND) return value.toLocaleString("vi-VN");
-  return (
-    value.toLocaleString("vi-VN", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }) + ` ${currency}`
-  );
+  return value.toLocaleString("vi-VN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ` ${currency}`;
+}
+function getCode(val: any): string {
+  if (!val) return "";
+  if (typeof val === "object") return val.code ?? getId(val) ?? "";
+  return String(val);
 }
 
-// Table renderer
+// -------- table ----------
 function PriceTable({ label, currency, zones, rows, headerTitle = "Weight (kg)" }: { label: string; currency: string; zones: number[]; rows: any[]; headerTitle?: string }) {
   const theme = useTheme();
   return (
@@ -108,20 +109,21 @@ function PriceTable({ label, currency, zones, rows, headerTitle = "Weight (kg)" 
   );
 }
 
-// Main Dialog
+// -------- main ----------
 export default function SalePriceDetailDialog({ open, group, onClose }: { open: boolean; group: ISalePriceGroup; onClose: () => void }) {
   if (!group) return null;
+  const datas = Array.isArray((group as any).datas) ? group.datas : [];
 
-  const docDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.DOCUMENT);
-  const parcelDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && !d.isPricePerKG);
-  const perKgDatas = group.datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && d.isPricePerKG);
+  const docDatas = datas.filter((d) => d.productType === EPRODUCT_TYPE.DOCUMENT);
+  const parcelDatas = datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && !d.isPricePerKG);
+  const perKgDatas = datas.filter((d) => d.productType === EPRODUCT_TYPE.PARCEL && d.isPricePerKG);
 
-  const getZones = (datas: typeof group.datas) => [...new Set(datas.map((d) => d.zone))].sort((a, b) => a - b);
-  const getCurrency = (datas: typeof group.datas) => [...new Set(datas.map((d) => d.currency))].join(", ");
+  const getZones = (arr: typeof datas) => [...new Set(arr.map((d) => d.zone))].sort((a, b) => a - b);
+  const getCurrencies = (arr: typeof datas) => [...new Set(arr.map((d) => d.currency))].join(", ");
 
-  // Document Table
+  // Document table
   const docZones = getZones(docDatas);
-  const docCurrency = getCurrency(docDatas);
+  const docCurrency = getCurrencies(docDatas);
   const docWeight = [...new Set(docDatas.map((d) => formatWeight(d.weightMax)))].sort((a, b) => Number(a) - Number(b));
   const docRows = docWeight.map((w) => [
     w,
@@ -131,9 +133,9 @@ export default function SalePriceDetailDialog({ open, group, onClose }: { open: 
     }),
   ]);
 
-  // Parcel Table
+  // Parcel table
   const parcelZones = getZones(parcelDatas);
-  const parcelCurrency = getCurrency(parcelDatas);
+  const parcelCurrency = getCurrencies(parcelDatas);
   const parcelWeight = [...new Set(parcelDatas.map((d) => formatWeight(d.weightMax)))].sort((a, b) => Number(a) - Number(b));
   const parcelRows = parcelWeight.map((w) => [
     w,
@@ -143,9 +145,9 @@ export default function SalePriceDetailDialog({ open, group, onClose }: { open: 
     }),
   ]);
 
-  // Per KG Table
+  // Per-KG table
   const perKgZones = getZones(perKgDatas);
-  const perKgCurrency = getCurrency(perKgDatas);
+  const perKgCurrency = getCurrencies(perKgDatas);
   const perKgRanges = [...new Set(perKgDatas.map((d) => `${formatWeight(d.weightMin)}–${formatWeight(d.weightMax)}`))].sort((a, b) => {
     const [aMin] = a.split("–").map(Number);
     const [bMin] = b.split("–").map(Number);
@@ -162,12 +164,12 @@ export default function SalePriceDetailDialog({ open, group, onClose }: { open: 
     ];
   });
 
-  // Group Info
+  // Header info
   const infoItems = [
-    { label: "Partner", value: typeof group.partnerId === "object" ? group.partnerId?.code : group.partnerId },
-    { label: "Sub Carrier", value: typeof group.carrierId === "object" ? group.carrierId?.code : group.carrierId },
-    { label: "Service", value: typeof group.serviceId === "object" ? group.serviceId?.code : group.serviceId },
-    { label: "Currency", value: group.datas[0]?.currency ?? "" },
+    { label: "Partner", value: getCode(group.partnerId) },
+    { label: "Sub Carrier", value: getCode(group.carrierId) },
+    { label: "Service", value: getCode(group.serviceId) },
+    { label: "Currency", value: getCurrencies(datas) },
   ];
 
   return (
@@ -186,7 +188,6 @@ export default function SalePriceDetailDialog({ open, group, onClose }: { open: 
         SALE PRICE TABLE
       </DialogTitle>
       <DialogContent dividers sx={{ background: "#f6f8fa" }}>
-        {/* Group Info */}
         <Stack direction="row" spacing={3} alignItems="center" sx={{ mb: 2 }}>
           <Grid container spacing={2}>
             {infoItems.map((item) => (
@@ -201,10 +202,9 @@ export default function SalePriceDetailDialog({ open, group, onClose }: { open: 
 
         <Divider sx={{ my: 2 }} />
 
-        {/* Tables */}
         {docRows.length > 0 && <PriceTable label="Document Rates" currency={docCurrency} zones={docZones} rows={docRows} />}
         {parcelRows.length > 0 && <PriceTable label="Non-Document Rates" currency={parcelCurrency} zones={parcelZones} rows={parcelRows} />}
-        {perKgRows.length > 0 && <PriceTable label="Rates per KG (for shipments from 30.1kg and up)" currency={perKgCurrency} zones={perKgZones} rows={perKgRows} headerTitle="Range (kg)" />}
+        {perKgRows.length > 0 && <PriceTable label="Rates per KG (for shipments from 30.1 kg and up)" currency={perKgCurrency} zones={perKgZones} rows={perKgRows} headerTitle="Range (kg)" />}
       </DialogContent>
       <DialogActions sx={{ background: "#fafbfc", borderTop: "1px solid #e0e0e0" }}>
         <Button variant="contained" color="primary" onClick={onClose}>

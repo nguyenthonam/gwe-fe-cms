@@ -17,7 +17,7 @@ import UpdateSalePriceDialog from "./UpdateSalePriceDialog";
 import SalePriceDetailDialog from "./SalePriceDetailDialog";
 
 import { ERECORD_STATUS } from "@/types/typeGlobals";
-import { getNameOfObjectId } from "@/utils/hooks/hookGlobals";
+import { getId, getNameOfObjectId } from "@/utils/hooks/hookGlobals";
 import { ActionMenu } from "../Globals/ActionMenu";
 import { exportSalePriceGroupToExcelFull } from "@/utils/hooks/hookPrice";
 import { ISalePriceGroup } from "@/types/typeSalePrice";
@@ -90,57 +90,38 @@ export default function SalePriceManagerView() {
 
   const handleDeleteGroup = async (group: ISalePriceGroup) => {
     if (!window.confirm("Are you sure you want to delete this group?")) return;
-    if (!group?.carrierId || !group?.partnerId || !group?.serviceId) {
-      showNotification("Incomplete group data for deletion!", "error");
-      return;
-    }
-
-    const carrierId = typeof group.carrierId === "object" ? group.carrierId._id : group.carrierId;
-    const partnerId = typeof group.partnerId === "object" ? group.partnerId._id : group.partnerId;
-    const serviceId = typeof group.serviceId === "object" ? group.serviceId._id : group.serviceId;
-
+    const carrierId = getId(group.carrierId);
+    const partnerId = getId(group.partnerId);
+    const serviceId = getId(group.serviceId);
     if (!carrierId || !partnerId || !serviceId) {
-      showNotification("Incomplete group data for deletion!", "error");
+      showNotification("Missing group ID!", "error");
       return;
     }
-
     try {
-      await deleteSalePriceGroupApi({
-        carrierId,
-        partnerId,
-        serviceId,
-      });
-      showNotification("Đã xoá group!");
+      await deleteSalePriceGroupApi({ carrierId, partnerId, serviceId });
+      showNotification("Group deleted successfully!");
       fetchData();
     } catch (err: any) {
-      showNotification(err.message || "Error deleting group", "error");
+      showNotification(err?.message || "Error deleting group", "error");
     }
   };
 
   const handleLockUnlockGroup = async (group: ISalePriceGroup) => {
-    if (!group?.carrierId || !group?.partnerId || !group?.serviceId) {
-      showNotification("Incomplete group data for lock/unlock!", "error");
-      return;
-    }
-
-    const carrierId = typeof group.carrierId === "object" ? group.carrierId._id : group.carrierId;
-    const partnerId = typeof group.partnerId === "object" ? group.partnerId._id : group.partnerId;
-    const serviceId = typeof group.serviceId === "object" ? group.serviceId._id : group.serviceId;
-
+    const carrierId = getId(group.carrierId);
+    const partnerId = getId(group.partnerId);
+    const serviceId = getId(group.serviceId);
     if (!carrierId || !partnerId || !serviceId) {
-      showNotification("Incomplete group data for lock/unlock!", "error");
+      showNotification("Missing group ID!", "error");
       return;
     }
-
-    const isLocked = group.datas.length > 0 && group.datas.every((d) => d.status === ERECORD_STATUS.Locked);
-
+    const isLocked = (group.datas?.length || 0) > 0 && group.datas!.every((d) => d.status === ERECORD_STATUS.Locked);
     try {
       const api = isLocked ? unlockSalePriceGroupApi : lockSalePriceGroupApi;
       await api({ carrierId, partnerId, serviceId });
       showNotification(isLocked ? "Group unlocked!" : "Group locked!");
       fetchData();
     } catch (err: any) {
-      showNotification(err.message || "Error updating status", "error");
+      showNotification(err?.message || "Error updating status", "error");
     }
   };
 
@@ -201,7 +182,7 @@ export default function SalePriceManagerView() {
       renderCell: ({ row }) => (
         <Stack direction="row" height="100%" spacing={1} alignItems="center">
           <Button size="small" startIcon={<Download />} onClick={() => exportGroupToExcel(row)}>
-            Export
+            Export Excel
           </Button>
           <ActionMenu
             onEdit={() => {
