@@ -1,5 +1,5 @@
 export const getId = (val: any): string | null => {
-  if (!val) return "";
+  if (!val) return null;
   if (typeof val === "object" && val._id) return val._id;
   if (typeof val === "string") return val;
   return null;

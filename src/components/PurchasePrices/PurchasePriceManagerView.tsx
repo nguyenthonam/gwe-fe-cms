@@ -10,7 +10,7 @@ import { useNotification } from "@/contexts/NotificationProvider";
 import { getCarriersApi } from "@/utils/apis/apiCarrier";
 import { getSuppliersApi } from "@/utils/apis/apiSupplier";
 import { getServicesApi, getServicesByCarrierApi } from "@/utils/apis/apiService";
-import { searchPurchasePriceGroupsApi, deletePurchasePriceGroupApi, lockPurchasePriceGroupApi, unlockPurchasePriceGroupApi, searchPurchasePriceListsApi } from "@/utils/apis/apiPurchasePrice";
+import { searchPurchasePriceGroupsApi, deletePurchasePriceGroupApi, lockPurchasePriceGroupApi, unlockPurchasePriceGroupApi } from "@/utils/apis/apiPurchasePrice";
 
 import CreatePurchasePriceDialog from "./CreatePurchasePriceDialog";
 import UpdatePurchasePriceDialog from "./UpdatePurchasePriceDialog";
@@ -77,9 +77,8 @@ export default function PurchasePriceManagerView() {
       const arr: IPurchasePriceGroup[] = Array.isArray(res?.data?.data?.data) ? res.data.data.data.filter(Boolean) : [];
       setGroups(arr);
       setTotal(res?.data?.data?.meta?.total || 0);
-      console.log("Fetched groups:", arr);
+      // eslint-disable-next-line
     } catch (err) {
-      console.error("Error fetching purchase price groups:", err);
       showNotification("Failed to load purchase price groups", "error");
     }
     setLoading(false);
@@ -89,29 +88,15 @@ export default function PurchasePriceManagerView() {
     fetchData();
   }, [keyword, page, pageSize, carrierIdFilter, serviceIdFilter, supplierIdFilter, statusFilter]);
 
+  // Open Detail giống Sale: không prefetch — dùng datas có sẵn trong group
   const openDetail = async (row: IPurchasePriceGroup) => {
-    const carrierId = getId(row.carrierId);
-    const supplierId = getId(row.supplierId);
-    const serviceId = getId(row.serviceId);
-
-    // gọi API list items theo group; perPage đủ lớn để lấy hết
-    const res = await searchPurchasePriceListsApi({
-      carrierId,
-      supplierId,
-      serviceId,
-      page: 1,
-      perPage: 2000,
-    });
-    const datas = res?.data?.data?.data || [];
-
-    setSelectedGroup({ ...row, datas }); // gắn datas vào group
+    setSelectedGroup(row);
     setOpenDetailDialog(true);
   };
 
   const handleDeleteGroup = async (group: IPurchasePriceGroup) => {
     if (!window.confirm("Are you sure you want to delete this group?")) return;
     try {
-      console.log("Deleting purchase price group:", group);
       const carrierId = getId(group.carrierId);
       const supplierId = getId(group.supplierId);
       const serviceId = getId(group.serviceId);
@@ -119,7 +104,6 @@ export default function PurchasePriceManagerView() {
         showNotification("Missing group ID!", "error");
         return;
       }
-
       await deletePurchasePriceGroupApi({ carrierId, supplierId, serviceId });
       showNotification("Group deleted successfully!");
       fetchData();
@@ -137,17 +121,15 @@ export default function PurchasePriceManagerView() {
       showNotification("Missing group ID!", "error");
       return;
     }
-
-    const isLocked = group.datas.length > 0 && group.datas.every((d) => d.status === ERECORD_STATUS.Locked);
-
+    const isLocked = (group.datas?.length || 0) > 0 && group.datas!.every((d) => d.status === ERECORD_STATUS.Locked);
     try {
       const api = isLocked ? unlockPurchasePriceGroupApi : lockPurchasePriceGroupApi;
       await api({ carrierId, supplierId, serviceId });
-      showNotification(isLocked ? "Unlocked successfully!" : "Locked successfully!");
+      showNotification(isLocked ? "Group unlocked!" : "Group locked!");
       fetchData();
     } catch (err: any) {
-      console.error("Error updating group status:", err);
-      showNotification(err.message || "Status update error", "error");
+      console.error("Error lock/unlock purchase price group:", err);
+      showNotification(err.message || "Update error", "error");
     }
   };
 
