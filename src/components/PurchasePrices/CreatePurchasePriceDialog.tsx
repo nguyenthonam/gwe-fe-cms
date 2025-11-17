@@ -22,6 +22,7 @@ import {
   TableHead,
   TableRow,
   Typography,
+  Dialog as MuiDialog, // ✅ thêm Modal phụ
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import { useNotification } from "@/contexts/NotificationProvider";
@@ -31,7 +32,7 @@ import { getServicesByCarrierApi } from "@/utils/apis/apiService";
 import { getSuppliersApi } from "@/utils/apis/apiSupplier";
 import { ECURRENCY, EPRODUCT_TYPE } from "@/types/typeGlobals";
 import { IPurchasePrice } from "@/types/typePurchasePrice";
-import { formatCurrency } from "@/utils/hooks/hookCurrency";
+import { formatNumberVi } from "@/utils/hooks/hookNumber";
 import dayjs from "dayjs";
 
 interface Props {
@@ -43,12 +44,13 @@ interface Props {
 interface WeightRange {
   min: number;
   max: number;
-  label: string;
+  label: string; // giữ label gốc (ví dụ "0,5", "1", "1,5", "0,5-1")
 }
+
 interface ParsedTable {
   weightRanges: WeightRange[];
   zones: number[];
-  prices: number[][];
+  prices: number[][]; // số để submit API
 }
 
 export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: Props) {
@@ -70,7 +72,35 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
   const [parsedTable, setParsedTable] = useState<ParsedTable | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // ✅ popup success
+  const [openSuccess, setOpenSuccess] = useState(false);
+
   const { showNotification } = useNotification();
+
+  /* ---------------- Helpers: parse số vi-VN ---------------- */
+
+  /** Parse số theo định dạng vi-VN: "." ngăn nghìn, "," thập phân. */
+  const parseViNumber = (input: string): number => {
+    if (!input) return NaN;
+    let s = input.trim();
+
+    // Xóa ký tự không cần (trừ dấu -, ., , và số)
+    s = s.replace(/[^\d.,-]/g, "");
+
+    // Bỏ dấu . ngăn nghìn, đổi dấu , thập phân → .
+    s = s.replace(/\./g, "").replace(/,/g, ".");
+
+    // Trường hợp "1," hoặc "1." (đuôi lửng) → coi như "1"
+    s = s.replace(/[.,]$/, "");
+
+    const n = Number(s);
+    return isNaN(n) ? NaN : n;
+  };
+
+  /** Nhận diện range "a-b" với a,b có thể là 12,5 hoặc 12.5 */
+  const isRangeToken = (token: string): boolean => /^\s*-?\d+(?:[.,]\d+)?\s*-\s*-?\d+(?:[.,]\d+)?\s*$/.test(token || "");
+
+  /* ---------------- Lifecycle ---------------- */
 
   useEffect(() => {
     if (!open) {
@@ -85,6 +115,8 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
       setStartDate(dayjs().format("YYYY-MM-DD"));
       setEndDate(dayjs().add(30, "day").format("YYYY-MM-DD"));
       setDateError("");
+      setOpenSuccess(false);
+      return;
     }
 
     if (open) {
@@ -100,7 +132,7 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
     if (isPricePerKG && productType !== EPRODUCT_TYPE.PARCEL) {
       setProductType(EPRODUCT_TYPE.PARCEL);
     }
-  }, [isPricePerKG]);
+  }, [isPricePerKG, productType]);
 
   useEffect(() => {
     if (startDate && endDate) {
@@ -111,6 +143,8 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
       }
     }
   }, [startDate, endDate]);
+
+  /* ---------------- Fetch ---------------- */
 
   const fetchCarriers = async () => {
     try {
@@ -152,6 +186,8 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
     // eslint-disable-next-line
   }, [carrierId]);
 
+  /* ---------------- Parse bảng Excel ---------------- */
+
   const handlePasteExcel = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const pasted = e.clipboardData.getData("text");
     setExcelInput(pasted);
@@ -164,74 +200,89 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
     parseExcelTable(e.target.value);
   };
 
-  function parseExcelTable(text: string) {
+  const parseExcelTable = (text: string) => {
     if (!text.trim()) {
       setParsedTable(null);
       return;
     }
+
     const lines = text.trim().split(/\r?\n/);
     let zones: number[] = [];
     let weightRanges: WeightRange[] = [];
     const prices: number[][] = [];
 
-    let isZoneHeader = false;
-    if (lines.length && isNaN(Number(lines[0].trim().split(/\t| +/)[0].replace("-", "")))) {
-      isZoneHeader = true;
-      zones = lines[0]
-        .trim()
-        .split(/\t| +/)
-        .slice(1)
-        .map((x, zidx) => Number(x.replace(/,/g, "")) || zidx + 1);
+    // Nhận diện header zone chính xác: CHỈ coi là header nếu ô đầu KHÔNG phải số/ range
+    const firstTokens = lines[0].trim().split(/\t| +/).filter(Boolean);
+    const firstCell = firstTokens[0] || "";
+    const firstIsNumber = !isNaN(parseViNumber(firstCell));
+    const firstIsRange = isRangeToken(firstCell);
+    const isZoneHeader = !(firstIsNumber || firstIsRange);
+
+    // Nếu là header, parse zone (nếu parse không được -> đánh số 1..N)
+    if (isZoneHeader) {
+      zones = firstTokens.slice(1).map((x, idx) => {
+        const z = parseViNumber(x);
+        return isNaN(z) ? idx + 1 : Math.round(z);
+      });
     }
     const startLine = isZoneHeader ? 1 : 0;
 
-    for (let i = startLine; i < lines.length; ++i) {
-      const arr = lines[i]
-        .trim()
-        .split(/\t| +/)
-        .filter((s) => s !== "")
-        .map((x) => x.replace(/,/g, ""));
-      if (arr.length < 2) continue;
+    // Duyệt từng dòng trọng lượng & giá
+    for (let i = startLine; i < lines.length; i++) {
+      const cellsRaw = lines[i].trim().split(/\t| +/).filter(Boolean);
+      if (cellsRaw.length < 2) continue;
 
+      const labelRaw = cellsRaw[0];
       let min = 0,
         max = 0;
-      const label = arr[0];
 
-      if (/^\d+(\.\d+)?-\d+(\.\d+)?$/.test(arr[0])) {
-        [min, max] = arr[0].split("-").map(Number);
+      if (isRangeToken(labelRaw)) {
+        const [a, b] = labelRaw.split("-").map((s) => parseViNumber(s));
+        min = a;
+        max = b;
       } else {
-        min = Number(arr[0]);
-        max = min;
+        const w = parseViNumber(labelRaw);
+        if (isNaN(w)) continue; // bỏ dòng rác
+        min = w;
+        max = w;
       }
-      weightRanges.push({ min, max, label });
-      prices.push(arr.slice(1).map(Number));
+
+      const tokens = cellsRaw.slice(1);
+      const rowPrices = tokens.map((x) => parseViNumber(x)); // số để lưu DB
+
+      weightRanges.push({ min, max, label: labelRaw });
+      prices.push(rowPrices);
     }
 
+    // Nếu không có header zone, tạo zone = 1..N (theo số cột)
     if (!zones.length && prices.length > 0) {
       zones = prices[0].map((_, idx) => idx + 1);
     }
 
+    // Bảng single-weight (0,5 | 1 | 1,5 | 2 ...) → tự nội suy khoảng
     const isSingle = weightRanges.length > 1 && weightRanges.every((w, i, arr) => w.min === w.max && (i === 0 || arr[i - 1].min < w.min));
+
     if (isSingle) {
       const newRanges: WeightRange[] = [];
-      for (let i = 0; i < weightRanges.length; ++i) {
-        let min = 0,
-          max = 0;
-        const label = lines[startLine + i].trim().split(/\t| +/)[0];
+      for (let i = 0; i < weightRanges.length; i++) {
+        const prev = i === 0 ? null : weightRanges[i - 1];
+        const cur = weightRanges[i];
+        const label = lines[startLine + i].trim().split(/\t| +/)[0]; // giữ label gốc (không dùng để render)
+
         if (i === 0) {
-          min = 0;
-          max = weightRanges[0].min;
+          newRanges.push({ min: 0, max: cur.min, label });
         } else {
-          min = parseFloat((weightRanges[i - 1].min + 0.01).toFixed(2));
-          max = weightRanges[i].min;
+          const minAuto = Number((prev!.min + 0.01).toFixed(2));
+          newRanges.push({ min: minAuto, max: cur.min, label });
         }
-        newRanges.push({ min, max, label });
       }
       weightRanges = newRanges;
     }
 
     setParsedTable({ weightRanges, zones, prices });
-  }
+  };
+
+  /* ---------------- Submit ---------------- */
 
   const handleSubmitAll = async () => {
     if (!carrierId || !serviceId || !supplierId || !parsedTable || !currency) {
@@ -260,7 +311,7 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
             zone: parsedTable.zones[zi],
             weightMin: min,
             weightMax: max,
-            price: parsedTable.prices[wi][zi],
+            price: parsedTable.prices[wi][zi], // số (không làm tròn) để lưu DB
             currency,
             isPricePerKG,
             startDate, // "YYYY-MM-DD"
@@ -271,168 +322,222 @@ export default function CreatePurchasePriceDialog({ open, onClose, onCreated }: 
       await createPurchasePriceApi(data);
       showNotification("Batch purchase price created successfully", "success");
       onCreated();
+
+      // reset input để user paste bảng mới
       setExcelInput("");
       setParsedTable(null);
+
+      // ✅ mở popup xác nhận
+      setOpenSuccess(true);
     } catch (err: any) {
-      showNotification(err.message || "Error creating purchase price", "error");
+      showNotification(err?.message || "Error creating purchase price", "error");
     } finally {
       setLoading(false);
     }
   };
 
+  /* ---------------- Render ---------------- */
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-      <DialogTitle>Create Purchase Price from Excel Table</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} mt={1}>
-          <Grid container spacing={2}>
-            <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Product Type</InputLabel>
-                <Select label="Product Type" value={productType} onChange={(e) => setProductType(e.target.value as EPRODUCT_TYPE)} disabled={isPricePerKG}>
-                  <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>DOCUMENT</MenuItem>
-                  <MenuItem value={EPRODUCT_TYPE.PARCEL}>PARCEL</MenuItem>
-                </Select>
-              </FormControl>
-              {isPricePerKG && (
-                <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, ml: 1 }}>
-                  {`If "Price per KG" is selected, product type will be automatically set to "Parcel" (mandatory)`}
-                </Typography>
-              )}
-            </Grid>
-            <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Supplier</InputLabel>
-                <Select label="Supplier" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
-                  {suppliers?.map((s) => (
-                    <MenuItem key={s._id} value={s._id}>
-                      {s.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Sub Carrier</InputLabel>
-                <Select label="Sub Carrier" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
-                  {carriers?.map((c) => (
-                    <MenuItem key={c._id} value={c._id}>
-                      {c.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Service</InputLabel>
-                <Select label="Service" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
-                  {services?.map((s) => (
-                    <MenuItem key={s._id} value={s._id}>
-                      {s.code}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={12} container spacing={1}>
+    <>
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+        <DialogTitle>Create Purchase Price from Excel Table</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} mt={1}>
+            <Grid container spacing={2}>
               <Grid size={6}>
-                <TextField
-                  label="Start date"
-                  type="date"
-                  fullWidth
-                  size="small"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  error={!!dateError}
-                />
+                <FormControl fullWidth size="small">
+                  <InputLabel>Product Type</InputLabel>
+                  <Select label="Product Type" value={productType} onChange={(e) => setProductType(e.target.value as EPRODUCT_TYPE)} disabled={isPricePerKG}>
+                    <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>DOCUMENT</MenuItem>
+                    <MenuItem value={EPRODUCT_TYPE.PARCEL}>PARCEL</MenuItem>
+                  </Select>
+                </FormControl>
+                {isPricePerKG && (
+                  <Typography variant="caption" color="warning.main" sx={{ mt: 0.5, ml: 1 }}>
+                    {`If "Price per KG" is selected, product type will be automatically set to "Parcel" (mandatory)`}
+                  </Typography>
+                )}
               </Grid>
+
               <Grid size={6}>
-                <TextField
-                  label="End date"
-                  type="date"
-                  fullWidth
-                  size="small"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  error={!!dateError}
-                  helperText={dateError}
-                />
+                <FormControl fullWidth size="small">
+                  <InputLabel>Supplier</InputLabel>
+                  <Select label="Supplier" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+                    {suppliers?.map((s) => (
+                      <MenuItem key={s._id} value={s._id}>
+                        {s.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid size={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Sub Carrier</InputLabel>
+                  <Select label="Sub Carrier" value={carrierId} onChange={(e) => setCarrierId(e.target.value)}>
+                    {carriers?.map((c) => (
+                      <MenuItem key={c._id} value={c._id}>
+                        {c.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid size={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Service</InputLabel>
+                  <Select label="Service" value={serviceId} onChange={(e) => setServiceId(e.target.value)}>
+                    {services?.map((s) => (
+                      <MenuItem key={s._id} value={s._id}>
+                        {s.code}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid size={12} container spacing={1}>
+                <Grid size={6}>
+                  <TextField
+                    label="Start date"
+                    type="date"
+                    fullWidth
+                    size="small"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    error={!!dateError}
+                  />
+                </Grid>
+                <Grid size={6}>
+                  <TextField
+                    label="End date"
+                    type="date"
+                    fullWidth
+                    size="small"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    error={!!dateError}
+                    helperText={dateError}
+                  />
+                </Grid>
+              </Grid>
+
+              <Grid size={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Currency</InputLabel>
+                  <Select label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value as ECURRENCY)}>
+                    {Object.values(ECURRENCY).map((cur) => (
+                      <MenuItem key={cur} value={cur}>
+                        {cur}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              <Grid size={6}>
+                <FormControlLabel control={<Checkbox checked={isPricePerKG} onChange={(e) => setIsPricePerKG(e.target.checked)} />} label="Price per KG" />
               </Grid>
             </Grid>
 
-            <Grid size={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Currency</InputLabel>
-                <Select label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value as ECURRENCY)}>
-                  {Object.values(ECURRENCY).map((cur) => (
-                    <MenuItem key={cur} value={cur}>
-                      {cur}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid size={6}>
-              <FormControlLabel control={<Checkbox checked={isPricePerKG} onChange={(e) => setIsPricePerKG(e.target.checked)} />} label="Price per KG" />
-            </Grid>
-          </Grid>
-          <TextField
-            label="Paste rate table from Excel (zones as columns, weight or weightMin-weightMax as rows)"
-            fullWidth
-            multiline
-            minRows={4}
-            value={excelInput}
-            placeholder={`0.5\t696,900\t764,267...\n30.1-70\t99,889\t103,374...`}
-            onPaste={(e: React.ClipboardEvent<any>) => handlePasteExcel(e)}
-            onChange={handleChangeExcelInput}
-            variant="outlined"
-            size="small"
-            sx={{ mt: 2 }}
-          />
-          {parsedTable && (
-            <Paper sx={{ mt: 2, maxHeight: 350, overflow: "auto" }}>
-              <Table size="small" stickyHeader>
-                <TableHead>
-                  <TableRow>
-                    <TableCell align="center" sx={{ fontWeight: 700, bgcolor: "#f5f5dc" }}>
-                      {parsedTable.weightRanges.some((w) => w.label.includes("-")) ? "Weight Range" : "From – To (kg)"}
-                    </TableCell>
-                    {parsedTable.zones.map((zone) => (
-                      <TableCell align="center" key={zone} sx={{ fontWeight: 700, bgcolor: "#fffde7" }}>
-                        Zone {zone}
+            <TextField
+              label="Paste rate table from Excel (zones as columns, weight or weightMin-weightMax as rows)"
+              fullWidth
+              multiline
+              minRows={4}
+              value={excelInput}
+              placeholder={`0,5\t12,85\t14,09...\n1\t16,83\t17,74...\n1,5\t19,07\t21,35...`}
+              onPaste={(e: React.ClipboardEvent<any>) => handlePasteExcel(e)}
+              onChange={handleChangeExcelInput}
+              variant="outlined"
+              size="small"
+              sx={{ mt: 2 }}
+            />
+
+            {parsedTable && (
+              <Paper sx={{ mt: 2, maxHeight: 350, overflow: "auto" }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell
+                        align="center"
+                        sx={{
+                          fontWeight: 700,
+                          bgcolor: "#f5f5dc",
+                        }}
+                      >
+                        {parsedTable.weightRanges.some((w) => w.label.includes("-")) ? "Weight Range" : "From – To (kg)"}
                       </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {parsedTable.weightRanges.map((w, wi) => (
-                    <TableRow key={wi}>
-                      <TableCell align="center" sx={{ fontWeight: 700, bgcolor: "#f5f5dc" }}>
-                        {w.label}
-                      </TableCell>
-                      {parsedTable.zones.map((zone, zi) => (
-                        <TableCell align="center" key={zone}>
-                          {formatCurrency(parsedTable.prices[wi][zi], currency)}
+                      {parsedTable.zones.map((zone) => (
+                        <TableCell
+                          align="center"
+                          key={zone}
+                          sx={{
+                            fontWeight: 700,
+                            bgcolor: "#fffde7",
+                          }}
+                        >
+                          Zone {zone}
                         </TableCell>
                       ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Paper>
-          )}
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSubmitAll} variant="contained" disabled={loading || !parsedTable || !!dateError || !startDate || !endDate}>
-          Create
-        </Button>
-      </DialogActions>
-    </Dialog>
+                  </TableHead>
+                  <TableBody>
+                    {parsedTable.weightRanges.map((w, wi) => (
+                      <TableRow key={wi}>
+                        <TableCell
+                          align="center"
+                          sx={{
+                            fontWeight: 700,
+                            bgcolor: "#f5f5dc",
+                          }}
+                        >
+                          {isPricePerKG ? `${formatNumberVi(w.min)}–${formatNumberVi(w.max)}` : formatNumberVi(w.max)}
+                        </TableCell>
+                        {parsedTable.zones.map((zone, zi) => (
+                          <TableCell align="center" key={zone}>
+                            {formatNumberVi(parsedTable.prices?.[wi]?.[zi]) ?? ""}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Paper>
+            )}
+          </Stack>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSubmitAll} variant="contained" disabled={loading || !parsedTable || !!dateError || !startDate || !endDate}>
+            Create
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ✅ Popup báo Created thành công */}
+      <MuiDialog open={openSuccess} onClose={() => setOpenSuccess(false)}>
+        <DialogTitle>Created</DialogTitle>
+        <DialogContent>
+          <Typography>Batch purchase price has been created successfully.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setOpenSuccess(false);
+            }}
+            variant="contained"
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </MuiDialog>
+    </>
   );
 }

@@ -11,6 +11,8 @@ export interface ISalePrice extends IBaseRecord {
   price: number;
   currency: ECURRENCY;
   isPricePerKG: boolean; // true: giá trên kg, false: giá cố định
+  startDate: string;
+  endDate: string;
 }
 
 export interface ISalePriceGroup {
