@@ -23,7 +23,7 @@ import OrderDetailDialog from "./OrderDetailDialog";
 import ImportOrdersDialog from "./ImportOrdersDialog";
 import { formatDate } from "@/utils/hooks/hookDate";
 import { blue, green, grey, orange, pink } from "@mui/material/colors";
-import { formatCurrency } from "@/utils/hooks/hookCurrency";
+import { formatNumberVi } from "@/utils/hooks/hookNumber";
 import BillPrintDialog from "@/components/Bill/BillPrintDialog";
 import BillShippingMarkDialog from "@/components/Bill/BillShippingMarkDialog";
 import { ECURRENCY, EORDER_STATUS, EPRODUCT_TYPE } from "@/types/typeGlobals";
@@ -43,7 +43,8 @@ const toIdOrObject = (v: any) => {
 };
 
 const getCurrency = (o: IOrder): ECURRENCY | null =>
-  (o.currency as ECURRENCY | null) ?? ((o as any)?.basePrice?.purchasePrice?.currency as ECURRENCY | null) ?? ((o as any)?.basePrice?.salePrice?.currency as ECURRENCY | null) ?? ECURRENCY.VND;
+  ((o.currency as ECURRENCY | null) ?? ((o as any)?.basePrice?.purchasePrice?.currency as ECURRENCY | null) ?? ((o as any)?.basePrice?.salePrice?.currency as ECURRENCY | null) ?? ECURRENCY.VND) ||
+  null;
 
 const getPurchaseBase = (o: IOrder) => Number((o as any)?.basePrice?.purchasePrice?.value ?? 0);
 const getSaleBase = (o: IOrder) => Number((o as any)?.basePrice?.salePrice?.value ?? 0);
@@ -96,6 +97,8 @@ const normalizeOrderLegacyToFE = (raw: any): IOrder => {
     },
 
     note: raw?.note ?? null,
+    systemNote: raw?.systemNote ?? null,
+
     zone: typeof raw?.zone === "number" ? raw.zone : null,
     chargeableWeight: Number(raw?.chargeableWeight ?? 0),
 
@@ -180,7 +183,7 @@ export default function OrderManagerView() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(0);
 
   // Selections
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -207,7 +210,7 @@ export default function OrderManagerView() {
   const [selected, setSelected] = useState<IOrder | null>(null);
 
   const { showNotification } = useNotification();
-  const debouncedSearch = useMemo(() => debounce((v) => setKeyword(v), 500), []);
+  const debouncedSearch = useMemo(() => debounce((v: string) => setKeyword(v), 500), []);
 
   // preload dropdowns
   useEffect(() => {
@@ -247,7 +250,7 @@ export default function OrderManagerView() {
   });
 
   const fetchData = async () => {
-    setLoading(true);
+    setLoading(1);
     try {
       const params: IFilterOrder = buildOrderFilters(false);
       const body = await searchOrdersApi(params);
@@ -259,7 +262,7 @@ export default function OrderManagerView() {
       console.error(err);
       showNotification(err?.message || "Failed to load orders list", "error");
     } finally {
-      setLoading(false);
+      setLoading(0);
     }
   };
 
@@ -269,14 +272,14 @@ export default function OrderManagerView() {
   }, [keyword, page, pageSize, carrierIdFilter, partnerIdFilter, serviceIdFilter, supplierIdFilter, orderStatusFilter, productTypeFilter, hawbFilter, cawbFilter, destCountryCode]);
 
   const calculateGrossWeight = (row: IOrder) => {
-    if (row?.packageDetail?.dimensions && row?.packageDetail?.dimensions.length > 0) {
+    if (row?.packageDetail?.dimensions?.length > 0) {
       return row.packageDetail.dimensions.reduce((acc: number, item: any) => acc + (item.grossWeight || 0), 0);
     }
     return 0;
   };
 
   const calculateVolumeWeight = (row: IOrder) => {
-    if (row?.packageDetail?.dimensions && row?.packageDetail?.dimensions.length > 0) {
+    if (row?.packageDetail?.dimensions?.length > 0) {
       return row.packageDetail.dimensions.reduce((acc: number, item: any) => acc + (item.volumeWeight || 0), 0);
     }
     return 0;
@@ -311,7 +314,7 @@ export default function OrderManagerView() {
     return { name: name || "", code: code || "" };
   };
 
-  // ========================= Export Excel (giữ logic của bạn) =========================
+  // ========================= Export Excel (updated with SYSTEM NOTE) =========================
   const handleExportExcel = async () => {
     try {
       const params: IFilterOrder = { ...buildOrderFilters(true), all: true };
@@ -354,6 +357,7 @@ export default function OrderManagerView() {
         "VAT (SELLING)",
         "TOTAL (SELLING)",
         "PROFIT",
+        "SYSTEM NOTE",
       ];
 
       const rowCurrencies: string[] = [];
@@ -413,10 +417,16 @@ export default function OrderManagerView() {
           "TOTAL (SELLING)": getTotalSale(c),
 
           PROFIT: getTotalSale(c) - getTotalPurchase(c),
+
+          "SYSTEM NOTE": c.systemNote || "",
         };
       });
 
-      const ws = XLSX.utils.json_to_sheet(rows, { header: HEADERS, skipHeader: false, cellDates: true });
+      const ws = XLSX.utils.json_to_sheet(rows, {
+        header: HEADERS,
+        skipHeader: false,
+        cellDates: true,
+      });
       ws["!cols"] = HEADERS.map(() => ({ wch: 22 }));
 
       const range = XLSX.utils.decode_range(ws["!ref"] || "");
@@ -424,8 +434,14 @@ export default function OrderManagerView() {
       HEADERS.forEach((h, i) => (colIndexByHeader[h] = i));
 
       const THIN = { style: "thin", color: { auto: 1 } } as any;
-      const BASE_BORDER = { top: THIN, bottom: THIN, left: THIN, right: THIN };
+      const BASE_BORDER = {
+        top: THIN,
+        bottom: THIN,
+        left: THIN,
+        right: THIN,
+      };
 
+      // Base style + border
       for (let R = range.s.r; R <= range.e.r; ++R) {
         for (let C = range.s.c; C <= range.e.c; ++C) {
           const addr = XLSX.utils.encode_cell({ r: R, c: C });
@@ -478,7 +494,13 @@ export default function OrderManagerView() {
             if (cell) {
               cell.t = "d";
               (cell as any).z = "dd/mm/yyyy";
-              (cell as any).s = { ...(cell as any).s, alignment: { ...(cell as any).s?.alignment, horizontal: "center" } };
+              (cell as any).s = {
+                ...(cell as any).s,
+                alignment: {
+                  ...(cell as any).s?.alignment,
+                  horizontal: "center",
+                },
+              };
             }
           }
         }
@@ -492,7 +514,13 @@ export default function OrderManagerView() {
           if (cell && cell.v !== "" && cell.v != null) {
             cell.t = "n";
             (cell as any).z = "0.00";
-            (cell as any).s = { ...(cell as any).s, alignment: { ...(cell as any).s?.alignment, horizontal: "right" } };
+            (cell as any).s = {
+              ...(cell as any).s,
+              alignment: {
+                ...(cell as any).s?.alignment,
+                horizontal: "right",
+              },
+            };
           }
         }
 
@@ -506,11 +534,18 @@ export default function OrderManagerView() {
           if (cell && cell.v !== "" && cell.v != null) {
             cell.t = "n";
             (cell as any).z = zMoney;
-            (cell as any).s = { ...(cell as any).s, alignment: { ...(cell as any).s?.alignment, horizontal: "right" } };
+            (cell as any).s = {
+              ...(cell as any).s,
+              alignment: {
+                ...(cell as any).s?.alignment,
+                horizontal: "right",
+              },
+            };
           }
         }
       }
 
+      // Outer border thicker
       const MED = { style: "medium", color: { auto: 1 } } as any;
       const rTop = range.s.r;
       const rBottom = range.e.r;
@@ -520,19 +555,34 @@ export default function OrderManagerView() {
       for (let c = cLeft; c <= cRight; c++) {
         const addr = XLSX.utils.encode_cell({ r: rTop, c });
         if (!ws[addr]) ws[addr] = { t: "s", v: "" } as any;
-        (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { top: MED, right: MED, bottom: MED, left: MED } };
+        (ws[addr] as any).s = {
+          ...(ws[addr] as any).s,
+          border: { top: MED, right: MED, bottom: MED, left: MED },
+        };
       }
       for (let c = cLeft; c <= cRight; c++) {
         let addr = XLSX.utils.encode_cell({ r: rTop, c });
-        (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { ...(ws[addr] as any).s?.border, top: MED } };
+        (ws[addr] as any).s = {
+          ...(ws[addr] as any).s,
+          border: { ...(ws[addr] as any).s?.border, top: MED },
+        };
         addr = XLSX.utils.encode_cell({ r: rBottom, c });
-        (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { ...(ws[addr] as any).s?.border, bottom: MED } };
+        (ws[addr] as any).s = {
+          ...(ws[addr] as any).s,
+          border: { ...(ws[addr] as any).s?.border, bottom: MED },
+        };
       }
       for (let r = rTop; r <= rBottom; r++) {
         let addr = XLSX.utils.encode_cell({ r, c: cLeft });
-        (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { ...(ws[addr] as any).s?.border, left: MED } };
+        (ws[addr] as any).s = {
+          ...(ws[addr] as any).s,
+          border: { ...(ws[addr] as any).s?.border, left: MED },
+        };
         addr = XLSX.utils.encode_cell({ r, c: cRight });
-        (ws[addr] as any).s = { ...(ws[addr] as any).s, border: { ...(ws[addr] as any).s?.border, right: MED } };
+        (ws[addr] as any).s = {
+          ...(ws[addr] as any).s,
+          border: { ...(ws[addr] as any).s?.border, right: MED },
+        };
       }
 
       const wb = XLSX.utils.book_new();
@@ -611,9 +661,35 @@ export default function OrderManagerView() {
         </Box>
       ),
     },
-    { field: "carrierAirWaybillCode", headerName: "AWB", align: "center", headerAlign: "center", minWidth: 130, flex: 0.7, sortable: false },
-    { field: "createdAt", headerName: "DATE", align: "center", headerAlign: "center", minWidth: 130, flex: 1, sortable: false, renderCell: ({ row }) => formatDate(row.createdAt) },
-    { field: "partner", headerName: "CUSTOMER NAME", align: "center", headerAlign: "center", minWidth: 150, flex: 1, sortable: false, renderCell: ({ row }) => row.partner?.partnerName },
+    {
+      field: "carrierAirWaybillCode",
+      headerName: "AWB",
+      align: "center",
+      headerAlign: "center",
+      minWidth: 130,
+      flex: 0.7,
+      sortable: false,
+    },
+    {
+      field: "createdAt",
+      headerName: "DATE",
+      align: "center",
+      headerAlign: "center",
+      minWidth: 130,
+      flex: 1,
+      sortable: false,
+      renderCell: ({ row }) => formatDate(row.createdAt),
+    },
+    {
+      field: "partner",
+      headerName: "CUSTOMER NAME",
+      align: "center",
+      headerAlign: "center",
+      minWidth: 150,
+      flex: 1,
+      sortable: false,
+      renderCell: ({ row }) => row.partner?.partnerName,
+    },
     {
       field: "supplierId",
       headerName: "SUPPLIER",
@@ -654,12 +730,37 @@ export default function OrderManagerView() {
       sortable: false,
       renderCell: ({ row }) =>
         row.recipient?.country?.code || row.recipient?.country?.name ? (
-          <Chip label={`${row.recipient?.country?.name || ""} (${row.recipient?.country?.code || ""})`} size="small" sx={{ backgroundColor: blue[200], color: "#fff", fontWeight: 500 }} />
+          <Chip
+            label={`${row.recipient?.country?.name || ""} (${row.recipient?.country?.code || ""})`}
+            size="small"
+            sx={{
+              backgroundColor: blue[200],
+              color: "#fff",
+              fontWeight: 500,
+            }}
+          />
         ) : (
-          <Chip label="N/A" size="small" sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }} />
+          <Chip
+            label="N/A"
+            size="small"
+            sx={{
+              backgroundColor: grey[500],
+              color: "#fff",
+              fontWeight: 500,
+            }}
+          />
         ),
     },
-    { field: "productType", headerName: "TYPE", align: "center", headerAlign: "center", minWidth: 90, flex: 1, sortable: false, renderCell: ({ row }) => row.productType },
+    {
+      field: "productType",
+      headerName: "TYPE",
+      align: "center",
+      headerAlign: "center",
+      minWidth: 90,
+      flex: 1,
+      sortable: false,
+      renderCell: ({ row }) => row.productType,
+    },
     {
       field: "packageDetail.dimensions",
       headerName: "DIMENSIONS",
@@ -673,10 +774,22 @@ export default function OrderManagerView() {
           <Chip
             label={row.packageDetail?.dimensions.map((d: any) => `${d.length}x${d.width}x${d.height}`).join(", ")}
             size="small"
-            sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }}
+            sx={{
+              backgroundColor: grey[500],
+              color: "#fff",
+              fontWeight: 500,
+            }}
           />
         ) : (
-          <Chip label="N/A" size="small" sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }} />
+          <Chip
+            label="N/A"
+            size="small"
+            sx={{
+              backgroundColor: grey[500],
+              color: "#fff",
+              fontWeight: 500,
+            }}
+          />
         ),
     },
     {
@@ -687,7 +800,17 @@ export default function OrderManagerView() {
       minWidth: 160,
       flex: 0.7,
       sortable: false,
-      renderCell: ({ row }) => <Chip label={calculateGrossWeight(row)} size="small" sx={{ backgroundColor: grey[300], color: "#fff", fontWeight: 500 }} />,
+      renderCell: ({ row }) => (
+        <Chip
+          label={formatNumberVi(calculateGrossWeight(row))}
+          size="small"
+          sx={{
+            backgroundColor: grey[300],
+            color: "#fff",
+            fontWeight: 500,
+          }}
+        />
+      ),
     },
     {
       field: "volumeWeight",
@@ -697,7 +820,17 @@ export default function OrderManagerView() {
       minWidth: 160,
       flex: 0.7,
       sortable: false,
-      renderCell: ({ row }) => <Chip label={calculateVolumeWeight(row)} size="small" sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }} />,
+      renderCell: ({ row }) => (
+        <Chip
+          label={formatNumberVi(calculateVolumeWeight(row))}
+          size="small"
+          sx={{
+            backgroundColor: grey[500],
+            color: "#fff",
+            fontWeight: 500,
+          }}
+        />
+      ),
     },
     {
       field: "chargeableWeight",
@@ -707,9 +840,27 @@ export default function OrderManagerView() {
       minWidth: 140,
       flex: 0.7,
       sortable: false,
-      renderCell: ({ value }) => <Chip label={value} size="small" sx={{ backgroundColor: grey[500], color: "#fff", fontWeight: 500 }} />,
+      renderCell: ({ value }) => (
+        <Chip
+          label={formatNumberVi(value ?? 0)}
+          size="small"
+          sx={{
+            backgroundColor: grey[500],
+            color: "#fff",
+            fontWeight: 500,
+          }}
+        />
+      ),
     },
-    { field: "note", headerName: "NOTE", align: "center", headerAlign: "center", minWidth: 110, flex: 1, sortable: false },
+    {
+      field: "note",
+      headerName: "NOTE",
+      align: "center",
+      headerAlign: "center",
+      minWidth: 110,
+      flex: 1,
+      sortable: false,
+    },
 
     // BUYING
     {
@@ -722,7 +873,7 @@ export default function OrderManagerView() {
       sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(getPurchaseBase(row), getCurrency(row) || undefined)}</Typography>
+          <Typography>{formatNumberVi(getPurchaseBase(row))}</Typography>
         </Box>
       ),
     },
@@ -736,7 +887,7 @@ export default function OrderManagerView() {
       sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(getExtraFeesTotal(row), getCurrency(row) || undefined)}</Typography>
+          <Typography>{formatNumberVi(getExtraFeesTotal(row))}</Typography>
         </Box>
       ),
     },
@@ -750,7 +901,7 @@ export default function OrderManagerView() {
       sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(getFscPurchase(row), getCurrency(row) || undefined)}</Typography>
+          <Typography>{formatNumberVi(getFscPurchase(row))}</Typography>
         </Box>
       ),
     },
@@ -764,7 +915,7 @@ export default function OrderManagerView() {
       sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(getVatPurchase(row), getCurrency(row) || undefined)}</Typography>
+          <Typography>{formatNumberVi(getVatPurchase(row))}</Typography>
         </Box>
       ),
     },
@@ -778,7 +929,7 @@ export default function OrderManagerView() {
       sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: blue[100] }}>
-          <Typography>{formatCurrency(getTotalPurchase(row), getCurrency(row) || undefined)}</Typography>
+          <Typography>{formatNumberVi(getTotalPurchase(row))}</Typography>
         </Box>
       ),
     },
@@ -794,7 +945,7 @@ export default function OrderManagerView() {
       sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(getSaleBase(row), getCurrency(row) || undefined)}</Typography>
+          <Typography>{formatNumberVi(getSaleBase(row))}</Typography>
         </Box>
       ),
     },
@@ -808,7 +959,7 @@ export default function OrderManagerView() {
       sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(getExtraFeesTotal(row), getCurrency(row) || undefined)}</Typography>
+          <Typography>{formatNumberVi(getExtraFeesTotal(row))}</Typography>
         </Box>
       ),
     },
@@ -822,7 +973,7 @@ export default function OrderManagerView() {
       sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(getFscSale(row), getCurrency(row) || undefined)}</Typography>
+          <Typography>{formatNumberVi(getFscSale(row))}</Typography>
         </Box>
       ),
     },
@@ -836,7 +987,7 @@ export default function OrderManagerView() {
       sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(getVatSale(row), getCurrency(row) || undefined)}</Typography>
+          <Typography>{formatNumberVi(getVatSale(row))}</Typography>
         </Box>
       ),
     },
@@ -850,7 +1001,7 @@ export default function OrderManagerView() {
       sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: green[100] }}>
-          <Typography>{formatCurrency(getTotalSale(row), getCurrency(row) || undefined)}</Typography>
+          <Typography>{formatNumberVi(getTotalSale(row))}</Typography>
         </Box>
       ),
     },
@@ -865,7 +1016,7 @@ export default function OrderManagerView() {
       sortable: false,
       renderCell: ({ row }) => (
         <Box display="flex" alignItems="center" justifyContent="center" height="100%" sx={{ bgcolor: pink[100] }}>
-          <Typography>{formatCurrency(getTotalSale(row) - getTotalPurchase(row), getCurrency(row) || undefined)}</Typography>
+          <Typography>{formatNumberVi(getTotalSale(row) - getTotalPurchase(row))}</Typography>
         </Box>
       ),
     },
@@ -948,7 +1099,16 @@ export default function OrderManagerView() {
 
   return (
     // ===== Root wrapper: chiếm toàn bộ chiều cao vùng main, không tràn trang
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, overflow: "hidden", p: 2 }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        minHeight: 0,
+        overflow: "hidden",
+        p: 2,
+      }}
+    >
       {/* Filters + actions */}
       <Box
         sx={{
@@ -961,13 +1121,6 @@ export default function OrderManagerView() {
           alignItems: "center",
         }}
       >
-        <Stack direction="row" spacing={1} flexWrap="wrap">
-          <TextField placeholder="Search keyword" size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 200 }} />
-          <TextField placeholder="HAWB (trackingCode)" size="small" value={hawbFilter} onChange={(e) => setHawbFilter(e.target.value)} sx={{ minWidth: 180 }} />
-          <TextField placeholder="CAWB (AWB)" size="small" value={cawbFilter} onChange={(e) => setCawbFilter(e.target.value)} sx={{ minWidth: 160 }} />
-          <CountrySelect value={destCountryCode} onChange={(country) => setDestCountryCode(country?.code || "")} label="Destination" />
-        </Stack>
-
         <Stack direction="row" spacing={1} overflow={"auto"}>
           <Button variant="outlined" startIcon={<UploadFile />} onClick={() => setOpenImportDialog(true)}>
             Import Excel
@@ -986,11 +1139,29 @@ export default function OrderManagerView() {
           </Button>
         </Stack>
 
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          <TextField className="!mb-1" placeholder="Search keyword" size="small" onChange={(e) => debouncedSearch(e.target.value)} sx={{ minWidth: 200 }} />
+          <TextField className="!mb-1" placeholder="HAWB (trackingCode)" size="small" value={hawbFilter} onChange={(e) => setHawbFilter(e.target.value)} sx={{ minWidth: 180 }} />
+          <TextField className="!mb-1" placeholder="CAWB (AWB)" size="small" value={cawbFilter} onChange={(e) => setCawbFilter(e.target.value)} sx={{ minWidth: 160 }} />
+          <Box className="!mb-1">
+            <CountrySelect value={destCountryCode} onChange={(country) => setDestCountryCode(country?.code || "")} label="Destination" />
+          </Box>
+        </Stack>
+
         <Stack direction="row" spacing={1} overflow={"auto"}>
           <Select size="small" value={productTypeFilter} onChange={(e) => setProductTypeFilter(e.target.value as any)} displayEmpty sx={{ minWidth: 140 }}>
             <MenuItem value="">All Types</MenuItem>
-            <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>DOX</MenuItem>
-            <MenuItem value={EPRODUCT_TYPE.PARCEL}>WPX</MenuItem>
+            <MenuItem value={EPRODUCT_TYPE.DOCUMENT}>DOCUMENT</MenuItem>
+            <MenuItem value={EPRODUCT_TYPE.PARCEL}>PARCEL</MenuItem>
+          </Select>
+
+          <Select size="small" value={supplierIdFilter} onChange={(e) => setSupplierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 140 }}>
+            <MenuItem value="">All Suppliers</MenuItem>
+            {suppliers?.map((s) => (
+              <MenuItem key={s._id} value={s._id}>
+                {s.name}
+              </MenuItem>
+            ))}
           </Select>
 
           <Select size="small" value={partnerIdFilter} onChange={(e) => setPartnerIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 160 }}>
@@ -1020,15 +1191,6 @@ export default function OrderManagerView() {
             ))}
           </Select>
 
-          <Select size="small" value={supplierIdFilter} onChange={(e) => setSupplierIdFilter(e.target.value)} displayEmpty sx={{ minWidth: 140 }}>
-            <MenuItem value="">All Suppliers</MenuItem>
-            {suppliers?.map((s) => (
-              <MenuItem key={s._id} value={s._id}>
-                {s.name}
-              </MenuItem>
-            ))}
-          </Select>
-
           <Select size="small" value={orderStatusFilter} onChange={(e) => setOrderStatusFilter(e.target.value as any)} displayEmpty sx={{ minWidth: 140 }}>
             <MenuItem value="">Default</MenuItem>
             <MenuItem value="all">All</MenuItem>
@@ -1042,7 +1204,14 @@ export default function OrderManagerView() {
       </Box>
 
       {/* ===== Grid + Action Rail (side-by-side) ===== */}
-      <Box sx={{ flex: "1 1 auto", minHeight: 0, display: "flex", alignItems: "stretch" }}>
+      <Box
+        sx={{
+          flex: "1 1 auto",
+          minHeight: 0,
+          display: "flex",
+          alignItems: "stretch",
+        }}
+      >
         {/* LEFT: DataGrid container */}
         <Box ref={gridRootRef} sx={{ flex: 1, minWidth: 0 }}>
           {loading ? (
@@ -1079,7 +1248,6 @@ export default function OrderManagerView() {
                   position: "relative",
                 },
 
-                // đảm bảo border màu nhất quán (v6 có biến này)
                 "--DataGrid-rowBorderColor": theme.palette.divider,
               }}
             />
@@ -1097,7 +1265,7 @@ export default function OrderManagerView() {
             minWidth: ACTION_COL_WIDTH,
           }}
         >
-          {/* Header rail — lấy đúng chiều cao header thực tế */}
+          {/* Header rail */}
           <Box
             sx={{
               height: `${headerH}px`,
@@ -1125,7 +1293,7 @@ export default function OrderManagerView() {
               overflowY: "auto",
               overflowX: "hidden",
               bgcolor: theme.palette.background.default,
-              pb: `${hScrollSize}px`, // đệm nếu grid có scrollbar ngang
+              pb: `${hScrollSize}px`,
             }}
           >
             {displayedRows.length === 0 ? (
@@ -1158,7 +1326,13 @@ export default function OrderManagerView() {
                               setOpenBillDialog(true);
                             }}
                             aria-label="Print Bill"
-                            sx={{ color: orange[600], "&:hover": { color: orange[800], bgcolor: "rgba(255,152,0,0.08)" } }}
+                            sx={{
+                              color: orange[600],
+                              "&:hover": {
+                                color: orange[800],
+                                bgcolor: "rgba(255,152,0,0.08)",
+                              },
+                            }}
                           >
                             <PrintBillIcon fontSize="small" />
                           </IconButton>
@@ -1172,27 +1346,24 @@ export default function OrderManagerView() {
                               setOpenShippingMarkDialog(true);
                             }}
                             aria-label="Print Mark"
-                            sx={{ color: blue[500], "&:hover": { color: blue[700], bgcolor: "rgba(63,81,181,0.08)" } }}
+                            sx={{
+                              color: blue[500],
+                              "&:hover": {
+                                color: blue[700],
+                                bgcolor: "rgba(63,81,181,0.08)",
+                              },
+                            }}
                           >
                             <PrintMarkIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        {/* Menu các thao tác khác */}
+
                         <ActionMenu
                           onEdit={() => {
                             setSelected(row);
                             setOpenUpdateDialog(true);
                           }}
                           onDelete={() => handleDelete(row)}
-                          // Bạn có thể bật menu print nếu thích (hiện đang dùng icon riêng phía trên):
-                          onPrintBill={() => {
-                            setSelected(row);
-                            setOpenBillDialog(true);
-                          }}
-                          onPrintMark={() => {
-                            setSelected(row);
-                            setOpenShippingMarkDialog(true);
-                          }}
                           status={row.orderStatus as any}
                         />
                       </Stack>

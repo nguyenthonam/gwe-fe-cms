@@ -74,6 +74,7 @@ export interface IOrder extends IBaseRecord {
 
   orderStatus: EORDER_STATUS;
   currency: ECURRENCY | null;
+  systemNote: string | null;
 }
 
 export type IFilterOrder = ISearchQuery & {

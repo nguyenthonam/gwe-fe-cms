@@ -4,6 +4,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { IDimension } from "@/types/typeGlobals";
 import { calculateVolumeWeight } from "@/utils/hooks/hookBill";
 import NumericInput from "@/components/Globals/NumericInput";
+import { formatNumberVi } from "@/utils/hooks/hookNumber";
 
 interface Props {
   volWeightRate?: number | null;
@@ -129,7 +130,7 @@ export default function OrderDimensionSection({ volWeightRate, dimensions, setDi
                     </TableCell>
                   ))}
                   <TableCell align="center">
-                    <Typography sx={{ fontWeight: 600 }}>{row.volumeWeight?.toFixed(2) ?? 0}</Typography>
+                    <Typography sx={{ fontWeight: 600 }}>{formatNumberVi(row.volumeWeight) || 0}</Typography>
                   </TableCell>
                   {!disabled && (
                     <TableCell align="center">
