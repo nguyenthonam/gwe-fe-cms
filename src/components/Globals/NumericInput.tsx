@@ -8,7 +8,8 @@ interface NumericInputProps extends Omit<TextFieldProps, "onChange" | "value"> {
 }
 
 export default function NumericInput({ value, onChange, disabled, ...props }: NumericInputProps) {
-  const regex = /^(\d+)?(\.\d*)?$/;
+  // const regex = /^(\d+)?(\.\d*)?$/;
+  const regex = /^(\d+)?(,\d*)?$/;
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     if (val === "" || regex.test(val)) {

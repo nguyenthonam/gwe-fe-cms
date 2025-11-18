@@ -2,6 +2,7 @@
 import { Box, Grid, Typography, TextField, MenuItem, FormControl, InputLabel, Select } from "@mui/material";
 import { ECURRENCY, EPRODUCT_TYPE } from "@/types/typeGlobals";
 import NumericInput from "@/components/Globals/NumericInput";
+import { formatNumberVi } from "@/utils/hooks/hookNumber";
 
 interface Props {
   content: string;
@@ -56,7 +57,7 @@ export default function OrderProductSection(props: Props) {
           </Typography>
         </Grid>
         <Grid size={8}>
-          <TextField value={quantity || ""} size="small" fullWidth disabled InputProps={{ readOnly: true }} sx={{ bgcolor: "#f5f5f5" }} />
+          <TextField value={formatNumberVi(quantity)} size="small" fullWidth disabled InputProps={{ readOnly: true }} sx={{ bgcolor: "#f5f5f5" }} />
         </Grid>
       </Grid>
       {/* Declared Weight */}
@@ -67,7 +68,7 @@ export default function OrderProductSection(props: Props) {
           </Typography>
         </Grid>
         <Grid size={8}>
-          <TextField value={declaredWeight || ""} size="small" fullWidth disabled InputProps={{ readOnly: true }} sx={{ bgcolor: "#f5f5f5" }} />
+          <TextField value={formatNumberVi(declaredWeight)} size="small" fullWidth disabled InputProps={{ readOnly: true }} sx={{ bgcolor: "#f5f5f5" }} />
         </Grid>
       </Grid>
       {/* Declared Value */}

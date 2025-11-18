@@ -5,7 +5,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, 
 import Grid from "@mui/material/Grid";
 import { IOrder } from "@/types/typeOrder";
 import { EnumChip } from "@/components/Globals/EnumChip";
-import { formatCurrency } from "@/utils/hooks/hookCurrency";
+import { formatNumberVi } from "@/utils/hooks/hookNumber";
 import { formatDate } from "@/utils/hooks/hookDate";
 import { ECURRENCY } from "@/types/typeGlobals";
 
@@ -79,6 +79,32 @@ export default function OrderDetailDialog({ open, onClose, order }: Props) {
       </DialogTitle>
       <DialogContent dividers>
         <Stack spacing={3} mt={0.5}>
+          {/* ⭐ System Note for Admin – only show if exists */}
+          {order.systemNote && (
+            <Paper
+              elevation={3}
+              sx={{
+                p: 2,
+                mb: 1,
+                borderLeft: "4px solid #f44336",
+                bgcolor: "#ffebee",
+              }}
+            >
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, textTransform: "uppercase" }}>
+                System Pricing Notes (for Admin)
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  whiteSpace: "pre-line",
+                  fontFamily: "monospace",
+                }}
+              >
+                {order.systemNote}
+              </Typography>
+            </Paper>
+          )}
+
           {/* Billing */}
           <SectionPaper title="Billing Information">
             <Grid container spacing={2}>
@@ -119,31 +145,31 @@ export default function OrderDetailDialog({ open, onClose, order }: Props) {
             <Grid container spacing={2}>
               <DetailItem label="Product Type" value={order.productType || "-"} />
               <DetailItem label="Contents" value={order.packageDetail?.content || "-"} />
-              <DetailItem label="Declared Weight (kg)" value={order.packageDetail?.declaredWeight ?? "-"} />
-              <DetailItem label="Pcs" value={order.packageDetail?.quantity ?? "-"} />
-              <DetailItem label="Declared Value" value={formatCurrency(Number(order.packageDetail?.declaredValue || 0), order.packageDetail?.currency ?? cur)} />
+              <DetailItem label="Declared Weight (kg)" value={formatNumberVi(order.packageDetail?.declaredWeight) ?? "-"} />
+              <DetailItem label="Pcs" value={formatNumberVi(order.packageDetail?.quantity) ?? "-"} />
+              <DetailItem label="Declared Value" value={formatNumberVi(order.packageDetail?.declaredValue || 0)} />
               <DetailItem label="Dimensions (cm)" value={order.packageDetail?.dimensions?.length ? order.packageDetail.dimensions.map((d) => `${d.length}x${d.width}x${d.height}`).join(", ") : "-"} />
-              <DetailItem label="Chargeable Weight" value={order.chargeableWeight ?? "-"} />
+              <DetailItem label="Chargeable Weight" value={formatNumberVi(order.chargeableWeight) ?? "-"} />
             </Grid>
           </SectionPaper>
 
           {/* Pricing */}
           <SectionPaper title="Pricing & Fees">
             <Grid container spacing={2}>
-              <DetailItem label="Base Rate (Buying)" value={formatCurrency(purchaseBase, order.basePrice?.purchasePrice?.currency ?? cur)} />
-              <DetailItem label="Base Rate (Selling)" value={formatCurrency(saleBase, order.basePrice?.salePrice?.currency ?? cur)} />
-              <DetailItem label="Extra Fees (Total)" value={formatCurrency(extraFeesTotal, cur)} />
-              <DetailItem label="FSC (Buying)" value={formatCurrency(fscPurchase, cur)} />
-              <DetailItem label="FSC (Selling)" value={formatCurrency(fscSale, cur)} />
-              <DetailItem label="VAT (Buying)" value={formatCurrency(vatPurchase, cur)} />
-              <DetailItem label="VAT (Selling)" value={formatCurrency(vatSale, cur)} />
-              <DetailItem label="Total (Buying)" value={formatCurrency(totalPurchase, cur)} />
-              <DetailItem label="Total (Selling)" value={formatCurrency(totalSale, cur)} />
-              <DetailItem label="Profit" value={formatCurrency(profit, cur)} />
+              <DetailItem label="Base Rate (Buying)" value={formatNumberVi(purchaseBase)} />
+              <DetailItem label="Base Rate (Selling)" value={formatNumberVi(saleBase)} />
+              <DetailItem label="Extra Fees (Total)" value={formatNumberVi(extraFeesTotal)} />
+              <DetailItem label="FSC (Buying)" value={formatNumberVi(fscPurchase)} />
+              <DetailItem label="FSC (Selling)" value={formatNumberVi(fscSale)} />
+              <DetailItem label="VAT (Buying)" value={formatNumberVi(vatPurchase)} />
+              <DetailItem label="VAT (Selling)" value={formatNumberVi(vatSale)} />
+              <DetailItem label="Total (Buying)" value={formatNumberVi(totalPurchase)} />
+              <DetailItem label="Total (Selling)" value={formatNumberVi(totalSale)} />
+              <DetailItem label="Profit" value={formatNumberVi(profit)} />
             </Grid>
           </SectionPaper>
 
-          {/* Note */}
+          {/* Note (customer note) */}
           <SectionPaper title="Note">
             <Typography variant="body2" sx={{ minHeight: 24 }}>
               {order.note || "-"}
