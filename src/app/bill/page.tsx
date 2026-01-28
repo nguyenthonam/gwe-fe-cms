@@ -1,10 +1,5 @@
-import BillForm from "@/components/Bill/BillForm";
-import { Container } from "@mui/material";
+import BillClientPage from "@/components/Bill/BillClientPage";
 
 export default function Bill() {
-  return (
-    <Container maxWidth="xl" sx={{ padding: "0" }}>
-      <BillForm />
-    </Container>
-  );
+  return <BillClientPage />;
 }
