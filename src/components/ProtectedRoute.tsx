@@ -1,76 +1,93 @@
 "use client";
-import { useEffect } from "react";
+
+import { useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter, usePathname } from "next/navigation";
-import { AppState } from "@/store";
-import { signOutUser, setProfile } from "@/store/reducers/authReducer";
-import { useNotification } from "@/contexts/NotificationProvider";
 import { ThunkDispatch } from "@reduxjs/toolkit";
 import { AnyAction } from "redux";
+
+import { AppState } from "@/store";
+import { logout, setAccessToken, setProfile } from "@/store/reducers/authReducer";
+import { useNotification } from "@/contexts/NotificationProvider";
 import { verifyTokenApi } from "@/utils/apis/apiAuth";
+
+const PUBLIC_PATHS = ["/sign-in", "/auth/forgot-password", "/auth/new-password"];
+
+const getClientToken = () => {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("AccessToken");
+};
+
+const getApiErrorMessage = (error: any, fallback = "Authentication check failed!") => {
+  return error?.response?.data?.message || error?.message || fallback;
+};
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
   const dispatch: ThunkDispatch<AppState, unknown, AnyAction> = useDispatch();
   const { showNotification } = useNotification();
-  const { accessToken } = useSelector((state: AppState) => state.auth);
+  const { accessToken, profile } = useSelector((state: AppState) => state.auth);
+  const verifiedTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const handleVerifyToken = async () => {
+    if (PUBLIC_PATHS.includes(pathname)) return;
+
+    const token = accessToken || getClientToken();
+
+    if (!token) {
+      verifiedTokenRef.current = null;
+      dispatch(logout());
+      router.replace("/sign-in");
+      return;
+    }
+
+    if (!accessToken) {
+      dispatch(setAccessToken({ accessToken: token }));
+    }
+
+    if (verifiedTokenRef.current === token && profile?._id) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const verify = async () => {
       try {
         const res = await verifyTokenApi();
-        if (!res) throw new Error("No response from server!");
+        const userData = res?.data?.data;
 
-        const data = res?.data;
-        if (data?.data) {
-          const userData = data.data;
+        if (!userData?._id) {
+          throw new Error("Token không hợp lệ!");
+        }
+
+        if (!cancelled) {
+          verifiedTokenRef.current = token;
           dispatch(setProfile({ profile: userData }));
         }
-        return true;
-      } catch (err: any) {
-        showNotification(err.message || "Token verification failed!", "error");
-        return false;
+      } catch (error: any) {
+        if (!cancelled) {
+          verifiedTokenRef.current = null;
+          dispatch(logout());
+          showNotification(getApiErrorMessage(error, "Token verification failed!"), "error");
+          router.replace("/sign-in");
+        }
       }
     };
 
-    const handleCheckAuthHeaders = async () => {
-      try {
-        // If there's no token in Redux or localStorage
-        if (!accessToken) {
-          dispatch(signOutUser());
-          return false;
-        }
+    verify();
 
-        const isValid = await handleVerifyToken();
-        if (!isValid) {
-          dispatch(signOutUser());
-          return false;
-        }
-
-        return true;
-      } catch (err: any) {
-        showNotification(err.message || "Authentication check failed!", "error");
-        return false;
-      }
+    return () => {
+      cancelled = true;
     };
+  }, [pathname, accessToken, profile?._id, dispatch, router, showNotification]);
 
-    const EXCEPT_PATHS = ["/auth/forgot-password", "/auth/new-password"];
-
-    if (!EXCEPT_PATHS.includes(pathname)) {
-      handleCheckAuthHeaders().then((isValid) => {
-        if (!isValid && pathname !== "/sign-in") {
-          showNotification("Session expired. Please sign in again!", "error");
-          router.push("/sign-in");
-        }
-      });
-    }
-  }, [pathname, router, dispatch, showNotification, accessToken]);
-
-  // Redirect if already signed in and on sign-in page
   useEffect(() => {
-    if (accessToken && pathname === "/sign-in") {
-      router.push("/dashboard");
+    if (pathname !== "/sign-in") return;
+
+    const token = accessToken || getClientToken();
+    if (token) {
+      router.replace("/dashboard");
     }
   }, [accessToken, pathname, router]);
 

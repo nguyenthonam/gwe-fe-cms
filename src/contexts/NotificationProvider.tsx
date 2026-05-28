@@ -1,8 +1,12 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
-import { Snackbar, Alert } from "@mui/material";
+"use client";
+
+import React, { createContext, useCallback, useContext, useMemo, useState, ReactNode } from "react";
+import { Alert, Snackbar } from "@mui/material";
+
+type NotificationSeverity = "success" | "error" | "warning" | "info";
 
 interface NotificationContextType {
-  showNotification: (message: string, severity?: "success" | "error" | "warning" | "info") => void;
+  showNotification: (message: string, severity?: NotificationSeverity) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -10,19 +14,29 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [severity, setSeverity] = useState<"success" | "error" | "warning" | "info">("info");
+  const [severity, setSeverity] = useState<NotificationSeverity>("info");
 
-  const showNotification = (msg: string, type: "success" | "error" | "warning" | "info" = "info") => {
+  /**
+   * Giữ reference ổn định để ProtectedRoute không bị chạy lại chỉ vì show notification.
+   * Lỗi cũ: showNotification bị tạo lại sau mỗi render => useEffect trong ProtectedRoute gọi lại verify-token.
+   */
+  const showNotification = useCallback((msg: string, type: NotificationSeverity = "info") => {
     setMessage(msg);
     setSeverity(type);
     setOpen(true);
-  };
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setOpen(false);
+  }, []);
+
+  const contextValue = useMemo(() => ({ showNotification }), [showNotification]);
 
   return (
-    <NotificationContext.Provider value={{ showNotification }}>
+    <NotificationContext.Provider value={contextValue}>
       {children}
-      <Snackbar open={open} autoHideDuration={3000} onClose={() => setOpen(false)} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
-        <Alert onClose={() => setOpen(false)} severity={severity} sx={{ width: "100%" }}>
+      <Snackbar open={open} autoHideDuration={3000} onClose={handleClose} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+        <Alert onClose={handleClose} severity={severity} sx={{ width: "100%" }}>
           {message}
         </Alert>
       </Snackbar>
